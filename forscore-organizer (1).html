@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Clean up your forScore library. Fix composer names, standardize formatting, and tidy metadata — all in your browser.">
+    <meta property="og:title" content="TidyScore">
+    <meta property="og:description" content="Clean up your forScore library. Fix composer names, standardize formatting, and tidy metadata — all in your browser.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="TidyScore">
+    <meta name="twitter:description" content="Clean up your forScore library. Fix composer names, standardize formatting, and tidy metadata — all in your browser.">
     <title>TidyScore</title>
     <style>
         :root {
@@ -158,6 +165,37 @@
 
         input[type="file"] {
             display: none;
+        }
+
+        .sample-prompt {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .sample-link {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .sample-link:hover {
+            text-decoration: underline;
+        }
+
+        .privacy-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .privacy-note svg {
+            flex-shrink: 0;
         }
 
         /* ===== Stats Grid ===== */
@@ -890,8 +928,15 @@
                 </svg>
             </div>
             <div class="upload-text">Drop your forScore CSV file here or click to browse</div>
-            <div class="upload-hint">Export your metadata from forScore (Menu → Share → CSV)</div>
+            <div class="upload-hint">Export your metadata from forScore (Menu &rarr; Share &rarr; CSV)</div>
             <input type="file" id="fileInput" accept=".csv">
+        </div>
+        <div id="samplePrompt" class="sample-prompt">
+            or <a href="#" class="sample-link" onclick="event.preventDefault(); app.loadSample();">try with sample data</a> to explore the tools
+        </div>
+        <div id="privacyNote" class="privacy-note">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="8" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+            Your data never leaves your browser
         </div>
 
         <div id="statsSection" class="hidden">
@@ -1270,6 +1315,33 @@
                 reader.readAsText(file);
             },
 
+            loadSample() {
+                const sampleCSV = [
+                    'Title,Composers,Genre,Tags',
+                    'Bach - Cello Suite No. 1 in G Major,,Baroque,cello',
+                    'Prelude in C Major,bach,Baroque,piano;keyboard',
+                    'Moonlight Sonata,beethoven,Classical,piano',
+                    '"Symphony No. 5, Op. 67",Ludwig van Beethoven,Classical,orchestra',
+                    'Clair de Lune,Debussy,Romantic,piano',
+                    'The Four Seasons - Spring,vivaldi ,Baroque,violin;ensemble',
+                    '"Nocturne Op. 9, No. 2",chopin,Romantic,piano',
+                    'Hungarian Rhapsody No. 2, ,Romantic,piano',
+                    'Ave Maria," Schubert, Franz ",Classical,vocal',
+                    'Gymnopédie No. 1,Erik Satie,Modern,piano',
+                    'Canon in D,Pachelbel,Baroque,ensemble',
+                    'Für Elise,beethoven,Classical,piano',
+                    '"IMSLP00001-Beethoven - Piano Sonata No.8, Op.13",,Classical,piano',
+                    'Rêverie,debussy,Romantic,piano',
+                    'Boléro,ravel,Modern,orchestra',
+                    'Träumerei,Robert Schumann,Romantic,piano',
+                    'Liebestraum No. 3,liszt,Romantic,piano',
+                    'The Nutcracker Suite,tchaikovsky,Romantic,orchestra',
+                    'New World Symphony,dvorak,Romantic,orchestra;symphony',
+                    'Piano Concerto No. 2,rachmaninoff,Romantic,piano;orchestra'
+                ].join('\n');
+                this.parseCSV(sampleCSV);
+            },
+
             parseCSV(text) {
                 const lines = text.split('\n').filter(line => line.trim());
                 
@@ -1377,6 +1449,8 @@
 
             renderAll() {
                 document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('samplePrompt').classList.add('hidden');
+                document.getElementById('privacyNote').classList.add('hidden');
                 document.getElementById('statsSection').classList.remove('hidden');
                 document.getElementById('tableSection').classList.remove('hidden');
 
@@ -2329,6 +2403,8 @@
                 this.resetClickTime = null;
                 
                 document.getElementById('uploadSection').classList.remove('hidden');
+                document.getElementById('samplePrompt').classList.remove('hidden');
+                document.getElementById('privacyNote').classList.remove('hidden');
                 document.getElementById('statsSection').classList.add('hidden');
                 document.getElementById('tableSection').classList.add('hidden');
             }
