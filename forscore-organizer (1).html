@@ -213,91 +213,11 @@
             letter-spacing: -0.5px;
         }
 
-        /* ===== Issues Section ===== */
-        .issues-section {
-            background: var(--color-surface);
-            border-radius: var(--radius-lg);
-            padding: 28px 32px;
-            margin-bottom: 32px;
-            border: 1px solid var(--color-border);
-            box-shadow: var(--shadow-sm);
-        }
-
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-        }
-
-        .issue-group {
-            margin-bottom: 28px;
-            padding-bottom: 28px;
-            border-bottom: 1px solid var(--color-border-light);
-        }
-
-        .issue-group:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .issue-title {
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 12px;
-            color: var(--color-text);
-        }
-
-        .issue-count {
-            display: inline-block;
-            background: var(--color-warning-bg);
-            color: var(--color-warning);
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-
-        .issue-items {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .issue-item {
-            background: var(--color-bg);
-            padding: 12px 16px;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background var(--transition-fast);
-        }
-
-        .issue-item:hover {
-            background: var(--color-accent-subtle);
-        }
-
-        .issue-item-text {
-            color: var(--color-text);
-        }
-
-        .issue-item-fix {
-            color: var(--color-accent);
-            font-size: 13px;
-            cursor: pointer;
-            padding: 5px 14px;
-            border-radius: var(--radius-sm);
-            transition: background var(--transition-fast), color var(--transition-fast);
-            font-weight: 500;
-        }
-
-        .issue-item-fix:hover {
-            background: var(--color-accent);
-            color: #ffffff;
         }
 
         /* ===== Table Section ===== */
@@ -638,23 +558,6 @@
             display: none;
         }
 
-        /* ===== Empty State ===== */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--color-text-muted);
-        }
-
-        .empty-state-icon {
-            margin-bottom: 12px;
-            color: var(--color-success);
-        }
-
-        .empty-state-text {
-            font-size: 15px;
-            font-weight: 500;
-        }
-
         .export-section {
             display: flex;
             gap: 12px;
@@ -953,7 +856,7 @@
                             <path d="M10 8v4M10 14.5v.5"/>
                         </svg>
                     </div>
-                    <div class="stat-label">Issues Found</div>
+                    <div class="stat-label">Issues</div>
                     <div class="stat-value" id="issuesFound">0</div>
                 </div>
                 <div class="stat-card">
@@ -966,13 +869,6 @@
                     <div class="stat-value" id="modifiedCount">0</div>
                 </div>
             </div>
-        </div>
-
-        <div id="issuesSection" class="issues-section hidden">
-            <div class="section-header">
-                <h2>Detected Issues</h2>
-            </div>
-            <div id="issuesList"></div>
         </div>
 
         <div id="tableSection" class="table-section hidden">
@@ -994,6 +890,7 @@
                     </svg>
                     <input type="text" id="searchInput" class="search-input" placeholder="Search titles or composers...">
                 </div>
+                <button class="btn btn-secondary" onclick="app.quickClean()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z"/><path d="M11 8l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z"/></svg>Quick Clean</span></button>
                 <button class="btn btn-secondary" onclick="app.cleanImslpTitles()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14l3-6h4l3 6H3zM8 8V2M5 5h6"/></svg>Clean IMSLP</span></button>
                 <button class="btn btn-secondary" onclick="app.smartExtract()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 14L14 2"/><circle cx="5" cy="2" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="5" r="0.7" fill="currentColor" stroke="none"/></svg>Smart Extract</span></button>
                 <button class="btn btn-secondary" onclick="app.findReplace()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><path d="M9 9l4 4"/></svg>Find & Replace</span></button>
@@ -1338,53 +1235,21 @@
 
             analyzeData() {
                 const issues = [];
-                const composerVariations = {};
-                const incompleteComposers = [];
-                
-                // Detect which field name is used for composer
+
+                // Detect which field name is used for each column
                 this.composerField = this.detectField(['composers', 'composer', 'Composers', 'Composer']);
                 this.titleField = this.detectField(['title', 'Title']);
                 this.genreField = this.detectField(['genre', 'Genre', 'genres', 'Genres']);
                 this.tagsField = this.detectField(['tags', 'Tags', 'tag', 'Tag']);
 
-                console.log('Detected fields:', {
-                    composer: this.composerField,
-                    title: this.titleField,
-                    genre: this.genreField,
-                    tags: this.tagsField
-                });
-                
                 this.data.forEach((row, index) => {
                     const composer = this.composerField ? row[this.composerField] : '';
                     const title = this.titleField ? row[this.titleField] : '';
-                    
-                    // Track composer variations
-                    const normalizedComposer = composer.toLowerCase().trim();
-                    if (normalizedComposer) {
-                        if (!composerVariations[normalizedComposer]) {
-                            composerVariations[normalizedComposer] = new Set();
-                        }
-                        composerVariations[normalizedComposer].add(composer);
-                    }
 
-                    // Check for incomplete composer names
-                    if (composer) {
-                        const suggestion = this.getSuggestion(composer);
-                        if (suggestion && suggestion !== composer) {
-                            incompleteComposers.push({
-                                index,
-                                current: composer,
-                                suggestion,
-                                title
-                            });
-                        }
-                    }
-
-                    // Detect issues
                     if (!composer) {
                         issues.push({ type: 'missing-composer', index, title });
                     }
-                    
+
                     if (composer && composer.includes(',') && composer.split(',')[1].trim() === '') {
                         issues.push({ type: 'trailing-comma', index, composer, title });
                     }
@@ -1395,25 +1260,6 @@
 
                     if (title && /^\s|\s$/.test(title)) {
                         issues.push({ type: 'title-whitespace', index, title });
-                    }
-                });
-
-                // Add incomplete composers as issues
-                if (incompleteComposers.length > 0) {
-                    issues.push({
-                        type: 'incomplete-composer',
-                        items: incompleteComposers
-                    });
-                }
-
-                // Find composer variations
-                Object.entries(composerVariations).forEach(([normalized, variations]) => {
-                    if (variations.size > 1) {
-                        issues.push({ 
-                            type: 'composer-variation', 
-                            variations: Array.from(variations),
-                            normalized 
-                        });
                     }
                 });
 
@@ -1438,11 +1284,9 @@
             renderAll() {
                 document.getElementById('uploadSection').classList.add('hidden');
                 document.getElementById('statsSection').classList.remove('hidden');
-                document.getElementById('issuesSection').classList.remove('hidden');
                 document.getElementById('tableSection').classList.remove('hidden');
 
                 this.updateStats();
-                this.renderIssues();
                 this.renderTable();
             },
 
@@ -1457,127 +1301,6 @@
                 document.getElementById('uniqueComposers').textContent = composers.size;
                 document.getElementById('issuesFound').textContent = this.issues.length;
                 document.getElementById('modifiedCount').textContent = this.modifiedCount;
-            },
-
-            renderIssues() {
-                const issuesList = document.getElementById('issuesList');
-                
-                if (this.issues.length === 0) {
-                    issuesList.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="20" cy="20" r="16" opacity="0.2" fill="currentColor" stroke="none"/><path d="M13 20l5 5 9-9"/></svg></div><div class="empty-state-text">No issues detected</div></div>';
-                    return;
-                }
-
-                const grouped = {};
-                this.issues.forEach(issue => {
-                    if (!grouped[issue.type]) grouped[issue.type] = [];
-                    grouped[issue.type].push(issue);
-                });
-
-                const issueConfig = {
-                    'missing-composer': { title: 'Missing Composers', action: 'Add' },
-                    'trailing-comma': { title: 'Trailing Commas', action: 'Fix' },
-                    'whitespace': { title: 'Extra Whitespace in Composers', action: 'Trim' },
-                    'title-whitespace': { title: 'Extra Whitespace in Titles', action: 'Trim' },
-                    'composer-variation': { title: 'Composer Name Variations', action: 'Standardize' },
-                    'incomplete-composer': { title: 'Incomplete Composer Names', action: 'Apply' }
-                };
-
-                let html = '';
-                Object.entries(grouped).forEach(([type, items]) => {
-                    const config = issueConfig[type];
-                    html += `
-                        <div class="issue-group">
-                            <div class="issue-title">
-                                ${config.title}
-                                <span class="issue-count">${type === 'incomplete-composer' ? items[0].items.length : items.length}</span>
-                            </div>
-                            <div class="issue-items">
-                    `;
-
-                    if (type === 'incomplete-composer') {
-                        const incompleteItems = items[0].items.slice(0, 10);
-                        incompleteItems.forEach(item => {
-                            html += `
-                                <div class="issue-item">
-                                    <span class="issue-item-text">"${item.current}" → "${item.suggestion}"</span>
-                                    <span class="issue-item-fix" onclick="app.applyComposerSuggestion(${item.index}, '${item.suggestion.replace(/'/g, "\\'")}')">
-                                        ${config.action}
-                                    </span>
-                                </div>
-                            `;
-                        });
-                        if (items[0].items.length > 10) {
-                            html += `<div class="issue-item"><span class="issue-item-text">...and ${items[0].items.length - 10} more</span></div>`;
-                        }
-                    } else if (type === 'composer-variation') {
-                        items.forEach((issue, i) => {
-                            html += `
-                                <div class="issue-item">
-                                    <span class="issue-item-text">${issue.variations.join(' • ')}</span>
-                                    <span class="issue-item-fix" onclick="app.fixComposerVariation('${issue.normalized}', '${issue.variations[0]}')">
-                                        ${config.action}
-                                    </span>
-                                </div>
-                            `;
-                        });
-                    } else {
-                        items.slice(0, 5).forEach(issue => {
-                            const displayText = issue.composer || issue.title || 'Unknown';
-                            html += `
-                                <div class="issue-item">
-                                    <span class="issue-item-text">${displayText}</span>
-                                    <span class="issue-item-fix" onclick="app.fixIssue('${type}', ${issue.index})">
-                                        ${config.action}
-                                    </span>
-                                </div>
-                            `;
-                        });
-                        if (items.length > 5) {
-                            html += `<div class="issue-item"><span class="issue-item-text">...and ${items.length - 5} more</span></div>`;
-                        }
-                    }
-
-                    html += `</div></div>`;
-                });
-
-                issuesList.innerHTML = html;
-            },
-
-            fixIssue(type, index) {
-                if (type === 'trailing-comma' && this.composerField) {
-                    this.data[index][this.composerField] = this.data[index][this.composerField].replace(/,\s*$/, '');
-                } else if (type === 'whitespace' && this.composerField) {
-                    this.data[index][this.composerField] = this.data[index][this.composerField].trim();
-                } else if (type === 'title-whitespace' && this.titleField) {
-                    this.data[index][this.titleField] = this.data[index][this.titleField].trim();
-                }
-
-                this.modifiedCount++;
-                this.analyzeData();
-                this.renderAll();
-            },
-
-            fixComposerVariation(normalized, standardForm) {
-                if (!this.composerField) return;
-                
-                this.data.forEach(row => {
-                    if (row[this.composerField].toLowerCase().trim() === normalized) {
-                        row[this.composerField] = standardForm;
-                        this.modifiedCount++;
-                    }
-                });
-
-                this.analyzeData();
-                this.renderAll();
-            },
-
-            applyComposerSuggestion(index, suggestion) {
-                if (!this.composerField) return;
-                
-                this.data[index][this.composerField] = suggestion;
-                this.modifiedCount++;
-                this.analyzeData();
-                this.renderAll();
             },
 
             renderTable(filteredData = null) {
@@ -2300,6 +2023,53 @@
                 this.showNotification(`Replaced in ${count} records`);
             },
 
+            quickClean() {
+                let trimmedComposers = 0;
+                let trimmedTitles = 0;
+                let fixedCommas = 0;
+
+                this.data.forEach(row => {
+                    if (this.composerField) {
+                        const composer = row[this.composerField] || '';
+                        // Trim whitespace
+                        const trimmed = composer.trim();
+                        if (trimmed !== composer) {
+                            row[this.composerField] = trimmed;
+                            trimmedComposers++;
+                        }
+                        // Fix trailing commas
+                        if (trimmed && trimmed.includes(',') && trimmed.split(',')[1].trim() === '') {
+                            row[this.composerField] = trimmed.replace(/,\s*$/, '');
+                            fixedCommas++;
+                        }
+                    }
+                    if (this.titleField) {
+                        const title = row[this.titleField] || '';
+                        const trimmed = title.trim();
+                        if (trimmed !== title) {
+                            row[this.titleField] = trimmed;
+                            trimmedTitles++;
+                        }
+                    }
+                });
+
+                const total = trimmedComposers + trimmedTitles + fixedCommas;
+                if (total === 0) {
+                    this.showNotification('Already clean! No whitespace or comma issues found.');
+                    return;
+                }
+
+                this.modifiedCount += total;
+                this.analyzeData();
+                this.renderAll();
+
+                const parts = [];
+                if (trimmedComposers > 0) parts.push(`${trimmedComposers} composer${trimmedComposers !== 1 ? 's' : ''} trimmed`);
+                if (trimmedTitles > 0) parts.push(`${trimmedTitles} title${trimmedTitles !== 1 ? 's' : ''} trimmed`);
+                if (fixedCommas > 0) parts.push(`${fixedCommas} trailing comma${fixedCommas !== 1 ? 's' : ''} fixed`);
+                this.showNotification(`Quick Clean: ${parts.join(', ')}`);
+            },
+
             standardizeComposers() {
                 if (!this.composerField) {
                     this.showNotification('Composer field not found in your CSV');
@@ -2378,7 +2148,6 @@
                 
                 document.getElementById('uploadSection').classList.remove('hidden');
                 document.getElementById('statsSection').classList.add('hidden');
-                document.getElementById('issuesSection').classList.add('hidden');
                 document.getElementById('tableSection').classList.add('hidden');
             }
         };
