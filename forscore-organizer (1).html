@@ -755,6 +755,27 @@
             font-weight: bold;
         }
 
+        .extraction-section-header {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            padding: 12px 8px 6px 8px;
+            border-bottom: 1px solid var(--color-border-light);
+            margin-top: 8px;
+        }
+
+        .extraction-section-header:first-child {
+            margin-top: 0;
+            padding-top: 4px;
+        }
+
+        .extraction-item--completion {
+            border-left: 3px solid var(--color-warning);
+            padding-left: 9px;
+        }
+
         /* ===== Notifications ===== */
         .toast-notification {
             position: fixed;
@@ -1012,8 +1033,10 @@
     <div id="extractionModal" class="modal">
         <div class="modal-content">
             <h3 class="modal-title">Smart Extraction Results</h3>
+            <p class="modal-desc" id="extractionDesc">
+                Found <strong id="extractionCount">0</strong> composer suggestions.
+            </p>
             <p class="modal-desc">
-                Found <strong id="extractionCount">0</strong> composer names.
                 <span id="extractionSelectedCount" class="modal-desc-accent"></span>
             </p>
             <div class="extraction-header">
@@ -1627,16 +1650,15 @@
 
             smartExtract() {
                 console.log('Smart Extract started');
-                
+
                 if (!this.composerField || !this.titleField) {
                     this.showNotification('Required fields not found');
                     return;
                 }
 
-                let extracted = [];
                 let checked = 0;
                 let skipped = 0;
-                
+
                 // Improved patterns - more specific to avoid over-matching
                 const patterns = [
                     // "Bach - Prelude" or "J.S. Bach - Air"
@@ -1651,89 +1673,134 @@
 
                 console.log('Processing', this.data.length, 'entries');
 
+                // === Pass 1: Extract composers from titles (empty composer field) ===
+                let titleExtractions = [];
                 this.data.forEach((row, index) => {
                     const title = row[this.titleField] || '';
                     const currentComposer = row[this.composerField] || '';
-                    
-                    // Only process if composer is empty
+
                     if (currentComposer) {
                         skipped++;
                         return;
                     }
-                    
+
                     checked++;
-                    
-                    // Try each pattern
+
                     for (let pattern of patterns) {
                         const match = title.match(pattern);
                         if (match) {
                             const potentialComposer = match[1].trim();
-                            console.log('Found potential composer:', potentialComposer, 'in title:', title);
-                            
-                            // Check if it matches a known composer (case insensitive)
                             const suggestion = this.getSuggestion(potentialComposer);
                             if (suggestion) {
-                                console.log('  ✓ Matched to:', suggestion);
-                                extracted.push({
+                                titleExtractions.push({
                                     index,
                                     title,
                                     extracted: potentialComposer,
-                                    suggestion
+                                    suggestion,
+                                    type: 'title'
                                 });
                                 break;
-                            } else {
-                                console.log('  ✗ No match in database for:', potentialComposer);
                             }
                         }
                     }
                 });
 
+                // === Pass 2: Detect incomplete/informal composer names ===
+                let nameCompletions = [];
+                this.data.forEach((row, index) => {
+                    const currentComposer = row[this.composerField] || '';
+                    const title = row[this.titleField] || '';
+
+                    if (!currentComposer) return;
+
+                    const suggestion = this.getSuggestion(currentComposer);
+                    if (suggestion && suggestion !== currentComposer.trim()) {
+                        nameCompletions.push({
+                            index,
+                            title,
+                            extracted: currentComposer.trim(),
+                            suggestion,
+                            type: 'completion'
+                        });
+                    }
+                });
+
+                let extracted = [...titleExtractions, ...nameCompletions];
+
                 console.log('Results:', {
                     total: this.data.length,
                     checked: checked,
                     skipped: skipped,
-                    extracted: extracted.length
+                    titleExtractions: titleExtractions.length,
+                    nameCompletions: nameCompletions.length
                 });
 
                 if (extracted.length === 0) {
-                    this.showNotification(`Smart extraction checked ${checked} entries with blank composers, but couldn't find any recognized composer names.\n\nThis works best with titles like:\n• "Bach - Prelude"\n• "Beethoven Symphony"\n• "Dvorak_String Quartet"\n\nCheck the console (F12) to see what was detected.`);
+                    this.showNotification(`Smart Extract checked ${checked} entries with blank composers and ${skipped} with existing composers, but found no suggestions.\n\nThis works best with titles like:\n• "Bach - Prelude"\n• "Beethoven Symphony"\n\nIt also detects incomplete names like "bach" or "beethoven" in the composer field.`);
                     return;
                 }
 
-                // Store extraction results and show modal
                 this.pendingExtraction = extracted;
+                this.extractionCounts = {
+                    titleCount: titleExtractions.length,
+                    completionCount: nameCompletions.length
+                };
                 this.showExtractionModal();
             },
 
             showExtractionModal() {
                 const modal = document.getElementById('extractionModal');
                 const resultsDiv = document.getElementById('extractionResults');
-                const countSpan = document.getElementById('extractionCount');
-                
+                const descEl = document.getElementById('extractionDesc');
+
                 // Initialize all as selected
                 this.selectedExtractions = new Set(this.pendingExtraction.map((_, i) => i));
-                
-                countSpan.textContent = this.pendingExtraction.length;
+
+                // Update description based on result types
+                const tc = this.extractionCounts.titleCount;
+                const cc = this.extractionCounts.completionCount;
+                if (tc > 0 && cc > 0) {
+                    descEl.innerHTML = `Found <strong>${this.pendingExtraction.length}</strong> composer suggestions (${tc} from titles, ${cc} name completion${cc !== 1 ? 's' : ''}).`;
+                } else if (cc > 0) {
+                    descEl.innerHTML = `Found <strong>${cc}</strong> incomplete composer name${cc !== 1 ? 's' : ''}.`;
+                } else {
+                    descEl.innerHTML = `Found <strong>${tc}</strong> composer name${tc !== 1 ? 's' : ''}.`;
+                }
+
                 this.updateExtractionSelectedCount();
-                
+
                 let html = '';
+
+                // Section headers only when both types present
+                if (tc > 0 && cc > 0) {
+                    html += `<div class="extraction-section-header">Extracted from Titles (${tc})</div>`;
+                }
+
                 this.pendingExtraction.forEach((e, index) => {
+                    // Insert completion section header before first completion item
+                    if (tc > 0 && cc > 0 && e.type === 'completion' && index === tc) {
+                        html += `<div class="extraction-section-header">Incomplete Composer Names (${cc})</div>`;
+                    }
+
+                    const titleDisplay = e.title.substring(0, 60) + (e.title.length > 60 ? '...' : '');
+                    const itemClass = e.type === 'completion' ? 'extraction-item extraction-item--completion' : 'extraction-item';
+
                     html += `
-                        <div class="extraction-item">
-                            <input type="checkbox" class="extraction-checkbox" 
-                                   id="extract_${index}" 
-                                   onchange="app.toggleExtraction(${index})" 
+                        <div class="${itemClass}">
+                            <input type="checkbox" class="extraction-checkbox"
+                                   id="extract_${index}"
+                                   onchange="app.toggleExtraction(${index})"
                                    checked>
                             <div class="extraction-content">
-                                <div class="extraction-title">${e.title.substring(0, 60)}${e.title.length > 60 ? '...' : ''}</div>
+                                <div class="extraction-title">${titleDisplay}</div>
                                 <div class="extraction-mapping">
-                                    "${e.extracted}"<span class="extraction-arrow">→</span><strong>${e.suggestion}</strong>
+                                    "${e.extracted}"<span class="extraction-arrow">\u2192</span><strong>${e.suggestion}</strong>
                                 </div>
                             </div>
                         </div>
                     `;
                 });
-                
+
                 resultsDiv.innerHTML = html;
                 modal.classList.add('active');
             },
@@ -1797,6 +1864,7 @@
                 document.getElementById('extractionModal').classList.remove('active');
                 this.pendingExtraction = null;
                 this.selectedExtractions = null;
+                this.extractionCounts = null;
             },
 
             applyExtraction() {
