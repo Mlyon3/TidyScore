@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>forScore Metadata Organizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .upload-section {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-section:hover {
+            border-color: #999;
+            background: #fefefe;
+        }
+
+        .upload-section.dragover {
+            border-color: #333;
+            background: #f5f5f5;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: #999;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .issues-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .issue-group {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .issue-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .issue-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .issue-count {
+            display: inline-block;
+            background: #f5f5f5;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .issue-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .issue-item {
+            background: #fafafa;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .issue-item-text {
+            color: #333;
+        }
+
+        .issue-item-fix {
+            color: #0066cc;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .issue-item-fix:hover {
+            background: #e5f1ff;
+        }
+
+        .table-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #e5e5e5;
+            overflow: hidden;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .bulk-controls {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .bulk-controls.active {
+            display: flex;
+        }
+
+        .bulk-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .bulk-input {
+            flex: 1;
+            max-width: 300px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"]:indeterminate {
+            opacity: 0.6;
+        }
+
+        tr.selected td {
+            background: #e5f1ff !important;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: #fafafa;
+            z-index: 10;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 2px solid #e5e5e5;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        th:hover {
+            background: #f0f0f0;
+        }
+
+        th.sorted-asc::after {
+            content: ' ↑';
+            color: #333;
+        }
+
+        th.sorted-desc::after {
+            content: ' ↓';
+            color: #333;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        .editable {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .editable:hover {
+            background: #f0f0f0;
+        }
+
+        .editing {
+            background: white;
+            border: 1px solid #0066cc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            outline: none;
+            width: 100%;
+        }
+
+        .suggestions-dropdown {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            margin-top: 4px;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        .suggestion-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: #f5f5f5;
+        }
+
+        .suggestion-label {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .suggestion-value {
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .export-section {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .extraction-results {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            background: #fafafa;
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .extraction-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .extraction-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 8px;
+            border-bottom: 1px solid #e5e5e5;
+            font-size: 14px;
+        }
+
+        .extraction-item:last-child {
+            border-bottom: none;
+        }
+
+        .extraction-item:hover {
+            background: #f5f5f5;
+        }
+
+        .extraction-checkbox {
+            margin-top: 3px;
+        }
+
+        .extraction-content {
+            flex: 1;
+        }
+
+        .extraction-title {
+            color: #666;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .extraction-mapping {
+            color: #1a1a1a;
+        }
+
+        .extraction-arrow {
+            color: #0066cc;
+            margin: 0 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>forScore Metadata Organizer</h1>
+            <p class="subtitle">Clean up composer names, titles, and standardize your music library</p>
+        </header>
+
+        <div id="uploadSection" class="upload-section">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Drop your forScore CSV file here or click to browse</div>
+            <div class="upload-hint">Export your metadata from forScore (Menu → Share → CSV)</div>
+            <input type="file" id="fileInput" accept=".csv">
+        </div>
+
+        <div id="statsSection" class="hidden">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Scores</div>
+                    <div class="stat-value" id="totalScores">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unique Composers</div>
+                    <div class="stat-value" id="uniqueComposers">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Issues Found</div>
+                    <div class="stat-value" id="issuesFound">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Modified</div>
+                    <div class="stat-value" id="modifiedCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="issuesSection" class="issues-section hidden">
+            <div class="section-header">
+                <h2>Detected Issues</h2>
+            </div>
+            <div id="issuesList"></div>
+        </div>
+
+        <div id="tableSection" class="table-section hidden">
+            <div class="section-header">
+                <h2>Your Library</h2>
+            </div>
+            
+            <div id="bulkControls" class="bulk-controls">
+                <span class="bulk-label"><span id="selectedCount">0</span> selected</span>
+                <input type="text" id="bulkComposerInput" class="bulk-input" placeholder="Enter composer name...">
+                <button class="btn btn-primary" onclick="app.applyBulkComposer()">Apply to Selected</button>
+                <button class="btn btn-secondary" onclick="app.clearSelection()">Clear Selection</button>
+            </div>
+
+            <div class="table-controls">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search titles or composers...">
+                <button class="btn btn-secondary" onclick="app.cleanImslpTitles()">Clean IMSLP Titles</button>
+                <button class="btn btn-secondary" onclick="app.smartExtract()">Smart Extract Composers</button>
+                <button class="btn btn-secondary" onclick="app.findReplace()">Find & Replace</button>
+                <button class="btn btn-secondary" onclick="app.standardizeComposers()">Standardize Composers</button>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Composer</th>
+                            <th>Genre</th>
+                            <th>Tags</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="export-section">
+                <button class="btn btn-primary" onclick="app.exportCSV()">Export Cleaned CSV</button>
+                <button class="btn btn-secondary" onclick="app.reset()">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Find & Replace Modal -->
+    <div id="findReplaceModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Find & Replace</h3>
+            <div class="form-group">
+                <label class="form-label">Find</label>
+                <input type="text" id="findText" class="form-input" placeholder="Text to find">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Replace with</label>
+                <input type="text" id="replaceText" class="form-input" placeholder="Replacement text">
+            </div>
+            <div class="form-group">
+                <label class="form-label">In field</label>
+                <select id="replaceField" class="form-input">
+                    <option value="composer">Composer</option>
+                    <option value="title">Title</option>
+                    <option value="genre">Genre</option>
+                    <option value="tags">Tags</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="app.executeReplace()">Replace All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extraction Results Modal -->
+    <div id="extractionModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Smart Extraction Results</h3>
+            <p style="color: #666; margin-bottom: 16px;">
+                Found <strong id="extractionCount">0</strong> composer names. 
+                <span id="extractionSelectedCount" style="color: #0066cc;"></span>
+            </p>
+            <div class="extraction-header">
+                <input type="checkbox" id="selectAllExtractions" onchange="app.toggleSelectAllExtractions()" checked>
+                <label for="selectAllExtractions" style="cursor: pointer; user-select: none;">Select All</label>
+            </div>
+            <div id="extractionResults" class="extraction-results"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeExtractionModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="app.applyExtraction()">Apply Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMSLP Cleanup Modal -->
+    <div id="imslpModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Clean IMSLP Titles</h3>
+            <p style="color: #666; margin-bottom: 16px;">
+                Found <strong id="imslpCount">0</strong> IMSLP titles to clean. 
+                <span id="imslpSelectedCount" style="color: #0066cc;"></span>
+            </p>
+            <div class="extraction-header">
+                <input type="checkbox" id="selectAllImslp" onchange="app.toggleSelectAllImslp()" checked>
+                <label for="selectAllImslp" style="cursor: pointer; user-select: none;">Select All</label>
+            </div>
+            <div id="imslpResults" class="extraction-results"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeImslpModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="app.applyImslpCleanup()">Apply Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            data: [],
+            originalData: [],
+            modifiedCount: 0,
+            sortColumn: null,
+            sortDirection: 'asc',
+            selectedRows: new Set(),
+            
+            // Composer database with common variations mapping to full names
+            composerDatabase: {
+                'bach': 'Bach, Johann Sebastian',
+                'j.s. bach': 'Bach, Johann Sebastian',
+                'js bach': 'Bach, Johann Sebastian',
+                'j s bach': 'Bach, Johann Sebastian',
+                'johann sebastian bach': 'Bach, Johann Sebastian',
+                
+                'beethoven': 'Beethoven, Ludwig van',
+                'ludwig van beethoven': 'Beethoven, Ludwig van',
+                'van beethoven': 'Beethoven, Ludwig van',
+                
+                'mozart': 'Mozart, Wolfgang Amadeus',
+                'w.a. mozart': 'Mozart, Wolfgang Amadeus',
+                'wolfgang amadeus mozart': 'Mozart, Wolfgang Amadeus',
+                'amadeus mozart': 'Mozart, Wolfgang Amadeus',
+                
+                'brahms': 'Brahms, Johannes',
+                'johannes brahms': 'Brahms, Johannes',
+                
+                'handel': 'Handel, George Frideric',
+                'g.f. handel': 'Handel, George Frideric',
+                'george frideric handel': 'Handel, George Frideric',
+                
+                'haydn': 'Haydn, Joseph',
+                'joseph haydn': 'Haydn, Joseph',
+                'franz joseph haydn': 'Haydn, Joseph',
+                
+                'chopin': 'Chopin, Frédéric',
+                'frederic chopin': 'Chopin, Frédéric',
+                'frédéric chopin': 'Chopin, Frédéric',
+                'f. chopin': 'Chopin, Frédéric',
+                
+                'schumann': 'Schumann, Robert',
+                'robert schumann': 'Schumann, Robert',
+                
+                'schubert': 'Schubert, Franz',
+                'franz schubert': 'Schubert, Franz',
+                
+                'tchaikovsky': 'Tchaikovsky, Pyotr Ilyich',
+                'pyotr tchaikovsky': 'Tchaikovsky, Pyotr Ilyich',
+                'tschaikovsky': 'Tchaikovsky, Pyotr Ilyich',
+                'chaikovsky': 'Tchaikovsky, Pyotr Ilyich',
+                
+                'vivaldi': 'Vivaldi, Antonio',
+                'antonio vivaldi': 'Vivaldi, Antonio',
+                
+                'debussy': 'Debussy, Claude',
+                'claude debussy': 'Debussy, Claude',
+                
+                'ravel': 'Ravel, Maurice',
+                'maurice ravel': 'Ravel, Maurice',
+                
+                'liszt': 'Liszt, Franz',
+                'franz liszt': 'Liszt, Franz',
+                
+                'mendelssohn': 'Mendelssohn, Felix',
+                'felix mendelssohn': 'Mendelssohn, Felix',
+                
+                'dvorak': 'Dvořák, Antonín',
+                'dvořák': 'Dvořák, Antonín',
+                'antonin dvorak': 'Dvořák, Antonín',
+                'antonín dvořák': 'Dvořák, Antonín',
+                
+                'rachmaninoff': 'Rachmaninoff, Sergei',
+                'sergei rachmaninoff': 'Rachmaninoff, Sergei',
+                'rachmaninov': 'Rachmaninoff, Sergei',
+                
+                'prokofiev': 'Prokofiev, Sergei',
+                'sergei prokofiev': 'Prokofiev, Sergei',
+                
+                'shostakovich': 'Shostakovich, Dmitri',
+                'dmitri shostakovich': 'Shostakovich, Dmitri',
+                
+                'stravinsky': 'Stravinsky, Igor',
+                'igor stravinsky': 'Stravinsky, Igor',
+                
+                'verdi': 'Verdi, Giuseppe',
+                'giuseppe verdi': 'Verdi, Giuseppe',
+                
+                'puccini': 'Puccini, Giacomo',
+                'giacomo puccini': 'Puccini, Giacomo',
+                
+                'wagner': 'Wagner, Richard',
+                'richard wagner': 'Wagner, Richard',
+                
+                'mahler': 'Mahler, Gustav',
+                'gustav mahler': 'Mahler, Gustav',
+                
+                'strauss': 'Strauss, Richard',
+                'richard strauss': 'Strauss, Richard',
+                'r. strauss': 'Strauss, Richard',
+                
+                'saint-saens': 'Saint-Saëns, Camille',
+                'saint saens': 'Saint-Saëns, Camille',
+                'camille saint-saens': 'Saint-Saëns, Camille',
+                
+                'faure': 'Fauré, Gabriel',
+                'fauré': 'Fauré, Gabriel',
+                'gabriel faure': 'Fauré, Gabriel',
+                
+                'elgar': 'Elgar, Edward',
+                'edward elgar': 'Elgar, Edward',
+                
+                'barber': 'Barber, Samuel',
+                'samuel barber': 'Barber, Samuel',
+                
+                'britten': 'Britten, Benjamin',
+                'benjamin britten': 'Britten, Benjamin',
+                
+                'copland': 'Copland, Aaron',
+                'aaron copland': 'Copland, Aaron',
+                
+                'gershwin': 'Gershwin, George',
+                'george gershwin': 'Gershwin, George',
+                
+                'holst': 'Holst, Gustav',
+                'gustav holst': 'Holst, Gustav',
+                
+                'sibelius': 'Sibelius, Jean',
+                'jean sibelius': 'Sibelius, Jean',
+                
+                'grieg': 'Grieg, Edvard',
+                'edvard grieg': 'Grieg, Edvard',
+                
+                'respighi': 'Respighi, Ottorino',
+                'ottorino respighi': 'Respighi, Ottorino',
+            },
+
+            init() {
+                const uploadSection = document.getElementById('uploadSection');
+                const fileInput = document.getElementById('fileInput');
+
+                uploadSection.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => this.handleFile(e.target.files[0]));
+
+                // Drag and drop
+                uploadSection.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadSection.classList.add('dragover');
+                });
+
+                uploadSection.addEventListener('dragleave', () => {
+                    uploadSection.classList.remove('dragover');
+                });
+
+                uploadSection.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadSection.classList.remove('dragover');
+                    if (e.dataTransfer.files.length) {
+                        this.handleFile(e.dataTransfer.files[0]);
+                    }
+                });
+
+                // Search
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.filterTable(e.target.value);
+                });
+            },
+
+            handleFile(file) {
+                if (!file || !file.name.endsWith('.csv')) {
+                    this.showNotification('Please upload a CSV file');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.parseCSV(e.target.result);
+                };
+                reader.readAsText(file);
+            },
+
+            parseCSV(text) {
+                const lines = text.split('\n').filter(line => line.trim());
+                
+                // Parse header line more carefully
+                const headerValues = this.parseCSVLine(lines[0]);
+                const headers = headerValues.map(h => h.trim().replace(/^"|"$/g, ''));
+                
+                console.log('Detected headers:', headers);
+                
+                this.data = [];
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    
+                    const values = this.parseCSVLine(lines[i]);
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || '';
+                    });
+                    this.data.push(row);
+                }
+
+                console.log('Parsed data:', this.data.slice(0, 3));
+                console.log('Total rows:', this.data.length);
+
+                if (this.data.length === 0) {
+                    this.showNotification('No data found in CSV. Please check the file format.');
+                    return;
+                }
+
+                this.originalData = JSON.parse(JSON.stringify(this.data));
+                this.headers = headers;
+                this.analyzeData();
+                this.renderAll();
+            },
+
+            parseCSVLine(line) {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                
+                return values.map(v => v.replace(/^"|"$/g, ''));
+            },
+
+            analyzeData() {
+                const issues = [];
+                const composerVariations = {};
+                const incompleteComposers = [];
+                
+                // Detect which field name is used for composer
+                this.composerField = this.detectField(['composers', 'composer', 'Composers', 'Composer']);
+                this.titleField = this.detectField(['title', 'Title']);
+                this.genreField = this.detectField(['genre', 'Genre', 'genres', 'Genres']);
+                this.tagsField = this.detectField(['tags', 'Tags', 'tag', 'Tag']);
+
+                console.log('Detected fields:', {
+                    composer: this.composerField,
+                    title: this.titleField,
+                    genre: this.genreField,
+                    tags: this.tagsField
+                });
+                
+                this.data.forEach((row, index) => {
+                    const composer = this.composerField ? row[this.composerField] : '';
+                    const title = this.titleField ? row[this.titleField] : '';
+                    
+                    // Track composer variations
+                    const normalizedComposer = composer.toLowerCase().trim();
+                    if (normalizedComposer) {
+                        if (!composerVariations[normalizedComposer]) {
+                            composerVariations[normalizedComposer] = new Set();
+                        }
+                        composerVariations[normalizedComposer].add(composer);
+                    }
+
+                    // Check for incomplete composer names
+                    if (composer) {
+                        const suggestion = this.getSuggestion(composer);
+                        if (suggestion && suggestion !== composer) {
+                            incompleteComposers.push({
+                                index,
+                                current: composer,
+                                suggestion,
+                                title
+                            });
+                        }
+                    }
+
+                    // Detect issues
+                    if (!composer) {
+                        issues.push({ type: 'missing-composer', index, title });
+                    }
+                    
+                    if (composer && composer.includes(',') && composer.split(',')[1].trim() === '') {
+                        issues.push({ type: 'trailing-comma', index, composer, title });
+                    }
+
+                    if (composer && /^\s|\s$/.test(composer)) {
+                        issues.push({ type: 'whitespace', index, composer, title });
+                    }
+
+                    if (title && /^\s|\s$/.test(title)) {
+                        issues.push({ type: 'title-whitespace', index, title });
+                    }
+                });
+
+                // Add incomplete composers as issues
+                if (incompleteComposers.length > 0) {
+                    issues.push({
+                        type: 'incomplete-composer',
+                        items: incompleteComposers
+                    });
+                }
+
+                // Find composer variations
+                Object.entries(composerVariations).forEach(([normalized, variations]) => {
+                    if (variations.size > 1) {
+                        issues.push({ 
+                            type: 'composer-variation', 
+                            variations: Array.from(variations),
+                            normalized 
+                        });
+                    }
+                });
+
+                this.issues = issues;
+            },
+
+            getSuggestion(composer) {
+                if (!composer) return null;
+                const normalized = composer.toLowerCase().trim();
+                return this.composerDatabase[normalized] || null;
+            },
+
+            detectField(possibleNames) {
+                for (let name of possibleNames) {
+                    if (this.headers.includes(name)) {
+                        return name;
+                    }
+                }
+                return null;
+            },
+
+            renderAll() {
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('statsSection').classList.remove('hidden');
+                document.getElementById('issuesSection').classList.remove('hidden');
+                document.getElementById('tableSection').classList.remove('hidden');
+
+                this.updateStats();
+                this.renderIssues();
+                this.renderTable();
+            },
+
+            updateStats() {
+                const composers = new Set(
+                    this.data
+                        .map(r => this.composerField ? r[this.composerField] : '')
+                        .filter(Boolean)
+                );
+                
+                document.getElementById('totalScores').textContent = this.data.length;
+                document.getElementById('uniqueComposers').textContent = composers.size;
+                document.getElementById('issuesFound').textContent = this.issues.length;
+                document.getElementById('modifiedCount').textContent = this.modifiedCount;
+            },
+
+            renderIssues() {
+                const issuesList = document.getElementById('issuesList');
+                
+                if (this.issues.length === 0) {
+                    issuesList.innerHTML = '<div class="empty-state">✓ No issues detected</div>';
+                    return;
+                }
+
+                const grouped = {};
+                this.issues.forEach(issue => {
+                    if (!grouped[issue.type]) grouped[issue.type] = [];
+                    grouped[issue.type].push(issue);
+                });
+
+                const issueConfig = {
+                    'missing-composer': { title: 'Missing Composers', action: 'Add' },
+                    'trailing-comma': { title: 'Trailing Commas', action: 'Fix' },
+                    'whitespace': { title: 'Extra Whitespace in Composers', action: 'Trim' },
+                    'title-whitespace': { title: 'Extra Whitespace in Titles', action: 'Trim' },
+                    'composer-variation': { title: 'Composer Name Variations', action: 'Standardize' },
+                    'incomplete-composer': { title: 'Incomplete Composer Names', action: 'Apply' }
+                };
+
+                let html = '';
+                Object.entries(grouped).forEach(([type, items]) => {
+                    const config = issueConfig[type];
+                    html += `
+                        <div class="issue-group">
+                            <div class="issue-title">
+                                ${config.title}
+                                <span class="issue-count">${type === 'incomplete-composer' ? items[0].items.length : items.length}</span>
+                            </div>
+                            <div class="issue-items">
+                    `;
+
+                    if (type === 'incomplete-composer') {
+                        const incompleteItems = items[0].items.slice(0, 10);
+                        incompleteItems.forEach(item => {
+                            html += `
+                                <div class="issue-item">
+                                    <span class="issue-item-text">"${item.current}" → "${item.suggestion}"</span>
+                                    <span class="issue-item-fix" onclick="app.applyComposerSuggestion(${item.index}, '${item.suggestion.replace(/'/g, "\\'")}')">
+                                        ${config.action}
+                                    </span>
+                                </div>
+                            `;
+                        });
+                        if (items[0].items.length > 10) {
+                            html += `<div class="issue-item"><span class="issue-item-text">...and ${items[0].items.length - 10} more</span></div>`;
+                        }
+                    } else if (type === 'composer-variation') {
+                        items.forEach((issue, i) => {
+                            html += `
+                                <div class="issue-item">
+                                    <span class="issue-item-text">${issue.variations.join(' • ')}</span>
+                                    <span class="issue-item-fix" onclick="app.fixComposerVariation('${issue.normalized}', '${issue.variations[0]}')">
+                                        ${config.action}
+                                    </span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        items.slice(0, 5).forEach(issue => {
+                            const displayText = issue.composer || issue.title || 'Unknown';
+                            html += `
+                                <div class="issue-item">
+                                    <span class="issue-item-text">${displayText}</span>
+                                    <span class="issue-item-fix" onclick="app.fixIssue('${type}', ${issue.index})">
+                                        ${config.action}
+                                    </span>
+                                </div>
+                            `;
+                        });
+                        if (items.length > 5) {
+                            html += `<div class="issue-item"><span class="issue-item-text">...and ${items.length - 5} more</span></div>`;
+                        }
+                    }
+
+                    html += `</div></div>`;
+                });
+
+                issuesList.innerHTML = html;
+            },
+
+            fixIssue(type, index) {
+                if (type === 'trailing-comma' && this.composerField) {
+                    this.data[index][this.composerField] = this.data[index][this.composerField].replace(/,\s*$/, '');
+                } else if (type === 'whitespace' && this.composerField) {
+                    this.data[index][this.composerField] = this.data[index][this.composerField].trim();
+                } else if (type === 'title-whitespace' && this.titleField) {
+                    this.data[index][this.titleField] = this.data[index][this.titleField].trim();
+                }
+
+                this.modifiedCount++;
+                this.analyzeData();
+                this.renderAll();
+            },
+
+            fixComposerVariation(normalized, standardForm) {
+                if (!this.composerField) return;
+                
+                this.data.forEach(row => {
+                    if (row[this.composerField].toLowerCase().trim() === normalized) {
+                        row[this.composerField] = standardForm;
+                        this.modifiedCount++;
+                    }
+                });
+
+                this.analyzeData();
+                this.renderAll();
+            },
+
+            applyComposerSuggestion(index, suggestion) {
+                if (!this.composerField) return;
+                
+                this.data[index][this.composerField] = suggestion;
+                this.modifiedCount++;
+                this.analyzeData();
+                this.renderAll();
+            },
+
+            renderTable(filteredData = null) {
+                const tbody = document.getElementById('tableBody');
+                const thead = document.querySelector('thead');
+                const dataToRender = filteredData || this.data;
+
+                // Update header with sort indicators and checkbox
+                const titleClass = this.sortColumn === this.titleField ? `sorted-${this.sortDirection}` : '';
+                const composerClass = this.sortColumn === this.composerField ? `sorted-${this.sortDirection}` : '';
+                const genreClass = this.sortColumn === this.genreField ? `sorted-${this.sortDirection}` : '';
+                const tagsClass = this.sortColumn === this.tagsField ? `sorted-${this.sortDirection}` : '';
+
+                thead.innerHTML = `
+                    <tr>
+                        <th class="checkbox-cell">
+                            <input type="checkbox" id="selectAll" onchange="app.toggleSelectAll()" ${this.selectedRows.size === this.data.length && this.data.length > 0 ? 'checked' : ''}>
+                        </th>
+                        <th class="${titleClass}" onclick="app.sortBy('${this.titleField}')">Title</th>
+                        <th class="${composerClass}" onclick="app.sortBy('${this.composerField}')">Composer</th>
+                        <th class="${genreClass}" onclick="app.sortBy('${this.genreField}')">Genre</th>
+                        <th class="${tagsClass}" onclick="app.sortBy('${this.tagsField}')">Tags</th>
+                    </tr>
+                `;
+
+                let html = '';
+                dataToRender.forEach((row, index) => {
+                    const title = this.titleField ? row[this.titleField] : '';
+                    const composer = this.composerField ? row[this.composerField] : '';
+                    const genre = this.genreField ? row[this.genreField] : '';
+                    const tags = this.tagsField ? row[this.tagsField] : '';
+                    const isSelected = this.selectedRows.has(index);
+                    
+                    html += `
+                        <tr class="${isSelected ? 'selected' : ''}">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" onchange="app.toggleRow(${index})" ${isSelected ? 'checked' : ''}>
+                            </td>
+                            <td><span class="editable" onclick="app.editCell(${index}, '${this.titleField}')">${title}</span></td>
+                            <td><span class="editable" onclick="app.editCell(${index}, '${this.composerField}')">${composer}</span></td>
+                            <td><span class="editable" onclick="app.editCell(${index}, '${this.genreField}')">${genre}</span></td>
+                            <td><span class="editable" onclick="app.editCell(${index}, '${this.tagsField}')">${tags}</span></td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+                this.updateBulkControls();
+            },
+
+            editCell(index, field) {
+                const cell = event.target;
+                const currentValue = this.data[index][field] || '';
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'editing';
+                input.value = currentValue;
+                
+                let isEscaping = false;
+                let suggestionsDropdown = null;
+                
+                // Function to show suggestions
+                const showSuggestions = () => {
+                    // Only show suggestions for composer field
+                    if (field !== this.composerField) return;
+                    
+                    const suggestion = this.getSuggestion(input.value);
+                    if (!suggestion || suggestion === input.value) {
+                        if (suggestionsDropdown) {
+                            suggestionsDropdown.remove();
+                            suggestionsDropdown = null;
+                        }
+                        return;
+                    }
+                    
+                    if (!suggestionsDropdown) {
+                        suggestionsDropdown = document.createElement('div');
+                        suggestionsDropdown.className = 'suggestions-dropdown';
+                        
+                        const rect = cell.getBoundingClientRect();
+                        suggestionsDropdown.style.position = 'fixed';
+                        suggestionsDropdown.style.left = rect.left + 'px';
+                        suggestionsDropdown.style.top = (rect.bottom + 4) + 'px';
+                        suggestionsDropdown.style.minWidth = rect.width + 'px';
+                        
+                        document.body.appendChild(suggestionsDropdown);
+                    }
+                    
+                    suggestionsDropdown.innerHTML = `
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">Suggested full name:</div>
+                            <div class="suggestion-value">${suggestion}</div>
+                        </div>
+                    `;
+                    
+                    suggestionsDropdown.querySelector('.suggestion-item').addEventListener('click', () => {
+                        input.value = suggestion;
+                        input.blur();
+                    });
+                };
+                
+                input.addEventListener('input', showSuggestions);
+                
+                input.addEventListener('blur', () => {
+                    if (isEscaping) return;
+                    
+                    // Small delay to allow clicking on suggestions
+                    setTimeout(() => {
+                        if (suggestionsDropdown) {
+                            suggestionsDropdown.remove();
+                            suggestionsDropdown = null;
+                        }
+                        
+                        const newValue = input.value;
+                        if (newValue !== currentValue) {
+                            this.data[index][field] = newValue;
+                            this.modifiedCount++;
+                            this.analyzeData();
+                            this.updateStats();
+                        }
+                        // Always re-render the table to restore the cell
+                        this.renderTable();
+                    }, 200);
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        input.blur();
+                    }
+                    if (e.key === 'Escape') {
+                        isEscaping = true;
+                        if (suggestionsDropdown) {
+                            suggestionsDropdown.remove();
+                            suggestionsDropdown = null;
+                        }
+                        this.renderTable();
+                    }
+                });
+
+                cell.textContent = '';
+                cell.appendChild(input);
+                input.focus();
+                input.select();
+                
+                // Show suggestions immediately if there's already a value
+                showSuggestions();
+            },
+
+            filterTable(query) {
+                if (!query) {
+                    this.renderTable();
+                    return;
+                }
+
+                const filtered = this.data.filter(row => {
+                    const title = this.titleField ? row[this.titleField] : '';
+                    const composer = this.composerField ? row[this.composerField] : '';
+                    const genre = this.genreField ? row[this.genreField] : '';
+                    const tags = this.tagsField ? row[this.tagsField] : '';
+                    
+                    const searchStr = `${title} ${composer} ${genre} ${tags}`.toLowerCase();
+                    return searchStr.includes(query.toLowerCase());
+                });
+
+                this.renderTable(filtered);
+            },
+
+            sortBy(field) {
+                if (!field) return;
+
+                // Toggle direction if clicking same column, otherwise default to asc
+                if (this.sortColumn === field) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortColumn = field;
+                    this.sortDirection = 'asc';
+                }
+
+                // Sort the data
+                this.data.sort((a, b) => {
+                    const aVal = (a[field] || '').toLowerCase();
+                    const bVal = (b[field] || '').toLowerCase();
+                    
+                    // Empty values always go to the bottom
+                    if (!aVal && !bVal) return 0;
+                    if (!aVal) return 1;
+                    if (!bVal) return -1;
+                    
+                    const comparison = aVal.localeCompare(bVal);
+                    return this.sortDirection === 'asc' ? comparison : -comparison;
+                });
+
+                this.renderTable();
+            },
+
+            toggleRow(index) {
+                if (this.selectedRows.has(index)) {
+                    this.selectedRows.delete(index);
+                } else {
+                    this.selectedRows.add(index);
+                }
+                this.updateBulkControls();
+                this.renderTable();
+            },
+
+            toggleSelectAll() {
+                const selectAllCheckbox = document.getElementById('selectAll');
+                if (selectAllCheckbox.checked) {
+                    // Select all
+                    this.data.forEach((_, index) => {
+                        this.selectedRows.add(index);
+                    });
+                } else {
+                    // Deselect all
+                    this.selectedRows.clear();
+                }
+                this.updateBulkControls();
+                this.renderTable();
+            },
+
+            updateBulkControls() {
+                const bulkControls = document.getElementById('bulkControls');
+                const selectedCount = document.getElementById('selectedCount');
+                
+                selectedCount.textContent = this.selectedRows.size;
+                
+                if (this.selectedRows.size > 0) {
+                    bulkControls.classList.add('active');
+                } else {
+                    bulkControls.classList.remove('active');
+                }
+            },
+
+            clearSelection() {
+                this.selectedRows.clear();
+                this.updateBulkControls();
+                this.renderTable();
+            },
+
+            applyBulkComposer() {
+                const composerInput = document.getElementById('bulkComposerInput');
+                const composer = composerInput.value.trim();
+                
+                if (!composer) {
+                    this.showNotification('Please enter a composer name');
+                    return;
+                }
+
+                if (!this.composerField) {
+                    this.showNotification('Composer field not found');
+                    return;
+                }
+
+                let count = 0;
+                this.selectedRows.forEach(index => {
+                    this.data[index][this.composerField] = composer;
+                    count++;
+                });
+
+                this.modifiedCount += count;
+                this.selectedRows.clear();
+                composerInput.value = '';
+                
+                this.analyzeData();
+                this.renderAll();
+                
+                this.showNotification(`Applied composer to ${count} entries`);
+            },
+
+            smartExtract() {
+                console.log('Smart Extract started');
+                
+                if (!this.composerField || !this.titleField) {
+                    this.showNotification('Required fields not found');
+                    return;
+                }
+
+                let extracted = [];
+                let checked = 0;
+                let skipped = 0;
+                
+                // Improved patterns - more specific to avoid over-matching
+                const patterns = [
+                    // "Bach - Prelude" or "J.S. Bach - Air"
+                    /^([A-Z][a-z]+(?:\s+[A-Z]\.?\s*[A-Z]\.?\s*)?(?:\s+[A-Z][a-z]+)?)\s*[-–—]\s*/,
+                    // "Dvorak_SQ12"
+                    /^([A-Z][a-z]+)_/,
+                    // "Bach Suite" or "Beethoven Sonata" - but just extract the name
+                    /^([A-Z][a-z]+)\s+(?:Suite|Sonata|Symphony|Concerto|Quartet|Quintet|Prelude|Fugue|Cantata|Mass|Requiem)/i,
+                    // "Bach 3rd" or "Beethoven 5th"
+                    /^([A-Z][a-z]+)\s+\d/,
+                ];
+
+                console.log('Processing', this.data.length, 'entries');
+
+                this.data.forEach((row, index) => {
+                    const title = row[this.titleField] || '';
+                    const currentComposer = row[this.composerField] || '';
+                    
+                    // Only process if composer is empty
+                    if (currentComposer) {
+                        skipped++;
+                        return;
+                    }
+                    
+                    checked++;
+                    
+                    // Try each pattern
+                    for (let pattern of patterns) {
+                        const match = title.match(pattern);
+                        if (match) {
+                            const potentialComposer = match[1].trim();
+                            console.log('Found potential composer:', potentialComposer, 'in title:', title);
+                            
+                            // Check if it matches a known composer (case insensitive)
+                            const suggestion = this.getSuggestion(potentialComposer);
+                            if (suggestion) {
+                                console.log('  ✓ Matched to:', suggestion);
+                                extracted.push({
+                                    index,
+                                    title,
+                                    extracted: potentialComposer,
+                                    suggestion
+                                });
+                                break;
+                            } else {
+                                console.log('  ✗ No match in database for:', potentialComposer);
+                            }
+                        }
+                    }
+                });
+
+                console.log('Results:', {
+                    total: this.data.length,
+                    checked: checked,
+                    skipped: skipped,
+                    extracted: extracted.length
+                });
+
+                if (extracted.length === 0) {
+                    this.showNotification(`Smart extraction checked ${checked} entries with blank composers, but couldn't find any recognized composer names.\n\nThis works best with titles like:\n• "Bach - Prelude"\n• "Beethoven Symphony"\n• "Dvorak_String Quartet"\n\nCheck the console (F12) to see what was detected.`);
+                    return;
+                }
+
+                // Store extraction results and show modal
+                this.pendingExtraction = extracted;
+                this.showExtractionModal();
+            },
+
+            showExtractionModal() {
+                const modal = document.getElementById('extractionModal');
+                const resultsDiv = document.getElementById('extractionResults');
+                const countSpan = document.getElementById('extractionCount');
+                
+                // Initialize all as selected
+                this.selectedExtractions = new Set(this.pendingExtraction.map((_, i) => i));
+                
+                countSpan.textContent = this.pendingExtraction.length;
+                this.updateExtractionSelectedCount();
+                
+                let html = '';
+                this.pendingExtraction.forEach((e, index) => {
+                    html += `
+                        <div class="extraction-item">
+                            <input type="checkbox" class="extraction-checkbox" 
+                                   id="extract_${index}" 
+                                   onchange="app.toggleExtraction(${index})" 
+                                   checked>
+                            <div class="extraction-content">
+                                <div class="extraction-title">${e.title.substring(0, 60)}${e.title.length > 60 ? '...' : ''}</div>
+                                <div class="extraction-mapping">
+                                    "${e.extracted}"<span class="extraction-arrow">→</span><strong>${e.suggestion}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                resultsDiv.innerHTML = html;
+                modal.classList.add('active');
+            },
+
+            toggleExtraction(index) {
+                if (this.selectedExtractions.has(index)) {
+                    this.selectedExtractions.delete(index);
+                } else {
+                    this.selectedExtractions.add(index);
+                }
+                this.updateExtractionSelectedCount();
+                this.updateSelectAllCheckbox();
+            },
+
+            toggleSelectAllExtractions() {
+                const selectAllCheckbox = document.getElementById('selectAllExtractions');
+                
+                if (selectAllCheckbox.checked) {
+                    // Select all
+                    this.selectedExtractions = new Set(this.pendingExtraction.map((_, i) => i));
+                    this.pendingExtraction.forEach((_, index) => {
+                        document.getElementById(`extract_${index}`).checked = true;
+                    });
+                } else {
+                    // Deselect all
+                    this.selectedExtractions.clear();
+                    this.pendingExtraction.forEach((_, index) => {
+                        document.getElementById(`extract_${index}`).checked = false;
+                    });
+                }
+                this.updateExtractionSelectedCount();
+            },
+
+            updateSelectAllCheckbox() {
+                const selectAllCheckbox = document.getElementById('selectAllExtractions');
+                if (this.selectedExtractions.size === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (this.selectedExtractions.size === this.pendingExtraction.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            },
+
+            updateExtractionSelectedCount() {
+                const selectedCountSpan = document.getElementById('extractionSelectedCount');
+                const count = this.selectedExtractions.size;
+                if (count === this.pendingExtraction.length) {
+                    selectedCountSpan.textContent = 'All selected';
+                } else if (count === 0) {
+                    selectedCountSpan.textContent = 'None selected';
+                } else {
+                    selectedCountSpan.textContent = `${count} selected`;
+                }
+            },
+
+            closeExtractionModal() {
+                document.getElementById('extractionModal').classList.remove('active');
+                this.pendingExtraction = null;
+                this.selectedExtractions = null;
+            },
+
+            applyExtraction() {
+                if (!this.pendingExtraction || !this.selectedExtractions) return;
+                
+                if (this.selectedExtractions.size === 0) {
+                    this.showNotification('Please select at least one extraction to apply');
+                    return;
+                }
+                
+                let count = 0;
+                this.selectedExtractions.forEach(index => {
+                    const extraction = this.pendingExtraction[index];
+                    this.data[extraction.index][this.composerField] = extraction.suggestion;
+                    this.modifiedCount++;
+                    count++;
+                });
+                
+                this.closeExtractionModal();
+                this.analyzeData();
+                this.renderAll();
+                
+                this.showNotification(`Applied ${count} composer${count !== 1 ? 's' : ''}!`);
+            },
+
+            showNotification(message) {
+                // Simple notification that doesn't use alert()
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #1a1a1a;
+                    color: white;
+                    padding: 16px 24px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 10000;
+                    max-width: 400px;
+                    white-space: pre-line;
+                `;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.transition = 'opacity 0.3s';
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }, 4000);
+            },
+
+            cleanImslpTitles() {
+                console.log('IMSLP Cleanup started');
+                
+                if (!this.titleField) {
+                    this.showNotification('Title field not found');
+                    return;
+                }
+
+                let cleanable = [];
+                let checked = 0;
+
+                this.data.forEach((row, index) => {
+                    const title = row[this.titleField] || '';
+                    checked++;
+                    
+                    // Check if this looks like an IMSLP title
+                    if (this.needsImslpCleanup(title)) {
+                        const cleaned = this.cleanImslpTitle(title);
+                        if (cleaned !== title) {
+                            cleanable.push({
+                                index,
+                                original: title,
+                                cleaned
+                            });
+                        }
+                    }
+                });
+
+                console.log('IMSLP cleanup results:', {
+                    total: this.data.length,
+                    checked: checked,
+                    cleanable: cleanable.length
+                });
+
+                if (cleanable.length === 0) {
+                    this.showNotification('No IMSLP titles found to clean.\n\nLooking for titles with:\n• IMSLP numbers\n• PMLP numbers\n• Excessive underscores');
+                    return;
+                }
+
+                // Store cleanup results and show modal
+                this.pendingImslpCleanup = cleanable;
+                this.showImslpModal();
+            },
+
+            needsImslpCleanup(title) {
+                // Check if title has IMSLP patterns that need cleaning
+                return /IMSLP\d+/.test(title) || 
+                       /PMLP\d+/.test(title) || 
+                       /_[A-Z]/.test(title) ||  // Has underscore before capital letter
+                       /^_/.test(title) ||      // Starts with underscore
+                       title.split('_').length > 3;  // Has multiple underscores
+            },
+
+            cleanImslpTitle(title) {
+                let cleaned = title;
+                
+                // Remove IMSLP and PMLP prefixes with numbers
+                cleaned = cleaned.replace(/^IMSLP\d+-?/g, '');
+                cleaned = cleaned.replace(/^PMLP\d+-?/g, '');
+                cleaned = cleaned.replace(/-PMLP\d+-?/g, '-');
+                
+                // Convert underscores to spaces
+                cleaned = cleaned.replace(/_/g, ' ');
+                
+                // Remove leading/trailing dashes and spaces
+                cleaned = cleaned.replace(/^[-\s]+|[-\s]+$/g, '');
+                
+                // Clean up multiple spaces
+                cleaned = cleaned.replace(/\s+/g, ' ');
+                
+                // Remove .pdf extension if present
+                cleaned = cleaned.replace(/\.pdf$/i, '');
+                
+                // Add (IMSLP) suffix if not already there and if it looked like an IMSLP file
+                if (title.match(/IMSLP\d+|PMLP\d+/) && !cleaned.includes('(IMSLP)')) {
+                    cleaned = cleaned + ' (IMSLP)';
+                }
+                
+                return cleaned.trim();
+            },
+
+            showImslpModal() {
+                const modal = document.getElementById('imslpModal');
+                const resultsDiv = document.getElementById('imslpResults');
+                const countSpan = document.getElementById('imslpCount');
+                
+                // Initialize all as selected
+                this.selectedImslpCleanups = new Set(this.pendingImslpCleanup.map((_, i) => i));
+                
+                countSpan.textContent = this.pendingImslpCleanup.length;
+                this.updateImslpSelectedCount();
+                
+                let html = '';
+                this.pendingImslpCleanup.forEach((item, index) => {
+                    html += `
+                        <div class="extraction-item">
+                            <input type="checkbox" class="extraction-checkbox" 
+                                   id="imslp_${index}" 
+                                   onchange="app.toggleImslpCleanup(${index})" 
+                                   checked>
+                            <div class="extraction-content">
+                                <div class="extraction-title">Original: ${item.original.substring(0, 60)}${item.original.length > 60 ? '...' : ''}</div>
+                                <div class="extraction-mapping">
+                                    <span class="extraction-arrow">→</span><strong>${item.cleaned}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                resultsDiv.innerHTML = html;
+                modal.classList.add('active');
+            },
+
+            toggleImslpCleanup(index) {
+                if (this.selectedImslpCleanups.has(index)) {
+                    this.selectedImslpCleanups.delete(index);
+                } else {
+                    this.selectedImslpCleanups.add(index);
+                }
+                this.updateImslpSelectedCount();
+                this.updateImslpSelectAllCheckbox();
+            },
+
+            toggleSelectAllImslp() {
+                const selectAllCheckbox = document.getElementById('selectAllImslp');
+                
+                if (selectAllCheckbox.checked) {
+                    // Select all
+                    this.selectedImslpCleanups = new Set(this.pendingImslpCleanup.map((_, i) => i));
+                    this.pendingImslpCleanup.forEach((_, index) => {
+                        document.getElementById(`imslp_${index}`).checked = true;
+                    });
+                } else {
+                    // Deselect all
+                    this.selectedImslpCleanups.clear();
+                    this.pendingImslpCleanup.forEach((_, index) => {
+                        document.getElementById(`imslp_${index}`).checked = false;
+                    });
+                }
+                this.updateImslpSelectedCount();
+            },
+
+            updateImslpSelectAllCheckbox() {
+                const selectAllCheckbox = document.getElementById('selectAllImslp');
+                if (this.selectedImslpCleanups.size === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (this.selectedImslpCleanups.size === this.pendingImslpCleanup.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            },
+
+            updateImslpSelectedCount() {
+                const selectedCountSpan = document.getElementById('imslpSelectedCount');
+                const count = this.selectedImslpCleanups.size;
+                if (count === this.pendingImslpCleanup.length) {
+                    selectedCountSpan.textContent = 'All selected';
+                } else if (count === 0) {
+                    selectedCountSpan.textContent = 'None selected';
+                } else {
+                    selectedCountSpan.textContent = `${count} selected`;
+                }
+            },
+
+            closeImslpModal() {
+                document.getElementById('imslpModal').classList.remove('active');
+                this.pendingImslpCleanup = null;
+                this.selectedImslpCleanups = null;
+            },
+
+            applyImslpCleanup() {
+                if (!this.pendingImslpCleanup || !this.selectedImslpCleanups) return;
+                
+                if (this.selectedImslpCleanups.size === 0) {
+                    this.showNotification('Please select at least one title to clean');
+                    return;
+                }
+                
+                let count = 0;
+                this.selectedImslpCleanups.forEach(index => {
+                    const cleanup = this.pendingImslpCleanup[index];
+                    this.data[cleanup.index][this.titleField] = cleanup.cleaned;
+                    this.modifiedCount++;
+                    count++;
+                });
+                
+                this.closeImslpModal();
+                this.analyzeData();
+                this.renderAll();
+                
+                this.showNotification(`Cleaned ${count} title${count !== 1 ? 's' : ''}!`);
+            },
+
+            findReplace() {
+                document.getElementById('findReplaceModal').classList.add('active');
+            },
+
+            closeModal() {
+                document.getElementById('findReplaceModal').classList.remove('active');
+            },
+
+            executeReplace() {
+                const find = document.getElementById('findText').value;
+                const replace = document.getElementById('replaceText').value;
+                const fieldType = document.getElementById('replaceField').value;
+
+                if (!find) return;
+
+                // Map field type to actual field name
+                let actualField;
+                switch(fieldType) {
+                    case 'composer': actualField = this.composerField; break;
+                    case 'title': actualField = this.titleField; break;
+                    case 'genre': actualField = this.genreField; break;
+                    case 'tags': actualField = this.tagsField; break;
+                }
+
+                if (!actualField) {
+                    this.showNotification(`Field "${fieldType}" not found in your CSV`);
+                    return;
+                }
+
+                let count = 0;
+                this.data.forEach(row => {
+                    if (row[actualField] && row[actualField].includes(find)) {
+                        row[actualField] = row[actualField].replace(new RegExp(find, 'g'), replace);
+                        count++;
+                    }
+                });
+
+                this.modifiedCount += count;
+                this.closeModal();
+                this.analyzeData();
+                this.renderAll();
+                
+                this.showNotification(`Replaced in ${count} records`);
+            },
+
+            standardizeComposers() {
+                if (!this.composerField) {
+                    this.showNotification('Composer field not found in your CSV');
+                    return;
+                }
+
+                let count = 0;
+
+                this.data.forEach(row => {
+                    const composer = row[this.composerField];
+                    if (!composer) return;
+
+                    // If it's already "Last, First" format, skip
+                    if (composer.includes(',')) return;
+
+                    // Try to convert "First Last" to "Last, First"
+                    const parts = composer.trim().split(' ');
+                    if (parts.length >= 2) {
+                        const last = parts.pop();
+                        const first = parts.join(' ');
+                        row[this.composerField] = `${last}, ${first}`;
+                        count++;
+                    }
+                });
+
+                if (count > 0) {
+                    this.modifiedCount += count;
+                    this.analyzeData();
+                    this.renderAll();
+                    this.showNotification(`Standardized ${count} composer names to "Last, First" format`);
+                } else {
+                    this.showNotification('No composers to standardize');
+                }
+            },
+
+            exportCSV() {
+                // Use the original headers from the CSV
+                const headers = this.headers;
+                
+                let csv = headers.join(',') + '\n';
+                
+                this.data.forEach(row => {
+                    const values = headers.map(header => {
+                        const value = row[header] || '';
+                        // Escape quotes and wrap in quotes if contains comma or quote
+                        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                            return '"' + value.replace(/"/g, '""') + '"';
+                        }
+                        return value;
+                    });
+                    csv += values.join(',') + '\n';
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'forscore-cleaned.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            reset() {
+                // Simple double-click protection without using confirm()
+                if (!this.resetClickTime || Date.now() - this.resetClickTime > 3000) {
+                    this.resetClickTime = Date.now();
+                    this.showNotification('Click "Start Over" again within 3 seconds to confirm reset');
+                    return;
+                }
+                
+                this.data = [];
+                this.originalData = [];
+                this.modifiedCount = 0;
+                this.selectedRows.clear();
+                this.resetClickTime = null;
+                
+                document.getElementById('uploadSection').classList.remove('hidden');
+                document.getElementById('statsSection').classList.add('hidden');
+                document.getElementById('issuesSection').classList.add('hidden');
+                document.getElementById('tableSection').classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
