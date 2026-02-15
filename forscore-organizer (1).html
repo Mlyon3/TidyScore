@@ -497,6 +497,7 @@
             position: relative;
             flex: 1;
             min-width: 200px;
+            align-self: flex-start;
         }
 
         .search-icon {
@@ -1607,6 +1608,11 @@
                     this.filterTable(e.target.value);
                 });
 
+                // Warn before closing with unsaved changes
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.modifiedCount > 0) { e.preventDefault(); }
+                });
+
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
                     // Cmd/Ctrl+Z for undo (but not when editing a cell)
@@ -2333,6 +2339,7 @@
                 this.undoStack.push({
                     data: JSON.parse(JSON.stringify(this.data)),
                     modifiedCount: this.modifiedCount,
+                    changeLog: JSON.parse(JSON.stringify(this.changeLog)),
                     label
                 });
                 if (this.undoStack.length > 50) this.undoStack.shift();
@@ -2344,6 +2351,7 @@
                 const snapshot = this.undoStack.pop();
                 this.data = snapshot.data;
                 this.modifiedCount = snapshot.modifiedCount;
+                this.changeLog = snapshot.changeLog;
                 this.analyzeData();
                 this.renderAll();
                 this.updateUndoButton();
