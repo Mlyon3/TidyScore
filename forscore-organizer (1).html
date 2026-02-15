@@ -2075,6 +2075,7 @@
 
                     checked++;
 
+                    let matched = false;
                     for (let pattern of patterns) {
                         const match = title.match(pattern);
                         if (match) {
@@ -2088,7 +2089,25 @@
                                     suggestion,
                                     type: 'title'
                                 });
+                                matched = true;
                                 break;
+                            }
+                        }
+                    }
+
+                    // Fallback: check if first word is a known composer
+                    if (!matched) {
+                        const firstWord = title.split(/[\s\-–—_]/)[0].trim();
+                        if (firstWord.length > 2) {
+                            const suggestion = this.getSuggestion(firstWord);
+                            if (suggestion) {
+                                titleExtractions.push({
+                                    index,
+                                    title,
+                                    extracted: firstWord,
+                                    suggestion,
+                                    type: 'title'
+                                });
                             }
                         }
                     }
