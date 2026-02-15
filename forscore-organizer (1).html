@@ -45,6 +45,44 @@
             --radius-xl: 20px;
         }
 
+        [data-theme="dark"] {
+            --color-bg: #141a22;
+            --color-surface: #1c2430;
+            --color-text: #e2e8f0;
+            --color-text-secondary: #94a3b8;
+            --color-text-muted: #64748b;
+            --color-accent: #38b2ac;
+            --color-accent-hover: #4fd1c5;
+            --color-accent-light: rgba(56, 178, 172, 0.15);
+            --color-accent-subtle: rgba(56, 178, 172, 0.07);
+            --color-border: #2d3748;
+            --color-border-light: #232d3b;
+            --color-success: #48bb78;
+            --color-success-bg: rgba(72, 187, 120, 0.12);
+            --color-warning: #ecc94b;
+            --color-warning-bg: rgba(236, 201, 75, 0.12);
+            --color-danger: #fc8181;
+            --color-danger-bg: rgba(252, 129, 129, 0.12);
+            --color-header-from: #0f1620;
+            --color-header-to: #1a2a36;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+            --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+
+        [data-theme="dark"] input[type="checkbox"]:checked::after {
+            border-color: #0f1620;
+        }
+
+        [data-theme="dark"] .modal {
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        [data-theme="dark"] .stat-icon--composers {
+            background: rgba(107, 90, 191, 0.15);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -99,6 +137,24 @@
             color: rgba(255, 255, 255, 0.65);
             font-weight: 400;
             line-height: 1.3;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
         }
 
         .container {
@@ -233,6 +289,72 @@
         .stat-icon--scores { background: var(--color-accent-light); color: var(--color-accent); }
         .stat-icon--composers { background: #f0edf8; color: #6b5abf; }
         .stat-icon--modified { background: var(--color-success-bg); color: var(--color-success); }
+
+        .stat-card--clickable {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .stat-card--clickable:hover {
+            border-color: var(--color-accent);
+        }
+
+        .stat-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 50;
+            min-width: 280px;
+            overflow: hidden;
+        }
+
+        .stat-dropdown-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            padding: 12px 16px 8px;
+        }
+
+        .stat-dropdown-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .stat-dropdown-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-top: 1px solid var(--color-border-light);
+        }
+
+        .stat-dropdown-row:hover {
+            background: var(--color-accent-subtle);
+        }
+
+        .stat-dropdown-name {
+            color: var(--color-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 12px;
+        }
+
+        .stat-dropdown-count {
+            color: var(--color-text-muted);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+        }
 
         .stat-label {
             font-size: 12px;
@@ -913,6 +1035,15 @@
                     <div class="app-tagline">Clean up your forScore library</div>
                 </div>
             </div>
+            <button class="theme-toggle" onclick="app.toggleTheme()" aria-label="Toggle dark mode">
+                <svg class="theme-icon theme-icon--light" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <circle cx="10" cy="10" r="4"/>
+                    <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/>
+                </svg>
+                <svg class="theme-icon theme-icon--dark" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                    <path d="M17 11.5a7 7 0 0 1-9.5-9.5A7 7 0 1 0 17 11.5z"/>
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -949,7 +1080,7 @@
                     <div class="stat-label">Total Scores</div>
                     <div class="stat-value" id="totalScores">0</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card stat-card--clickable" onclick="app.toggleComposerStats(event)" id="composerStatCard">
                     <div class="stat-icon stat-icon--composers">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                             <circle cx="10" cy="6" r="3"/>
@@ -958,6 +1089,7 @@
                     </div>
                     <div class="stat-label">Unique Composers</div>
                     <div class="stat-value" id="uniqueComposers">0</div>
+                    <div id="composerStatsDropdown" class="stat-dropdown hidden"></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon stat-icon--modified">
@@ -1121,6 +1253,22 @@
         </div>
     </div>
 
+    <!-- Export Summary Modal -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Export Summary</h3>
+            <p class="modal-desc" id="exportSummaryDesc"></p>
+            <div id="exportSummaryList" class="extraction-results" style="max-height: 260px;"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeExportModal()">Cancel</button>
+                <button class="btn btn-primary btn-icon" onclick="app.doExport()">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
+                    Download CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const app = {
             data: [],
@@ -1130,6 +1278,7 @@
             sortDirection: 'asc',
             selectedRows: new Set(),
             undoStack: [],
+            changeLog: [],
 
             // Composer database with common variations mapping to full names
             composerDatabase: {
@@ -1258,9 +1407,166 @@
                 
                 'respighi': 'Respighi, Ottorino',
                 'ottorino respighi': 'Respighi, Ottorino',
+
+                // More Classical / Romantic
+                'satie': 'Satie, Erik',
+                'erik satie': 'Satie, Erik',
+                'mussorgsky': 'Mussorgsky, Modest',
+                'modest mussorgsky': 'Mussorgsky, Modest',
+                'rimsky-korsakov': 'Rimsky-Korsakov, Nikolai',
+                'rimsky korsakov': 'Rimsky-Korsakov, Nikolai',
+                'nikolai rimsky-korsakov': 'Rimsky-Korsakov, Nikolai',
+                'borodin': 'Borodin, Alexander',
+                'alexander borodin': 'Borodin, Alexander',
+                'paganini': 'Paganini, Niccolò',
+                'niccolo paganini': 'Paganini, Niccolò',
+                'telemann': 'Telemann, Georg Philipp',
+                'georg philipp telemann': 'Telemann, Georg Philipp',
+                'purcell': 'Purcell, Henry',
+                'henry purcell': 'Purcell, Henry',
+                'monteverdi': 'Monteverdi, Claudio',
+                'claudio monteverdi': 'Monteverdi, Claudio',
+                'scarlatti': 'Scarlatti, Domenico',
+                'domenico scarlatti': 'Scarlatti, Domenico',
+                'd. scarlatti': 'Scarlatti, Domenico',
+                'corelli': 'Corelli, Arcangelo',
+                'arcangelo corelli': 'Corelli, Arcangelo',
+                'albinoni': 'Albinoni, Tomaso',
+                'tomaso albinoni': 'Albinoni, Tomaso',
+                'pachelbel': 'Pachelbel, Johann',
+                'johann pachelbel': 'Pachelbel, Johann',
+                'franck': 'Franck, César',
+                'cesar franck': 'Franck, César',
+                'césar franck': 'Franck, César',
+                'bruch': 'Bruch, Max',
+                'max bruch': 'Bruch, Max',
+                'glazunov': 'Glazunov, Alexander',
+                'alexander glazunov': 'Glazunov, Alexander',
+                'janacek': 'Janáček, Leoš',
+                'janáček': 'Janáček, Leoš',
+                'leos janacek': 'Janáček, Leoš',
+                'smetana': 'Smetana, Bedřich',
+                'bedrich smetana': 'Smetana, Bedřich',
+                'hummel': 'Hummel, Johann Nepomuk',
+                'johann nepomuk hummel': 'Hummel, Johann Nepomuk',
+                'clementi': 'Clementi, Muzio',
+                'muzio clementi': 'Clementi, Muzio',
+                'czerny': 'Czerny, Carl',
+                'carl czerny': 'Czerny, Carl',
+                'hanon': 'Hanon, Charles-Louis',
+                'charles-louis hanon': 'Hanon, Charles-Louis',
+                'weber': 'Weber, Carl Maria von',
+                'carl maria von weber': 'Weber, Carl Maria von',
+                'scriabin': 'Scriabin, Alexander',
+                'alexander scriabin': 'Scriabin, Alexander',
+                'delius': 'Delius, Frederick',
+                'frederick delius': 'Delius, Frederick',
+                'vaughan williams': 'Vaughan Williams, Ralph',
+                'ralph vaughan williams': 'Vaughan Williams, Ralph',
+                'rvw': 'Vaughan Williams, Ralph',
+
+                // Contemporary Classical
+                'glass': 'Glass, Philip',
+                'philip glass': 'Glass, Philip',
+                'pärt': 'Pärt, Arvo',
+                'part': 'Pärt, Arvo',
+                'arvo pärt': 'Pärt, Arvo',
+                'arvo part': 'Pärt, Arvo',
+                'adams': 'Adams, John',
+                'john adams': 'Adams, John',
+                'reich': 'Reich, Steve',
+                'steve reich': 'Reich, Steve',
+                'bernstein': 'Bernstein, Leonard',
+                'leonard bernstein': 'Bernstein, Leonard',
+                'cage': 'Cage, John',
+                'john cage': 'Cage, John',
+                'ligeti': 'Ligeti, György',
+                'györgy ligeti': 'Ligeti, György',
+                'messiaen': 'Messiaen, Olivier',
+                'olivier messiaen': 'Messiaen, Olivier',
+                'penderecki': 'Penderecki, Krzysztof',
+                'krzysztof penderecki': 'Penderecki, Krzysztof',
+                'gorecki': 'Górecki, Henryk',
+                'górecki': 'Górecki, Henryk',
+                'henryk gorecki': 'Górecki, Henryk',
+                'piazzolla': 'Piazzolla, Astor',
+                'astor piazzolla': 'Piazzolla, Astor',
+                'villa-lobos': 'Villa-Lobos, Heitor',
+                'villa lobos': 'Villa-Lobos, Heitor',
+                'heitor villa-lobos': 'Villa-Lobos, Heitor',
+                'ginastera': 'Ginastera, Alberto',
+                'alberto ginastera': 'Ginastera, Alberto',
+                'barток': 'Bartók, Béla',
+                'bartok': 'Bartók, Béla',
+                'bela bartok': 'Bartók, Béla',
+                'béla bartók': 'Bartók, Béla',
+                'kodaly': 'Kodály, Zoltán',
+                'kodály': 'Kodály, Zoltán',
+                'zoltan kodaly': 'Kodály, Zoltán',
+                'sondheim': 'Sondheim, Stephen',
+                'stephen sondheim': 'Sondheim, Stephen',
+
+                // Jazz
+                'ellington': 'Ellington, Duke',
+                'duke ellington': 'Ellington, Duke',
+                'coltrane': 'Coltrane, John',
+                'john coltrane': 'Coltrane, John',
+                'monk': 'Monk, Thelonious',
+                'thelonious monk': 'Monk, Thelonious',
+                'miles davis': 'Davis, Miles',
+                'davis': 'Davis, Miles',
+                'bill evans': 'Evans, Bill',
+                'oscar peterson': 'Peterson, Oscar',
+                'charlie parker': 'Parker, Charlie',
+                'parker': 'Parker, Charlie',
+                'dizzy gillespie': 'Gillespie, Dizzy',
+                'dave brubeck': 'Brubeck, Dave',
+                'brubeck': 'Brubeck, Dave',
+                'herbie hancock': 'Hancock, Herbie',
+                'chick corea': 'Corea, Chick',
+                'keith jarrett': 'Jarrett, Keith',
+                'pat metheny': 'Metheny, Pat',
+
+                // Film / Game / Musical Theatre
+                'john williams': 'Williams, John',
+                'williams': 'Williams, John',
+                'morricone': 'Morricone, Ennio',
+                'ennio morricone': 'Morricone, Ennio',
+                'hans zimmer': 'Zimmer, Hans',
+                'zimmer': 'Zimmer, Hans',
+                'howard shore': 'Shore, Howard',
+                'joe hisaishi': 'Hisaishi, Joe',
+                'hisaishi': 'Hisaishi, Joe',
+                'nobuo uematsu': 'Uematsu, Nobuo',
+                'uematsu': 'Uematsu, Nobuo',
+                'koji kondo': 'Kondo, Koji',
+                'kondo': 'Kondo, Koji',
+                'yoko shimomura': 'Shimomura, Yoko',
+                'shimomura': 'Shimomura, Yoko',
+                'andrew lloyd webber': 'Lloyd Webber, Andrew',
+                'lloyd webber': 'Lloyd Webber, Andrew',
+                'rodgers': 'Rodgers, Richard',
+                'richard rodgers': 'Rodgers, Richard',
+                'joplin': 'Joplin, Scott',
+                'scott joplin': 'Joplin, Scott',
+                'yiruma': 'Yiruma',
+                'ludovico einaudi': 'Einaudi, Ludovico',
+                'einaudi': 'Einaudi, Ludovico',
+                'ryuichi sakamoto': 'Sakamoto, Ryuichi',
+                'sakamoto': 'Sakamoto, Ryuichi',
             },
 
             init() {
+                // Restore saved theme
+                try {
+                    const saved = localStorage.getItem('tidyscore-theme');
+                    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                        document.querySelector('.theme-icon--light').style.display = 'none';
+                        document.querySelector('.theme-icon--dark').style.display = '';
+                    }
+                } catch(e) {}
+
                 const uploadSection = document.getElementById('uploadSection');
                 const fileInput = document.getElementById('fileInput');
 
@@ -1288,6 +1594,15 @@
                 // Search
                 document.getElementById('searchInput').addEventListener('input', (e) => {
                     this.filterTable(e.target.value);
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    // Cmd/Ctrl+Z for undo (but not when editing a cell)
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.target.classList.contains('editing')) {
+                        e.preventDefault();
+                        this.undo();
+                    }
                 });
             },
 
@@ -1550,6 +1865,7 @@
                             this.pushUndo('Edit');
                             this.data[index][field] = newValue;
                             this.modifiedCount++;
+                            this.logChange('Manual edits', 1);
                             this.analyzeData();
                             this.updateStats();
                         }
@@ -1694,12 +2010,13 @@
                 });
 
                 this.modifiedCount += count;
+                this.logChange('Bulk composer assignments', count);
                 this.selectedRows.clear();
                 composerInput.value = '';
-                
+
                 this.analyzeData();
                 this.renderAll();
-                
+
                 this.showNotification(`Applied composer to ${count} entries`);
             },
 
@@ -1939,11 +2256,66 @@
                     count++;
                 });
                 
+                this.logChange('Composers extracted/completed', count);
                 this.closeExtractionModal();
                 this.analyzeData();
                 this.renderAll();
-                
+
                 this.showNotification(`Applied ${count} composer${count !== 1 ? 's' : ''}!`);
+            },
+
+            toggleComposerStats(e) {
+                e.stopPropagation();
+                const dropdown = document.getElementById('composerStatsDropdown');
+                if (!dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                    return;
+                }
+
+                const counts = {};
+                this.data.forEach(row => {
+                    const composer = this.composerField ? (row[this.composerField] || '').trim() : '';
+                    if (composer) {
+                        counts[composer] = (counts[composer] || 0) + 1;
+                    }
+                });
+
+                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                const top = sorted.slice(0, 20);
+
+                let html = `<div class="stat-dropdown-title">Top Composers</div><div class="stat-dropdown-list">`;
+                top.forEach(([name, count]) => {
+                    html += `<div class="stat-dropdown-row">
+                        <span class="stat-dropdown-name">${name}</span>
+                        <span class="stat-dropdown-count">${count}</span>
+                    </div>`;
+                });
+                if (sorted.length > 20) {
+                    html += `<div class="stat-dropdown-row" style="color:var(--color-text-muted);font-size:13px;">
+                        <span>+${sorted.length - 20} more</span><span></span>
+                    </div>`;
+                }
+                html += '</div>';
+
+                dropdown.innerHTML = html;
+                dropdown.classList.remove('hidden');
+
+                const closeDropdown = (ev) => {
+                    if (!dropdown.contains(ev.target) && ev.target !== dropdown) {
+                        dropdown.classList.add('hidden');
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            },
+
+            logChange(category, count) {
+                const existing = this.changeLog.find(c => c.category === category);
+                if (existing) {
+                    existing.count += count;
+                } else {
+                    this.changeLog.push({ category, count });
+                }
             },
 
             pushUndo(label) {
@@ -2185,10 +2557,11 @@
                     count++;
                 });
                 
+                this.logChange('IMSLP titles cleaned', count);
                 this.closeImslpModal();
                 this.analyzeData();
                 this.renderAll();
-                
+
                 this.showNotification(`Cleaned ${count} title${count !== 1 ? 's' : ''}!`);
             },
 
@@ -2231,10 +2604,11 @@
                 });
 
                 this.modifiedCount += count;
+                this.logChange('Find & replace edits', count);
                 this.closeModal();
                 this.analyzeData();
                 this.renderAll();
-                
+
                 this.showNotification(`Replaced in ${count} records`);
             },
 
@@ -2283,6 +2657,7 @@
                 if (trimmedComposers > 0) parts.push(`${trimmedComposers} composer${trimmedComposers !== 1 ? 's' : ''} trimmed`);
                 if (trimmedTitles > 0) parts.push(`${trimmedTitles} title${trimmedTitles !== 1 ? 's' : ''} trimmed`);
                 if (fixedCommas > 0) parts.push(`${fixedCommas} trailing comma${fixedCommas !== 1 ? 's' : ''} fixed`);
+                this.logChange('Whitespace & commas cleaned', total);
                 this.showNotification(`Quick Clean: ${parts.join(', ')}`);
             },
 
@@ -2314,6 +2689,7 @@
 
                 if (count > 0) {
                     this.modifiedCount += count;
+                    this.logChange('Composers standardized', count);
                     this.analyzeData();
                     this.renderAll();
                     this.showNotification(`Standardized ${count} composer names to "Last, First" format`);
@@ -2323,15 +2699,47 @@
             },
 
             exportCSV() {
-                // Use the original headers from the CSV
+                if (this.modifiedCount === 0) {
+                    this.doExport();
+                    return;
+                }
+
+                const modal = document.getElementById('exportModal');
+                const desc = document.getElementById('exportSummaryDesc');
+                const list = document.getElementById('exportSummaryList');
+
+                desc.innerHTML = `<strong>${this.modifiedCount}</strong> field${this.modifiedCount !== 1 ? 's' : ''} modified across <strong>${this.data.length}</strong> scores.`;
+
+                if (this.changeLog.length > 0) {
+                    let html = '';
+                    this.changeLog.forEach(c => {
+                        html += `<div style="display:flex;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--color-border-light);font-size:14px;">
+                            <span>${c.category}</span>
+                            <strong>${c.count}</strong>
+                        </div>`;
+                    });
+                    list.innerHTML = html;
+                    list.style.display = '';
+                } else {
+                    list.style.display = 'none';
+                }
+
+                modal.classList.add('active');
+            },
+
+            closeExportModal() {
+                document.getElementById('exportModal').classList.remove('active');
+            },
+
+            doExport() {
+                this.closeExportModal();
                 const headers = this.headers;
-                
+
                 let csv = headers.join(',') + '\n';
-                
+
                 this.data.forEach(row => {
                     const values = headers.map(header => {
                         const value = row[header] || '';
-                        // Escape quotes and wrap in quotes if contains comma or quote
                         if (value.includes(',') || value.includes('"') || value.includes('\n')) {
                             return '"' + value.replace(/"/g, '""') + '"';
                         }
@@ -2349,6 +2757,15 @@
                 URL.revokeObjectURL(url);
             },
 
+            toggleTheme() {
+                const html = document.documentElement;
+                const isDark = html.getAttribute('data-theme') === 'dark';
+                html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                document.querySelector('.theme-icon--light').style.display = isDark ? '' : 'none';
+                document.querySelector('.theme-icon--dark').style.display = isDark ? 'none' : '';
+                try { localStorage.setItem('tidyscore-theme', isDark ? 'light' : 'dark'); } catch(e) {}
+            },
+
             reset() {
                 // Simple double-click protection without using confirm()
                 if (!this.resetClickTime || Date.now() - this.resetClickTime > 3000) {
@@ -2361,6 +2778,7 @@
                 this.originalData = [];
                 this.modifiedCount = 0;
                 this.undoStack = [];
+                this.changeLog = [];
                 this.selectedRows.clear();
                 this.resetClickTime = null;
                 
