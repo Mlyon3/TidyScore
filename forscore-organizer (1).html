@@ -450,6 +450,17 @@
             color: var(--color-accent);
         }
 
+        .btn-tool:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-tool:disabled:hover {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-text-secondary);
+        }
+
         /* ===== Table ===== */
         .table-wrapper {
             overflow-x: auto;
@@ -988,6 +999,11 @@
 
             <div class="export-section">
                 <button class="btn btn-primary" onclick="app.exportCSV()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>Export Cleaned CSV</span></button>
+                <button id="undoBtn" class="btn btn-secondary btn-tool" onclick="app.undo()" disabled>
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7a4 4 0 0 1 0 8H7"/><path d="M6 4L3 7l3 3"/></svg>
+                    <span class="btn-tool-label">Undo</span>
+                    <span class="btn-tool-desc">Reverse last action</span>
+                </button>
                 <button class="btn btn-secondary" onclick="app.reset()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8a7 7 0 0 1 13.3-3M15 8a7 7 0 0 1-13.3 3"/><path d="M14.3 1v4h-4M1.7 15v-4h4"/></svg>Start Over</span></button>
             </div>
         </div>
@@ -1079,7 +1095,8 @@
             sortColumn: null,
             sortDirection: 'asc',
             selectedRows: new Set(),
-            
+            undoStack: [],
+
             // Composer database with common variations mapping to full names
             composerDatabase: {
                 'bach': 'Bach, Johann Sebastian',
@@ -1494,6 +1511,7 @@
                         
                         const newValue = input.value;
                         if (newValue !== currentValue) {
+                            this.pushUndo('Edit');
                             this.data[index][field] = newValue;
                             this.modifiedCount++;
                             this.analyzeData();
@@ -1632,6 +1650,7 @@
                     return;
                 }
 
+                this.pushUndo('Bulk Composer');
                 let count = 0;
                 this.selectedRows.forEach(index => {
                     this.data[index][this.composerField] = composer;
@@ -1875,6 +1894,7 @@
                     return;
                 }
                 
+                this.pushUndo('Smart Extract');
                 let count = 0;
                 this.selectedExtractions.forEach(index => {
                     const extraction = this.pendingExtraction[index];
@@ -1888,6 +1908,41 @@
                 this.renderAll();
                 
                 this.showNotification(`Applied ${count} composer${count !== 1 ? 's' : ''}!`);
+            },
+
+            pushUndo(label) {
+                this.undoStack.push({
+                    data: JSON.parse(JSON.stringify(this.data)),
+                    modifiedCount: this.modifiedCount,
+                    label
+                });
+                if (this.undoStack.length > 50) this.undoStack.shift();
+                this.updateUndoButton();
+            },
+
+            undo() {
+                if (this.undoStack.length === 0) return;
+                const snapshot = this.undoStack.pop();
+                this.data = snapshot.data;
+                this.modifiedCount = snapshot.modifiedCount;
+                this.analyzeData();
+                this.renderAll();
+                this.updateUndoButton();
+                this.showNotification(`Undid "${snapshot.label}"`);
+            },
+
+            updateUndoButton() {
+                const btn = document.getElementById('undoBtn');
+                if (!btn) return;
+                const label = btn.querySelector('.btn-tool-label');
+                if (this.undoStack.length === 0) {
+                    btn.disabled = true;
+                    if (label) label.textContent = 'Undo';
+                } else {
+                    btn.disabled = false;
+                    const lastLabel = this.undoStack[this.undoStack.length - 1].label;
+                    if (label) label.textContent = `Undo ${lastLabel}`;
+                }
             },
 
             showNotification(message) {
@@ -2085,6 +2140,7 @@
                     return;
                 }
                 
+                this.pushUndo('Clean IMSLP');
                 let count = 0;
                 this.selectedImslpCleanups.forEach(index => {
                     const cleanup = this.pendingImslpCleanup[index];
@@ -2129,6 +2185,7 @@
                     return;
                 }
 
+                this.pushUndo('Find & Replace');
                 let count = 0;
                 this.data.forEach(row => {
                     if (row[actualField] && row[actualField].includes(find)) {
@@ -2146,6 +2203,7 @@
             },
 
             quickClean() {
+                this.pushUndo('Quick Clean');
                 let trimmedComposers = 0;
                 let trimmedTitles = 0;
                 let fixedCommas = 0;
@@ -2198,6 +2256,7 @@
                     return;
                 }
 
+                this.pushUndo('Standardize');
                 let count = 0;
 
                 this.data.forEach(row => {
@@ -2265,6 +2324,7 @@
                 this.data = [];
                 this.originalData = [];
                 this.modifiedCount = 0;
+                this.undoStack = [];
                 this.selectedRows.clear();
                 this.resetClickTime = null;
                 
