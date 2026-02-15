@@ -232,7 +232,6 @@
 
         .stat-icon--scores { background: var(--color-accent-light); color: var(--color-accent); }
         .stat-icon--composers { background: #f0edf8; color: #6b5abf; }
-        .stat-icon--issues { background: var(--color-warning-bg); color: var(--color-warning); }
         .stat-icon--modified { background: var(--color-success-bg); color: var(--color-success); }
 
         .stat-label {
@@ -961,16 +960,6 @@
                     <div class="stat-value" id="uniqueComposers">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon stat-icon--issues">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10 2L1 18h18L10 2z"/>
-                            <path d="M10 8v4M10 14.5v.5"/>
-                        </svg>
-                    </div>
-                    <div class="stat-label">Issues</div>
-                    <div class="stat-value" id="issuesFound">0</div>
-                </div>
-                <div class="stat-card">
                     <div class="stat-icon stat-icon--modified">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12.5 2.5l5 5L7 18H2v-5L12.5 2.5z"/>
@@ -1400,36 +1389,10 @@
             },
 
             analyzeData() {
-                const issues = [];
-
-                // Detect which field name is used for each column
                 this.composerField = this.detectField(['composers', 'composer', 'Composers', 'Composer']);
                 this.titleField = this.detectField(['title', 'Title']);
                 this.genreField = this.detectField(['genre', 'Genre', 'genres', 'Genres']);
                 this.tagsField = this.detectField(['tags', 'Tags', 'tag', 'Tag']);
-
-                this.data.forEach((row, index) => {
-                    const composer = this.composerField ? row[this.composerField] : '';
-                    const title = this.titleField ? row[this.titleField] : '';
-
-                    if (!composer) {
-                        issues.push({ type: 'missing-composer', index, title });
-                    }
-
-                    if (composer && composer.includes(',') && composer.split(',')[1].trim() === '') {
-                        issues.push({ type: 'trailing-comma', index, composer, title });
-                    }
-
-                    if (composer && /^\s|\s$/.test(composer)) {
-                        issues.push({ type: 'whitespace', index, composer, title });
-                    }
-
-                    if (title && /^\s|\s$/.test(title)) {
-                        issues.push({ type: 'title-whitespace', index, title });
-                    }
-                });
-
-                this.issues = issues;
             },
 
             getSuggestion(composer) {
@@ -1467,7 +1430,6 @@
                 
                 document.getElementById('totalScores').textContent = this.data.length;
                 document.getElementById('uniqueComposers').textContent = composers.size;
-                document.getElementById('issuesFound').textContent = this.issues.length;
                 document.getElementById('modifiedCount').textContent = this.modifiedCount;
             },
 
