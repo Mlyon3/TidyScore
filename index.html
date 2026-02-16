@@ -2306,12 +2306,13 @@
         const app = {
             data: [],
             originalData: [],
+            dataById: new Map(),
             modifiedCount: 0,
             sortColumn: null,
             sortDirection: 'asc',
-            selectedRows: new Set(),
+            selectedIds: new Set(),
             currentFilter: '',
-            visibleIndices: [],
+            visibleIds: [],
             undoStack: [],
             changeLog: [],
 
@@ -2905,8 +2906,12 @@
                     return;
                 }
 
+                this.data.forEach((row, i) => { row.__id = i; });
+                this.dataById = new Map(this.data.map(row => [row.__id, row]));
                 this.originalData = JSON.parse(JSON.stringify(this.data));
                 this.headers = headers;
+                this.selectedIds.clear();
+                this.undoStack = [];
                 this.analyzeData();
                 this.renderAll();
             },
@@ -2983,23 +2988,36 @@
                 const tbody = document.getElementById('tableBody');
                 const thead = document.querySelector('thead');
 
-                // Build entries with real data indices
+                // Build entries using stable __id
                 let entries;
                 const query = this.currentFilter;
                 if (query) {
                     entries = [];
                     const q = query.toLowerCase();
-                    this.data.forEach((row, i) => {
+                    this.data.forEach(row => {
                         const searchStr = `${this.titleField ? row[this.titleField] : ''} ${this.composerField ? row[this.composerField] : ''} ${this.genreField ? row[this.genreField] : ''} ${this.tagsField ? row[this.tagsField] : ''}`.toLowerCase();
                         if (searchStr.includes(q)) {
-                            entries.push({row, _i: i});
+                            entries.push({row, _id: row.__id});
                         }
                     });
                 } else {
-                    entries = this.data.map((row, i) => ({row, _i: i}));
+                    entries = this.data.map(row => ({row, _id: row.__id}));
                 }
 
-                this.visibleIndices = entries.map(e => e._i);
+                // Sort entries for display (this.data stays in import order)
+                if (this.sortColumn) {
+                    const field = this.sortColumn, dir = this.sortDirection;
+                    entries.sort((a, b) => {
+                        const aVal = (a.row[field] || '').toLowerCase();
+                        const bVal = (b.row[field] || '').toLowerCase();
+                        if (!aVal && !bVal) return 0;
+                        if (!aVal) return 1;
+                        if (!bVal) return -1;
+                        return dir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                    });
+                }
+
+                this.visibleIds = entries.map(e => e._id);
 
                 // Update header with sort indicators and checkbox
                 const titleClass = this.sortColumn === this.titleField ? `sorted-${this.sortDirection}` : '';
@@ -3007,7 +3025,7 @@
                 const genreClass = this.sortColumn === this.genreField ? `sorted-${this.sortDirection}` : '';
                 const tagsClass = this.sortColumn === this.tagsField ? `sorted-${this.sortDirection}` : '';
 
-                const allVisibleSelected = this.visibleIndices.length > 0 && this.visibleIndices.every(i => this.selectedRows.has(i));
+                const allVisibleSelected = this.visibleIds.length > 0 && this.visibleIds.every(id => this.selectedIds.has(id));
 
                 thead.innerHTML = `
                     <tr>
@@ -3023,14 +3041,14 @@
                 `;
 
                 let html = '';
-                entries.forEach(({row, _i}) => {
+                entries.forEach(({row, _id}) => {
                     const title = this.titleField ? row[this.titleField] : '';
                     const composer = this.composerField ? row[this.composerField] : '';
                     const genre = this.genreField ? row[this.genreField] : '';
                     const tags = this.tagsField ? row[this.tagsField] : '';
-                    const isSelected = this.selectedRows.has(_i);
+                    const isSelected = this.selectedIds.has(_id);
 
-                    const orig = this.originalData[_i];
+                    const orig = this.originalData[_id];
                     const titleMod = orig && title !== (orig[this.titleField] || '') ? ' cell-modified' : '';
                     const composerMod = orig && composer !== (orig[this.composerField] || '') ? ' cell-modified' : '';
                     const genreMod = orig && genre !== (orig[this.genreField] || '') ? ' cell-modified' : '';
@@ -3039,13 +3057,13 @@
                     html += `
                         <tr class="${isSelected ? 'selected' : ''}">
                             <td class="checkbox-cell">
-                                <input type="checkbox" onchange="app.toggleRow(${_i})" ${isSelected ? 'checked' : ''}>
+                                <input type="checkbox" onchange="app.toggleRow(${_id})" ${isSelected ? 'checked' : ''}>
                             </td>
-                            <td class="row-num-cell">${_i + 1}</td>
-                            <td class="${titleMod}"><span class="editable" onclick="app.editCell(${_i}, '${this.titleField}')">${title}</span></td>
-                            <td class="${composerMod}"><span class="editable" onclick="app.editCell(${_i}, '${this.composerField}')">${composer}</span></td>
-                            <td class="${genreMod}"><span class="editable" onclick="app.editCell(${_i}, '${this.genreField}')">${genre}</span></td>
-                            <td class="${tagsMod}"><span class="editable" onclick="app.editCell(${_i}, '${this.tagsField}')">${tags}</span></td>
+                            <td class="row-num-cell">${_id + 1}</td>
+                            <td class="${titleMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.titleField}')">${title}</span></td>
+                            <td class="${composerMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.composerField}')">${composer}</span></td>
+                            <td class="${genreMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.genreField}')">${genre}</span></td>
+                            <td class="${tagsMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.tagsField}')">${tags}</span></td>
                         </tr>
                     `;
                 });
@@ -3055,9 +3073,10 @@
                 this.updateScopeIndicator();
             },
 
-            editCell(index, field) {
+            editCell(id, field) {
                 const cell = event.target;
-                const currentValue = this.data[index][field] || '';
+                const row = this.dataById.get(id);
+                const currentValue = row[field] || '';
                 
                 const input = document.createElement('input');
                 input.type = 'text';
@@ -3122,7 +3141,7 @@
                         const newValue = input.value;
                         if (newValue !== currentValue) {
                             this.pushUndo('Edit');
-                            this.data[index][field] = newValue;
+                            row[field] = newValue;
                             this.modifiedCount++;
                             this.logChange('Manual edits', 1);
                             this.analyzeData();
@@ -3172,7 +3191,6 @@
             sortBy(field) {
                 if (!field) return;
 
-                // Toggle direction if clicking same column, otherwise default to asc
                 if (this.sortColumn === field) {
                     this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
                 } else {
@@ -3180,28 +3198,14 @@
                     this.sortDirection = 'asc';
                 }
 
-                // Sort the data
-                this.data.sort((a, b) => {
-                    const aVal = (a[field] || '').toLowerCase();
-                    const bVal = (b[field] || '').toLowerCase();
-                    
-                    // Empty values always go to the bottom
-                    if (!aVal && !bVal) return 0;
-                    if (!aVal) return 1;
-                    if (!bVal) return -1;
-                    
-                    const comparison = aVal.localeCompare(bVal);
-                    return this.sortDirection === 'asc' ? comparison : -comparison;
-                });
-
                 this.renderTable();
             },
 
-            toggleRow(index) {
-                if (this.selectedRows.has(index)) {
-                    this.selectedRows.delete(index);
+            toggleRow(id) {
+                if (this.selectedIds.has(id)) {
+                    this.selectedIds.delete(id);
                 } else {
-                    this.selectedRows.add(index);
+                    this.selectedIds.add(id);
                 }
                 this.updateBulkControls();
                 this.renderTable();
@@ -3211,10 +3215,9 @@
                 const selectAllCheckbox = document.getElementById('selectAll');
                 if (selectAllCheckbox.checked) {
                     // Select only visible rows
-                    this.visibleIndices.forEach(i => this.selectedRows.add(i));
+                    this.visibleIds.forEach(id => this.selectedIds.add(id));
                 } else {
-                    // Deselect visible rows (preserve selections on hidden rows)
-                    this.visibleIndices.forEach(i => this.selectedRows.delete(i));
+                    this.visibleIds.forEach(id => this.selectedIds.delete(id));
                 }
                 this.updateBulkControls();
                 this.renderTable();
@@ -3224,25 +3227,25 @@
                 const bulkControls = document.getElementById('bulkControls');
                 const selectedCount = document.getElementById('selectedCount');
                 
-                selectedCount.textContent = this.selectedRows.size;
+                selectedCount.textContent = this.selectedIds.size;
                 
-                if (this.selectedRows.size > 0) {
+                if (this.selectedIds.size > 0) {
                     bulkControls.classList.add('active');
                 } else {
                     bulkControls.classList.remove('active');
                 }
             },
 
-            getTargetRows() {
-                if (this.selectedRows.size > 0) {
-                    return [...this.selectedRows];
+            getTargetIds() {
+                if (this.selectedIds.size > 0) {
+                    return [...this.selectedIds];
                 }
-                return this.data.map((_, i) => i);
+                return this.data.map(row => row.__id);
             },
 
             getScopeLabel() {
-                if (this.selectedRows.size > 0) {
-                    return `${this.selectedRows.size} selected`;
+                if (this.selectedIds.size > 0) {
+                    return `${this.selectedIds.size} selected`;
                 }
                 return null;
             },
@@ -3252,8 +3255,8 @@
                 if (!el) return;
 
                 const total = this.data.length;
-                const visible = this.visibleIndices.length;
-                const selected = this.selectedRows.size;
+                const visible = this.visibleIds.length;
+                const selected = this.selectedIds.size;
 
                 if (selected > 0) {
                     el.innerHTML = `<span class="scope-highlight">${selected} selected</span> of ${total}`;
@@ -3265,7 +3268,7 @@
             },
 
             clearSelection() {
-                this.selectedRows.clear();
+                this.selectedIds.clear();
                 this.updateBulkControls();
                 this.renderTable();
             },
@@ -3286,14 +3289,14 @@
 
                 this.pushUndo('Bulk Composer');
                 let count = 0;
-                this.selectedRows.forEach(index => {
-                    this.data[index][this.composerField] = composer;
+                this.selectedIds.forEach(id => {
+                    this.dataById.get(id)[this.composerField] = composer;
                     count++;
                 });
 
                 this.modifiedCount += count;
                 this.logChange('Bulk composer assignments', count);
-                this.selectedRows.clear();
+                this.selectedIds.clear();
                 composerInput.value = '';
 
                 this.analyzeData();
@@ -3325,13 +3328,13 @@
                     /^([A-Z][a-z]+)\s+\d/,
                 ];
 
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 console.log('Processing', targetIndices.length, 'entries');
 
                 // === Pass 1: Extract composers from titles (empty composer field) ===
                 let titleExtractions = [];
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const title = row[this.titleField] || '';
                     const currentComposer = row[this.composerField] || '';
 
@@ -3350,7 +3353,7 @@
                             const suggestion = this.getSuggestion(potentialComposer);
                             if (suggestion) {
                                 titleExtractions.push({
-                                    index: idx,
+                                    id: idx,
                                     title,
                                     extracted: potentialComposer,
                                     suggestion,
@@ -3369,7 +3372,7 @@
                             const suggestion = this.getSuggestion(firstWord);
                             if (suggestion) {
                                 titleExtractions.push({
-                                    index: idx,
+                                    id: idx,
                                     title,
                                     extracted: firstWord,
                                     suggestion,
@@ -3383,7 +3386,7 @@
                 // === Pass 2: Detect incomplete/informal composer names ===
                 let nameCompletions = [];
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const currentComposer = row[this.composerField] || '';
                     const title = row[this.titleField] || '';
 
@@ -3392,7 +3395,7 @@
                     const suggestion = this.getSuggestion(currentComposer);
                     if (suggestion && suggestion !== currentComposer.trim()) {
                         nameCompletions.push({
-                            index: idx,
+                            id: idx,
                             title,
                             extracted: currentComposer.trim(),
                             suggestion,
@@ -3555,7 +3558,7 @@
                 let count = 0;
                 this.selectedExtractions.forEach(index => {
                     const extraction = this.pendingExtraction[index];
-                    this.data[extraction.index][this.composerField] = extraction.suggestion;
+                    this.dataById.get(extraction.id)[this.composerField] = extraction.suggestion;
                     this.modifiedCount++;
                     count++;
                 });
@@ -3632,8 +3635,8 @@
                 const fieldCounts = {};
                 fields.forEach(f => { fieldCounts[f.name] = 0; });
 
-                this.data.forEach((row, i) => {
-                    const orig = this.originalData[i];
+                this.data.forEach(row => {
+                    const orig = this.originalData[row.__id];
                     if (!orig) return;
                     fields.forEach(f => {
                         if (f.field && (row[f.field] || '') !== (orig[f.field] || '')) {
@@ -3711,6 +3714,7 @@
                 if (this.undoStack.length === 0) return;
                 const snapshot = this.undoStack.pop();
                 this.data = snapshot.data;
+                this.dataById = new Map(this.data.map(row => [row.__id, row]));
                 this.modifiedCount = snapshot.modifiedCount;
                 this.changeLog = snapshot.changeLog;
                 this.analyzeData();
@@ -3754,10 +3758,10 @@
                 }
 
                 let cleanable = [];
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const title = row[this.titleField] || '';
 
                     // Check if this looks like an IMSLP title
@@ -3765,7 +3769,7 @@
                         const cleaned = this.cleanImslpTitle(title);
                         if (cleaned !== title) {
                             cleanable.push({
-                                index: idx,
+                                id: idx,
                                 original: title,
                                 cleaned
                             });
@@ -3931,7 +3935,7 @@
                 let count = 0;
                 this.selectedImslpCleanups.forEach(index => {
                     const cleanup = this.pendingImslpCleanup[index];
-                    this.data[cleanup.index][this.titleField] = cleanup.cleaned;
+                    this.dataById.get(cleanup.id)[this.titleField] = cleanup.cleaned;
                     this.modifiedCount++;
                     count++;
                 });
@@ -3972,17 +3976,17 @@
                     return;
                 }
 
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 const changes = [];
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     if (row[actualField] && row[actualField].includes(find)) {
                         const oldVal = row[actualField];
                         const newVal = oldVal.replace(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replace);
                         if (oldVal !== newVal) {
                             changes.push({
-                                index: idx,
+                                id: idx,
                                 label: `Row ${idx + 1}: ${actualField}`,
                                 detail: oldVal,
                                 newDetail: newVal,
@@ -4003,11 +4007,11 @@
             },
 
             quickClean() {
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 const changes = [];
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const rowChanges = [];
 
                     if (this.composerField) {
@@ -4051,7 +4055,7 @@
                     rowChanges.forEach(c => {
                         const titleVal = this.titleField ? (row[this.titleField] || '').trim() : '';
                         changes.push({
-                            index: idx,
+                            id: idx,
                             label: `Row ${idx + 1}: ${titleVal || '(untitled)'}`,
                             detail: row[c.field] || '',
                             newDetail: c.newVal,
@@ -4075,11 +4079,11 @@
                     return;
                 }
 
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 const changes = [];
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const composer = row[this.composerField];
                     if (!composer) return;
                     if (composer.includes(',')) return;
@@ -4090,7 +4094,7 @@
                         const first = parts.join(' ');
                         const newVal = `${last}, ${first}`;
                         changes.push({
-                            index: idx,
+                            id: idx,
                             label: `Row ${idx + 1}`,
                             detail: composer,
                             newDetail: newVal,
@@ -4189,7 +4193,7 @@
                 selected.forEach(i => {
                     const c = this._previewChanges[i];
                     if (c) {
-                        this.data[c.index][c.field] = c.newVal;
+                        this.dataById.get(c.id)[c.field] = c.newVal;
                         count++;
                     }
                 });
@@ -4242,11 +4246,11 @@
                     return;
                 }
 
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 let suggestions = [];
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const genre = (row[this.genreField] || '').trim();
                     const composer = (row[this.composerField] || '').trim();
                     if (genre || !composer) return;
@@ -4254,7 +4258,7 @@
                     const era = this.getComposerEra(composer);
                     if (era) {
                         suggestions.push({
-                            index: idx,
+                            id: idx,
                             composer: composer,
                             suggestedGenre: era,
                             title: row[this.titleField] || ''
@@ -4352,7 +4356,7 @@
                 let count = 0;
                 this.selectedGenreSuggestions.forEach(index => {
                     const suggestion = this.pendingGenreSuggestions[index];
-                    this.data[suggestion.index][this.genreField] = suggestion.suggestedGenre;
+                    this.dataById.get(suggestion.id)[this.genreField] = suggestion.suggestedGenre;
                     this.modifiedCount++;
                     count++;
                 });
@@ -4373,11 +4377,11 @@
                     return;
                 }
 
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 let suggestions = [];
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const title = (row[this.titleField] || '').trim();
                     if (!title) return;
 
@@ -4410,7 +4414,7 @@
 
                     if (newTags.length > 0) {
                         suggestions.push({
-                            index: idx,
+                            id: idx,
                             title: title,
                             existingTags: row[this.tagsField] || '',
                             suggestedTags: newTags
@@ -4505,7 +4509,7 @@
                 let count = 0;
                 this.selectedTagSuggestions.forEach(index => {
                     const suggestion = this.pendingTagSuggestions[index];
-                    const row = this.data[suggestion.index];
+                    const row = this.dataById.get(suggestion.id);
                     const existing = (row[this.tagsField] || '').trim();
                     const newTagStr = suggestion.suggestedTags.join(';');
                     row[this.tagsField] = existing ? existing + ';' + newTagStr : newTagStr;
@@ -4534,7 +4538,7 @@
                     return;
                 }
 
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 const scopeLabel = this.getScopeLabel();
                 const scope = scopeLabel ? scopeLabel : `all ${this.data.length} rows`;
                 document.getElementById('batchTagScope').innerHTML = `Editing tags for <strong>${targetIndices.length}</strong> rows (${scope}).`;
@@ -4562,10 +4566,10 @@
             },
 
             _renderBatchTagRemoveChips() {
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
                 const tagCounts = {};
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const tags = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
                     tags.forEach(t => {
                         tagCounts[t] = (tagCounts[t] || 0) + 1;
@@ -4596,12 +4600,12 @@
                 const newTag = input.value.trim();
                 if (!newTag) return;
 
-                const targetIndices = this.getTargetRows();
-                this.saveUndoState();
+                const targetIndices = this.getTargetIds();
+                this.pushUndo('Batch Add Tag');
                 let count = 0;
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
                     if (!existing.some(t => t.toLowerCase() === newTag.toLowerCase())) {
                         existing.push(newTag);
@@ -4611,8 +4615,8 @@
                 });
 
                 if (count > 0) {
+                    this.modifiedCount += count;
                     this.logChange('Batch add tag', count);
-                    this.updateModifiedCount();
                     this.renderTable();
                     this.showNotification(`Added "${newTag}" to ${count} row${count !== 1 ? 's' : ''}.`);
                 } else {
@@ -4623,12 +4627,12 @@
             },
 
             batchRemoveTag(tag) {
-                const targetIndices = this.getTargetRows();
-                this.saveUndoState();
+                const targetIndices = this.getTargetIds();
+                this.pushUndo('Batch Remove Tag');
                 let count = 0;
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
                     const filtered = existing.filter(t => t.toLowerCase() !== tag.toLowerCase());
                     if (filtered.length !== existing.length) {
@@ -4638,8 +4642,8 @@
                 });
 
                 if (count > 0) {
+                    this.modifiedCount += count;
                     this.logChange('Batch remove tag', count);
-                    this.updateModifiedCount();
                     this.renderTable();
                     this._renderBatchTagRemoveChips();
                     this.showNotification(`Removed "${tag}" from ${count} row${count !== 1 ? 's' : ''}.`);
@@ -4660,12 +4664,12 @@
                     return;
                 }
 
-                const targetIndices = this.getTargetRows();
-                this.saveUndoState();
+                const targetIndices = this.getTargetIds();
+                this.pushUndo('Batch Replace Tag');
                 let count = 0;
 
                 targetIndices.forEach(idx => {
-                    const row = this.data[idx];
+                    const row = this.dataById.get(idx);
                     const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
                     let changed = false;
                     const updated = existing.map(t => {
@@ -4675,7 +4679,6 @@
                         }
                         return t;
                     });
-                    // Deduplicate
                     const unique = [...new Set(updated.map(t => t.toLowerCase()))].map(lower => {
                         return updated.find(t => t.toLowerCase() === lower);
                     });
@@ -4686,8 +4689,8 @@
                 });
 
                 if (count > 0) {
+                    this.modifiedCount += count;
                     this.logChange('Batch replace tag', count);
-                    this.updateModifiedCount();
                     this.renderTable();
                     this.showNotification(`Replaced "${fromTag}" with "${toTag}" in ${count} row${count !== 1 ? 's' : ''}.`);
                     document.getElementById('batchTagReplaceFrom').value = '';
@@ -4726,18 +4729,18 @@
             computeManagerData() {
                 const counts = {};
                 let emptyCount = 0;
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
 
                 if (this.managerTab === 'genres') {
                     if (!this.genreField) { this.managerData = []; return; }
                     targetIndices.forEach(idx => {
-                        const val = (this.data[idx][this.genreField] || '').trim();
+                        const val = (this.dataById.get(idx)[this.genreField] || '').trim();
                         if (!val) { emptyCount++; } else { counts[val] = (counts[val] || 0) + 1; }
                     });
                 } else {
                     if (!this.tagsField) { this.managerData = []; return; }
                     targetIndices.forEach(idx => {
-                        const raw = (this.data[idx][this.tagsField] || '').trim();
+                        const raw = (this.dataById.get(idx)[this.tagsField] || '').trim();
                         if (!raw) { emptyCount++; return; }
                         const tags = raw.split(';').map(t => t.trim()).filter(Boolean);
                         if (tags.length === 0) { emptyCount++; return; }
@@ -4832,7 +4835,7 @@
                 }
 
                 const selectedValues = new Set(this.managerSelectedValues);
-                const targetIndices = this.getTargetRows();
+                const targetIndices = this.getTargetIds();
 
                 this.pushUndo('Manager Rename');
                 let count = 0;
@@ -4840,7 +4843,7 @@
                 if (this.managerTab === 'genres') {
                     const field = this.genreField;
                     targetIndices.forEach(idx => {
-                        const row = this.data[idx];
+                        const row = this.dataById.get(idx);
                         const current = (row[field] || '').trim();
                         if (selectedValues.has(current) || (selectedValues.has('') && !current)) {
                             if (current !== newName) {
@@ -4852,7 +4855,7 @@
                 } else {
                     const field = this.tagsField;
                     targetIndices.forEach(idx => {
-                        const row = this.data[idx];
+                        const row = this.dataById.get(idx);
                         const raw = (row[field] || '').trim();
                         if (!raw && selectedValues.has('')) {
                             row[field] = newName;
@@ -4928,14 +4931,14 @@
                 // Compute diff for diff view
                 this._exportDiffs = [];
                 const fields = this.headers;
-                this.data.forEach((row, i) => {
-                    const orig = this.originalData[i];
+                this.data.forEach(row => {
+                    const orig = this.originalData[row.__id];
                     if (!orig) return;
                     fields.forEach(field => {
                         const oldVal = orig[field] || '';
                         const newVal = row[field] || '';
                         if (oldVal !== newVal) {
-                            this._exportDiffs.push({ rowNum: i + 1, field, oldVal, newVal });
+                            this._exportDiffs.push({ rowNum: row.__id + 1, field, oldVal, newVal });
                         }
                     });
                 });
@@ -5005,7 +5008,7 @@
 
             doExport() {
                 this.closeExportModal();
-                const headers = this.headers;
+                const headers = this.headers.filter(h => h !== '__id');
 
                 let csv = headers.join(',') + '\n';
 
@@ -5048,10 +5051,11 @@
                 
                 this.data = [];
                 this.originalData = [];
+                this.dataById = new Map();
                 this.modifiedCount = 0;
                 this.undoStack = [];
                 this.changeLog = [];
-                this.selectedRows.clear();
+                this.selectedIds.clear();
                 this.resetClickTime = null;
                 
                 document.getElementById('uploadSection').classList.remove('hidden');
