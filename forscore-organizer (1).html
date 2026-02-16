@@ -436,6 +436,8 @@
             border-radius: var(--radius-sm);
             font-size: 14px;
             transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+            background: var(--color-surface);
+            color: var(--color-text);
         }
 
         .bulk-input:focus {
@@ -520,18 +522,44 @@
 
         .search-input {
             width: 100%;
-            padding: 10px 16px 10px 40px;
+            padding: 10px 36px 10px 40px;
             border: 1px solid var(--color-border);
             border-radius: var(--radius-sm);
             font-size: 14px;
             transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
             background: var(--color-surface);
+            color: var(--color-text);
         }
 
         .search-input:focus {
             border-color: var(--color-accent);
             box-shadow: 0 0 0 3px var(--color-accent-light);
             outline: none;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-light);
+            font-size: 18px;
+            line-height: 1;
+            padding: 4px 6px;
+            border-radius: var(--radius-sm);
+            transition: color var(--transition-fast), background var(--transition-fast);
+        }
+
+        .search-clear:hover {
+            color: var(--color-text);
+            background: var(--color-border);
+        }
+
+        .search-clear.hidden {
+            display: none;
         }
 
         /* ===== Buttons ===== */
@@ -856,6 +884,8 @@
             border-radius: var(--radius-sm);
             font-size: 14px;
             transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+            background: var(--color-surface);
+            color: var(--color-text);
         }
 
         .form-input:focus {
@@ -1512,6 +1542,7 @@
                     <circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/>
                 </svg>
                 <input type="text" id="searchInput" class="search-input" placeholder="Search...">
+                <button id="searchClear" class="search-clear hidden" onclick="app.clearSearch()">&times;</button>
             </div>
 
             <div class="table-controls">
@@ -2275,6 +2306,8 @@
                 // Search
                 document.getElementById('searchInput').addEventListener('input', (e) => {
                     this.filterTable(e.target.value);
+                    const clearBtn = document.getElementById('searchClear');
+                    clearBtn.classList.toggle('hidden', !e.target.value);
                 });
 
                 // Warn before closing with unsaved changes
@@ -2606,6 +2639,14 @@
             filterTable(query) {
                 this.currentFilter = query || '';
                 this.renderTable();
+            },
+
+            clearSearch() {
+                const input = document.getElementById('searchInput');
+                input.value = '';
+                this.filterTable('');
+                document.getElementById('searchClear').classList.add('hidden');
+                input.focus();
             },
 
             sortBy(field) {
