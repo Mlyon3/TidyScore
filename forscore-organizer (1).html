@@ -1040,6 +1040,181 @@
             outline-offset: 2px;
         }
 
+        /* ===== Genre & Tag Tools ===== */
+        .btn-tool-wrapper {
+            position: relative;
+        }
+
+        .tool-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 6px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            min-width: 220px;
+            padding: 6px;
+        }
+
+        .tool-dropdown.active {
+            display: block;
+        }
+
+        .tool-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .tool-dropdown-item:hover {
+            background: var(--color-accent-subtle);
+            color: var(--color-accent);
+        }
+
+        .tool-dropdown-item svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .tool-dropdown-item-desc {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        .tool-dropdown-item:hover .tool-dropdown-item-desc {
+            color: var(--color-accent);
+        }
+
+        /* ===== Manager Modal ===== */
+        .manager-modal-content {
+            max-width: 600px;
+        }
+
+        .manager-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--color-border-light, var(--color-border));
+        }
+
+        .manager-tab {
+            padding: 10px 24px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .manager-tab:hover {
+            color: var(--color-text);
+        }
+
+        .manager-tab.active {
+            color: var(--color-accent);
+            border-bottom-color: var(--color-accent);
+        }
+
+        .manager-search-row {
+            margin-bottom: 12px;
+        }
+
+        .manager-list {
+            max-height: 350px;
+        }
+
+        .manager-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--color-border-light, var(--color-border));
+            font-size: 14px;
+            transition: background var(--transition-fast);
+        }
+
+        .manager-item:hover {
+            background: var(--color-accent-subtle);
+        }
+
+        .manager-item:last-child {
+            border-bottom: none;
+        }
+
+        .manager-item-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .manager-item-name--empty {
+            color: var(--color-text-muted);
+            font-style: italic;
+        }
+
+        .manager-item-count {
+            font-variant-numeric: tabular-nums;
+            color: var(--color-text-muted);
+            font-weight: 600;
+            font-size: 13px;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .manager-rename-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border-light, var(--color-border));
+        }
+
+        .manager-selected-info {
+            font-size: 13px;
+            color: var(--color-accent);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .manager-rename-input {
+            flex: 1;
+        }
+
+        .tag-suggest-new {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--color-success-bg, rgba(76, 175, 80, 0.1));
+            color: var(--color-success);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 4px;
+        }
+
         /* ===== Responsive: Tablet & Landscape Phone ===== */
         @media (max-width: 768px) {
             .container {
@@ -1224,6 +1399,23 @@
             .table-wrapper {
                 -webkit-overflow-scrolling: touch;
             }
+
+            .manager-modal-content {
+                max-width: none;
+            }
+
+            .manager-rename-row {
+                flex-wrap: wrap;
+            }
+
+            .manager-rename-input {
+                width: 100%;
+            }
+
+            .tool-dropdown {
+                left: auto;
+                right: 0;
+            }
         }
     </style>
 </head>
@@ -1357,6 +1549,39 @@
                     <span class="btn-tool-label">Standardize</span>
                     <span class="btn-tool-desc">Apply Last, First name format to composers</span>
                 </button>
+                <div class="btn-tool-wrapper">
+                    <button class="btn btn-secondary btn-tool" onclick="app.toggleGenreTagMenu(event)">
+                        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 2h6l2 2h5a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2z"/>
+                            <path d="M5 9h6M5 12h3"/>
+                        </svg>
+                        <span class="btn-tool-label">Genre & Tags</span>
+                        <span class="btn-tool-desc">Suggest, browse & manage</span>
+                    </button>
+                    <div id="genreTagDropdown" class="tool-dropdown">
+                        <button class="tool-dropdown-item" onclick="app.suggestGenres()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M2 7h8M2 11h5"/><circle cx="12" cy="10" r="3"/><path d="M12 9v2M11 10h2"/></svg>
+                            <div>
+                                <div>Suggest Genre</div>
+                                <div class="tool-dropdown-item-desc">Fill genre from composer era</div>
+                            </div>
+                        </button>
+                        <button class="tool-dropdown-item" onclick="app.suggestTags()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3l4-1v12l-4 1V3z"/><path d="M5 2l5-1v12l-5 1V2z"/><path d="M13 8l2 2-2 2"/></svg>
+                            <div>
+                                <div>Suggest Tags</div>
+                                <div class="tool-dropdown-item-desc">Detect tags from title keywords</div>
+                            </div>
+                        </button>
+                        <button class="tool-dropdown-item" onclick="app.openManagerModal()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2L7.5 3.5 9 5"/><path d="M7.5 3.5H12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h1"/><path d="M5 8h6M5 11h4"/></svg>
+                            <div>
+                                <div>Manage Genres & Tags</div>
+                                <div class="tool-dropdown-item-desc">Browse, rename & merge in bulk</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="table-wrapper">
@@ -1475,6 +1700,71 @@
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
                     Download CSV
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Genre Suggestion Modal -->
+    <div id="genreSuggestModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Suggest Genre from Composer</h3>
+            <p class="modal-desc">
+                Found <strong id="genreSuggestCount">0</strong> rows where genre can be inferred from the composer.
+                <span id="genreSuggestSelectedCount" class="modal-desc-accent"></span>
+            </p>
+            <div class="extraction-header">
+                <input type="checkbox" id="selectAllGenreSuggestions" onchange="app.toggleAllGenreSuggestions()" checked>
+                <label for="selectAllGenreSuggestions" style="cursor: pointer; user-select: none;">Select All</label>
+            </div>
+            <div id="genreSuggestResults" class="extraction-results"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeGenreSuggestModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="app.applyGenreSuggestions()">Apply Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tag Suggestion Modal -->
+    <div id="tagSuggestModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Suggest Tags from Titles</h3>
+            <p class="modal-desc">
+                Found <strong id="tagSuggestCount">0</strong> rows with tag suggestions from title keywords.
+                <span id="tagSuggestSelectedCount" class="modal-desc-accent"></span>
+            </p>
+            <div class="extraction-header">
+                <input type="checkbox" id="selectAllTagSuggestions" onchange="app.toggleAllTagSuggestions()" checked>
+                <label for="selectAllTagSuggestions" style="cursor: pointer; user-select: none;">Select All</label>
+            </div>
+            <div id="tagSuggestResults" class="extraction-results"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeTagSuggestModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="app.applyTagSuggestions()">Apply Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Genre/Tag Manager Modal -->
+    <div id="managerModal" class="modal">
+        <div class="modal-content manager-modal-content">
+            <h3 class="modal-title">Genre & Tag Manager</h3>
+            <div class="manager-tabs">
+                <button class="manager-tab active" id="managerTabGenres" onclick="app.switchManagerTab('genres')">Genres</button>
+                <button class="manager-tab" id="managerTabTags" onclick="app.switchManagerTab('tags')">Tags</button>
+            </div>
+            <div class="manager-search-row">
+                <input type="text" id="managerSearchInput" class="form-input" placeholder="Filter values..." oninput="app.filterManagerList()">
+            </div>
+            <div id="managerList" class="extraction-results manager-list"></div>
+            <div class="manager-rename-row">
+                <div class="manager-selected-info">
+                    <span id="managerSelectedCount">0</span> selected
+                </div>
+                <input type="text" id="managerRenameInput" class="form-input manager-rename-input" placeholder="Rename selected to...">
+                <button class="btn btn-primary" onclick="app.applyManagerRename()">Rename</button>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeManagerModal()">Close</button>
             </div>
         </div>
     </div>
@@ -1767,6 +2057,194 @@
                 'ryuichi sakamoto': 'Sakamoto, Ryuichi',
                 'sakamoto': 'Sakamoto, Ryuichi',
             },
+
+            // Maps canonical composer names to musical era/genre
+            composerEraDatabase: {
+                // Baroque
+                'Bach, Johann Sebastian': 'Baroque',
+                'Handel, George Frideric': 'Baroque',
+                'Vivaldi, Antonio': 'Baroque',
+                'Telemann, Georg Philipp': 'Baroque',
+                'Purcell, Henry': 'Baroque',
+                'Monteverdi, Claudio': 'Baroque',
+                'Scarlatti, Domenico': 'Baroque',
+                'Corelli, Arcangelo': 'Baroque',
+                'Albinoni, Tomaso': 'Baroque',
+                'Pachelbel, Johann': 'Baroque',
+                'Rameau, Jean-Philippe': 'Baroque',
+                'Lully, Jean-Baptiste': 'Baroque',
+                'Buxtehude, Dietrich': 'Baroque',
+                'Couperin, François': 'Baroque',
+                // Classical
+                'Mozart, Wolfgang Amadeus': 'Classical',
+                'Haydn, Joseph': 'Classical',
+                'Beethoven, Ludwig van': 'Classical',
+                'Clementi, Muzio': 'Classical',
+                'Hummel, Johann Nepomuk': 'Classical',
+                'Boccherini, Luigi': 'Classical',
+                'Czerny, Carl': 'Classical',
+                // Romantic
+                'Chopin, Frédéric': 'Romantic',
+                'Schumann, Robert': 'Romantic',
+                'Schubert, Franz': 'Romantic',
+                'Liszt, Franz': 'Romantic',
+                'Brahms, Johannes': 'Romantic',
+                'Mendelssohn, Felix': 'Romantic',
+                'Tchaikovsky, Pyotr Ilyich': 'Romantic',
+                'Dvořák, Antonín': 'Romantic',
+                'Rachmaninoff, Sergei': 'Romantic',
+                'Wagner, Richard': 'Romantic',
+                'Verdi, Giuseppe': 'Romantic',
+                'Puccini, Giacomo': 'Romantic',
+                'Grieg, Edvard': 'Romantic',
+                'Fauré, Gabriel': 'Romantic',
+                'Saint-Saëns, Camille': 'Romantic',
+                'Franck, César': 'Romantic',
+                'Bruch, Max': 'Romantic',
+                'Paganini, Niccolò': 'Romantic',
+                'Sibelius, Jean': 'Romantic',
+                'Elgar, Edward': 'Romantic',
+                'Mahler, Gustav': 'Romantic',
+                'Strauss, Richard': 'Romantic',
+                'Weber, Carl Maria von': 'Romantic',
+                'Mussorgsky, Modest': 'Romantic',
+                'Rimsky-Korsakov, Nikolai': 'Romantic',
+                'Borodin, Alexander': 'Romantic',
+                'Smetana, Bedřich': 'Romantic',
+                'Glazunov, Alexander': 'Romantic',
+                'Scriabin, Alexander': 'Romantic',
+                'Delius, Frederick': 'Romantic',
+                'Respighi, Ottorino': 'Romantic',
+                'Hanon, Charles-Louis': 'Romantic',
+                // Impressionist
+                'Debussy, Claude': 'Impressionist',
+                'Ravel, Maurice': 'Impressionist',
+                'Satie, Erik': 'Impressionist',
+                // 20th Century
+                'Bartók, Béla': '20th Century',
+                'Stravinsky, Igor': '20th Century',
+                'Prokofiev, Sergei': '20th Century',
+                'Shostakovich, Dmitri': '20th Century',
+                'Gershwin, George': '20th Century',
+                'Copland, Aaron': '20th Century',
+                'Barber, Samuel': '20th Century',
+                'Bernstein, Leonard': '20th Century',
+                'Britten, Benjamin': '20th Century',
+                'Holst, Gustav': '20th Century',
+                'Vaughan Williams, Ralph': '20th Century',
+                'Kodály, Zoltán': '20th Century',
+                'Janáček, Leoš': '20th Century',
+                // Contemporary
+                'Glass, Philip': 'Contemporary',
+                'Pärt, Arvo': 'Contemporary',
+                'Adams, John': 'Contemporary',
+                'Reich, Steve': 'Contemporary',
+                'Cage, John': 'Contemporary',
+                'Ligeti, György': 'Contemporary',
+                'Messiaen, Olivier': 'Contemporary',
+                'Penderecki, Krzysztof': 'Contemporary',
+                'Górecki, Henryk': 'Contemporary',
+                'Piazzolla, Astor': 'Contemporary',
+                'Villa-Lobos, Heitor': 'Contemporary',
+                'Ginastera, Alberto': 'Contemporary',
+                // Jazz
+                'Ellington, Duke': 'Jazz',
+                'Coltrane, John': 'Jazz',
+                'Monk, Thelonious': 'Jazz',
+                'Davis, Miles': 'Jazz',
+                'Evans, Bill': 'Jazz',
+                'Peterson, Oscar': 'Jazz',
+                'Parker, Charlie': 'Jazz',
+                'Gillespie, Dizzy': 'Jazz',
+                'Brubeck, Dave': 'Jazz',
+                'Hancock, Herbie': 'Jazz',
+                'Corea, Chick': 'Jazz',
+                'Jarrett, Keith': 'Jazz',
+                'Metheny, Pat': 'Jazz',
+                // Film / Musical Theatre
+                'Williams, John': 'Film',
+                'Morricone, Ennio': 'Film',
+                'Zimmer, Hans': 'Film',
+                'Shore, Howard': 'Film',
+                'Hisaishi, Joe': 'Film',
+                'Uematsu, Nobuo': 'Film',
+                'Kondo, Koji': 'Film',
+                'Shimomura, Yoko': 'Film',
+                'Lloyd Webber, Andrew': 'Musical Theatre',
+                'Rodgers, Richard': 'Musical Theatre',
+                'Sondheim, Stephen': 'Musical Theatre',
+                // Ragtime
+                'Joplin, Scott': 'Ragtime',
+                // Neo-Classical / Crossover
+                'Einaudi, Ludovico': 'Neo-Classical',
+                'Yiruma': 'Neo-Classical',
+                'Sakamoto, Ryuichi': 'Neo-Classical',
+            },
+
+            // Musical keywords in titles mapped to tag suggestions
+            tagKeywordDatabase: [
+                // Instruments
+                { pattern: /\bpiano\b/i, tag: 'piano' },
+                { pattern: /\bviolin\b/i, tag: 'violin' },
+                { pattern: /\bviola\b(?!\s+da)/i, tag: 'viola' },
+                { pattern: /\bcello\b/i, tag: 'cello' },
+                { pattern: /\bflute\b/i, tag: 'flute' },
+                { pattern: /\boboe\b/i, tag: 'oboe' },
+                { pattern: /\bclarinet\b/i, tag: 'clarinet' },
+                { pattern: /\bbassoon\b/i, tag: 'bassoon' },
+                { pattern: /\btrumpet\b/i, tag: 'trumpet' },
+                { pattern: /\bhorn\b/i, tag: 'horn' },
+                { pattern: /\btrombone\b/i, tag: 'trombone' },
+                { pattern: /\bguitar\b/i, tag: 'guitar' },
+                { pattern: /\bharp\b/i, tag: 'harp' },
+                { pattern: /\borgan\b/i, tag: 'organ' },
+                // Ensemble types
+                { pattern: /\borchestra\b/i, tag: 'orchestra' },
+                { pattern: /\bchamber\b/i, tag: 'chamber' },
+                { pattern: /\bstring quartet\b/i, tag: 'string quartet' },
+                { pattern: /\btrio\b/i, tag: 'trio' },
+                { pattern: /\bduo\b/i, tag: 'duo' },
+                { pattern: /\bsolo\b/i, tag: 'solo' },
+                // Forms
+                { pattern: /\bsonata\b/i, tag: 'sonata' },
+                { pattern: /\bsonatina\b/i, tag: 'sonatina' },
+                { pattern: /\bconcerto\b/i, tag: 'concerto' },
+                { pattern: /\bsymphon(?:y|ie)\b/i, tag: 'symphony' },
+                { pattern: /\bsuite\b/i, tag: 'suite' },
+                { pattern: /\bprelude\b/i, tag: 'prelude' },
+                { pattern: /\bfugue\b/i, tag: 'fugue' },
+                { pattern: /\b[eé]tude\b/i, tag: 'etude' },
+                { pattern: /\bnocturne\b/i, tag: 'nocturne' },
+                { pattern: /\bwaltz\b/i, tag: 'waltz' },
+                { pattern: /\bmazurka\b/i, tag: 'mazurka' },
+                { pattern: /\bpolonaise\b/i, tag: 'polonaise' },
+                { pattern: /\bballade\b/i, tag: 'ballade' },
+                { pattern: /\bscherzo\b/i, tag: 'scherzo' },
+                { pattern: /\brondo\b/i, tag: 'rondo' },
+                { pattern: /\baria\b/i, tag: 'aria' },
+                { pattern: /\bmass\b/i, tag: 'mass' },
+                { pattern: /\brequiem\b/i, tag: 'requiem' },
+                { pattern: /\bcantata\b/i, tag: 'cantata' },
+                { pattern: /\bopera\b/i, tag: 'opera' },
+                { pattern: /\boverture\b/i, tag: 'overture' },
+                { pattern: /\brhapsod(?:y|ie)\b/i, tag: 'rhapsody' },
+                { pattern: /\bfantas(?:y|ia|ie)\b/i, tag: 'fantasy' },
+                { pattern: /\bvariations?\b/i, tag: 'variations' },
+                { pattern: /\bminuet\b/i, tag: 'minuet' },
+                { pattern: /\bgavotte\b/i, tag: 'gavotte' },
+                { pattern: /\bsarabande\b/i, tag: 'sarabande' },
+                { pattern: /\ballemande\b/i, tag: 'allemande' },
+                { pattern: /\bbourr[eé]e\b/i, tag: 'bourree' },
+                { pattern: /\bgigue\b/i, tag: 'gigue' },
+                { pattern: /\btoccata\b/i, tag: 'toccata' },
+                { pattern: /\binvention\b/i, tag: 'invention' },
+                { pattern: /\bpartita\b/i, tag: 'partita' },
+                { pattern: /\bserenade\b/i, tag: 'serenade' },
+                { pattern: /\bdivertimento\b/i, tag: 'divertimento' },
+                // Vocal
+                { pattern: /\bchoir\b|\bchoral\b|\bchorus\b/i, tag: 'choral' },
+                { pattern: /\blied(?:er)?\b/i, tag: 'lied' },
+            ],
 
             init() {
                 // Restore saved theme
@@ -2926,9 +3404,38 @@
                     }
                 });
 
-                const total = trimmedComposers + trimmedTitles + fixedCommas;
+                // Tag cleanup: trim, deduplicate, sort
+                let cleanedTags = 0;
+                if (this.tagsField) {
+                    targetIndices.forEach(idx => {
+                        const row = this.data[idx];
+                        const raw = row[this.tagsField] || '';
+                        if (!raw) return;
+
+                        let tags = raw.split(';').map(t => t.trim()).filter(t => t.length > 0);
+                        // Deduplicate (case-insensitive, keep first casing)
+                        const seen = new Map();
+                        const deduped = [];
+                        tags.forEach(tag => {
+                            const lower = tag.toLowerCase();
+                            if (!seen.has(lower)) {
+                                seen.set(lower, tag);
+                                deduped.push(tag);
+                            }
+                        });
+                        // Sort alphabetically
+                        deduped.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                        const cleaned = deduped.join(';');
+                        if (cleaned !== raw) {
+                            row[this.tagsField] = cleaned;
+                            cleanedTags++;
+                        }
+                    });
+                }
+
+                const total = trimmedComposers + trimmedTitles + fixedCommas + cleanedTags;
                 if (total === 0) {
-                    this.showNotification('Already clean! No whitespace or comma issues found.');
+                    this.showNotification('Already clean! No issues found.');
                     return;
                 }
 
@@ -2940,7 +3447,8 @@
                 if (trimmedComposers > 0) parts.push(`${trimmedComposers} composer${trimmedComposers !== 1 ? 's' : ''} trimmed`);
                 if (trimmedTitles > 0) parts.push(`${trimmedTitles} title${trimmedTitles !== 1 ? 's' : ''} trimmed`);
                 if (fixedCommas > 0) parts.push(`${fixedCommas} trailing comma${fixedCommas !== 1 ? 's' : ''} fixed`);
-                this.logChange('Whitespace & commas cleaned', total);
+                if (cleanedTags > 0) parts.push(`${cleanedTags} tag field${cleanedTags !== 1 ? 's' : ''} tidied`);
+                this.logChange('Whitespace, commas & tags cleaned', total);
                 const scope = scopeLabel ? ` (${scopeLabel})` : '';
                 this.showNotification(`Quick Clean${scope}: ${parts.join(', ')}`);
             },
@@ -2984,6 +3492,510 @@
                 } else {
                     this.showNotification(`No composers to standardize${scope}`);
                 }
+            },
+
+            // ===== Genre & Tag Tools =====
+
+            toggleGenreTagMenu(e) {
+                e.stopPropagation();
+                const dropdown = document.getElementById('genreTagDropdown');
+                const isOpen = dropdown.classList.contains('active');
+                dropdown.classList.toggle('active');
+                if (!isOpen) {
+                    const closeHandler = (event) => {
+                        if (!dropdown.contains(event.target)) {
+                            dropdown.classList.remove('active');
+                            document.removeEventListener('click', closeHandler);
+                        }
+                    };
+                    setTimeout(() => document.addEventListener('click', closeHandler), 0);
+                }
+            },
+
+            closeGenreTagMenu() {
+                document.getElementById('genreTagDropdown').classList.remove('active');
+            },
+
+            getComposerEra(composerValue) {
+                if (!composerValue) return null;
+                const trimmed = composerValue.trim();
+                if (this.composerEraDatabase[trimmed]) return this.composerEraDatabase[trimmed];
+                const canonical = this.getSuggestion(trimmed);
+                if (canonical && this.composerEraDatabase[canonical]) return this.composerEraDatabase[canonical];
+                return null;
+            },
+
+            // --- Suggest Genre from Composer ---
+
+            suggestGenres() {
+                this.closeGenreTagMenu();
+                if (!this.composerField || !this.genreField) {
+                    this.showNotification('Composer and Genre fields are required');
+                    return;
+                }
+
+                const targetIndices = this.getTargetRows();
+                let suggestions = [];
+
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
+                    const genre = (row[this.genreField] || '').trim();
+                    const composer = (row[this.composerField] || '').trim();
+                    if (genre || !composer) return;
+
+                    const era = this.getComposerEra(composer);
+                    if (era) {
+                        suggestions.push({
+                            index: idx,
+                            composer: composer,
+                            suggestedGenre: era,
+                            title: row[this.titleField] || ''
+                        });
+                    }
+                });
+
+                if (suggestions.length === 0) {
+                    const scopeLabel = this.getScopeLabel();
+                    const scope = scopeLabel ? ` (${scopeLabel})` : '';
+                    this.showNotification(`No genre suggestions found${scope}.\n\nThis fills empty genres based on the composer's era.\nComposers must be recognized (try Smart Extract first).`);
+                    return;
+                }
+
+                this.pendingGenreSuggestions = suggestions;
+                this.selectedGenreSuggestions = new Set(suggestions.map((_, i) => i));
+                this.showGenreSuggestModal();
+            },
+
+            showGenreSuggestModal() {
+                const modal = document.getElementById('genreSuggestModal');
+                const resultsDiv = document.getElementById('genreSuggestResults');
+                document.getElementById('genreSuggestCount').textContent = this.pendingGenreSuggestions.length;
+
+                let html = '';
+                this.pendingGenreSuggestions.forEach((item, index) => {
+                    html += `
+                        <div class="extraction-item">
+                            <input type="checkbox" class="extraction-checkbox"
+                                   id="genre_${index}"
+                                   onchange="app.toggleGenreSuggestion(${index})" checked>
+                            <label for="genre_${index}" class="extraction-label">
+                                <div class="extraction-mapping">
+                                    <span class="extraction-original">${item.composer}</span>
+                                    <span class="extraction-arrow">&rarr;</span>
+                                    <span class="extraction-suggestion">${item.suggestedGenre}</span>
+                                </div>
+                                <div class="extraction-title">${item.title}</div>
+                            </label>
+                        </div>
+                    `;
+                });
+
+                resultsDiv.innerHTML = html;
+                this.updateGenreSuggestSelectedCount();
+                modal.classList.add('active');
+            },
+
+            toggleGenreSuggestion(index) {
+                if (this.selectedGenreSuggestions.has(index)) {
+                    this.selectedGenreSuggestions.delete(index);
+                } else {
+                    this.selectedGenreSuggestions.add(index);
+                }
+                document.getElementById(`genre_${index}`).checked = this.selectedGenreSuggestions.has(index);
+                const selectAll = document.getElementById('selectAllGenreSuggestions');
+                selectAll.checked = this.selectedGenreSuggestions.size === this.pendingGenreSuggestions.length;
+                selectAll.indeterminate = this.selectedGenreSuggestions.size > 0 && this.selectedGenreSuggestions.size < this.pendingGenreSuggestions.length;
+                this.updateGenreSuggestSelectedCount();
+            },
+
+            toggleAllGenreSuggestions() {
+                const checked = document.getElementById('selectAllGenreSuggestions').checked;
+                this.selectedGenreSuggestions = checked ? new Set(this.pendingGenreSuggestions.map((_, i) => i)) : new Set();
+                this.pendingGenreSuggestions.forEach((_, i) => {
+                    const el = document.getElementById(`genre_${i}`);
+                    if (el) el.checked = checked;
+                });
+                this.updateGenreSuggestSelectedCount();
+            },
+
+            updateGenreSuggestSelectedCount() {
+                const count = this.selectedGenreSuggestions.size;
+                const total = this.pendingGenreSuggestions.length;
+                const span = document.getElementById('genreSuggestSelectedCount');
+                if (count === total) span.textContent = 'All selected';
+                else if (count === 0) span.textContent = 'None selected';
+                else span.textContent = `${count} of ${total} selected`;
+            },
+
+            closeGenreSuggestModal() {
+                document.getElementById('genreSuggestModal').classList.remove('active');
+                this.pendingGenreSuggestions = null;
+                this.selectedGenreSuggestions = null;
+            },
+
+            applyGenreSuggestions() {
+                if (!this.pendingGenreSuggestions || !this.selectedGenreSuggestions) return;
+                if (this.selectedGenreSuggestions.size === 0) {
+                    this.showNotification('Please select at least one suggestion to apply');
+                    return;
+                }
+
+                this.pushUndo('Suggest Genre');
+                let count = 0;
+                this.selectedGenreSuggestions.forEach(index => {
+                    const suggestion = this.pendingGenreSuggestions[index];
+                    this.data[suggestion.index][this.genreField] = suggestion.suggestedGenre;
+                    this.modifiedCount++;
+                    count++;
+                });
+
+                this.logChange('Genres suggested from composer', count);
+                this.closeGenreSuggestModal();
+                this.analyzeData();
+                this.renderAll();
+                this.showNotification(`Applied genre to ${count} row${count !== 1 ? 's' : ''}`);
+            },
+
+            // --- Suggest Tags from Titles ---
+
+            suggestTags() {
+                this.closeGenreTagMenu();
+                if (!this.titleField || !this.tagsField) {
+                    this.showNotification('Title and Tags fields are required');
+                    return;
+                }
+
+                const targetIndices = this.getTargetRows();
+                let suggestions = [];
+
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
+                    const title = (row[this.titleField] || '').trim();
+                    if (!title) return;
+
+                    const existingTags = (row[this.tagsField] || '')
+                        .split(';').map(t => t.trim().toLowerCase()).filter(Boolean);
+
+                    let newTags = [];
+                    this.tagKeywordDatabase.forEach(entry => {
+                        if (entry.pattern.test(title)) {
+                            if (!existingTags.includes(entry.tag.toLowerCase()) && !newTags.includes(entry.tag)) {
+                                newTags.push(entry.tag);
+                            }
+                        }
+                    });
+
+                    if (newTags.length > 0) {
+                        suggestions.push({
+                            index: idx,
+                            title: title,
+                            existingTags: row[this.tagsField] || '',
+                            suggestedTags: newTags
+                        });
+                    }
+                });
+
+                if (suggestions.length === 0) {
+                    const scopeLabel = this.getScopeLabel();
+                    const scope = scopeLabel ? ` (${scopeLabel})` : '';
+                    this.showNotification(`No tag suggestions found${scope}.\n\nThis scans titles for musical terms:\n- Instruments (piano, violin, cello...)\n- Forms (sonata, concerto, fugue...)\n- Ensembles (orchestra, trio, quartet...)`);
+                    return;
+                }
+
+                this.pendingTagSuggestions = suggestions;
+                this.selectedTagSuggestions = new Set(suggestions.map((_, i) => i));
+                this.showTagSuggestModal();
+            },
+
+            showTagSuggestModal() {
+                const modal = document.getElementById('tagSuggestModal');
+                const resultsDiv = document.getElementById('tagSuggestResults');
+                document.getElementById('tagSuggestCount').textContent = this.pendingTagSuggestions.length;
+
+                let html = '';
+                this.pendingTagSuggestions.forEach((item, index) => {
+                    const tagBadges = item.suggestedTags.map(t => `<span class="tag-suggest-new">+ ${t}</span>`).join(' ');
+                    html += `
+                        <div class="extraction-item">
+                            <input type="checkbox" class="extraction-checkbox"
+                                   id="tagsug_${index}"
+                                   onchange="app.toggleTagSuggestion(${index})" checked>
+                            <label for="tagsug_${index}" class="extraction-label">
+                                <div class="extraction-title">${item.title}</div>
+                                <div class="extraction-mapping" style="margin-top:4px">${tagBadges}</div>
+                            </label>
+                        </div>
+                    `;
+                });
+
+                resultsDiv.innerHTML = html;
+                this.updateTagSuggestSelectedCount();
+                modal.classList.add('active');
+            },
+
+            toggleTagSuggestion(index) {
+                if (this.selectedTagSuggestions.has(index)) {
+                    this.selectedTagSuggestions.delete(index);
+                } else {
+                    this.selectedTagSuggestions.add(index);
+                }
+                document.getElementById(`tagsug_${index}`).checked = this.selectedTagSuggestions.has(index);
+                const selectAll = document.getElementById('selectAllTagSuggestions');
+                selectAll.checked = this.selectedTagSuggestions.size === this.pendingTagSuggestions.length;
+                selectAll.indeterminate = this.selectedTagSuggestions.size > 0 && this.selectedTagSuggestions.size < this.pendingTagSuggestions.length;
+                this.updateTagSuggestSelectedCount();
+            },
+
+            toggleAllTagSuggestions() {
+                const checked = document.getElementById('selectAllTagSuggestions').checked;
+                this.selectedTagSuggestions = checked ? new Set(this.pendingTagSuggestions.map((_, i) => i)) : new Set();
+                this.pendingTagSuggestions.forEach((_, i) => {
+                    const el = document.getElementById(`tagsug_${i}`);
+                    if (el) el.checked = checked;
+                });
+                this.updateTagSuggestSelectedCount();
+            },
+
+            updateTagSuggestSelectedCount() {
+                const count = this.selectedTagSuggestions.size;
+                const total = this.pendingTagSuggestions.length;
+                const span = document.getElementById('tagSuggestSelectedCount');
+                if (count === total) span.textContent = 'All selected';
+                else if (count === 0) span.textContent = 'None selected';
+                else span.textContent = `${count} of ${total} selected`;
+            },
+
+            closeTagSuggestModal() {
+                document.getElementById('tagSuggestModal').classList.remove('active');
+                this.pendingTagSuggestions = null;
+                this.selectedTagSuggestions = null;
+            },
+
+            applyTagSuggestions() {
+                if (!this.pendingTagSuggestions || !this.selectedTagSuggestions) return;
+                if (this.selectedTagSuggestions.size === 0) {
+                    this.showNotification('Please select at least one suggestion to apply');
+                    return;
+                }
+
+                this.pushUndo('Suggest Tags');
+                let count = 0;
+                this.selectedTagSuggestions.forEach(index => {
+                    const suggestion = this.pendingTagSuggestions[index];
+                    const row = this.data[suggestion.index];
+                    const existing = (row[this.tagsField] || '').trim();
+                    const newTagStr = suggestion.suggestedTags.join(';');
+                    row[this.tagsField] = existing ? existing + ';' + newTagStr : newTagStr;
+                    this.modifiedCount++;
+                    count++;
+                });
+
+                this.logChange('Tags suggested from titles', count);
+                this.closeTagSuggestModal();
+                this.analyzeData();
+                this.renderAll();
+                this.showNotification(`Added tags to ${count} row${count !== 1 ? 's' : ''}`);
+            },
+
+            // --- Genre/Tag Manager ---
+
+            managerTab: 'genres',
+            managerData: [],
+            managerSelectedValues: new Set(),
+            managerFilterText: '',
+
+            openManagerModal() {
+                this.closeGenreTagMenu();
+                this.managerTab = 'genres';
+                this.managerSelectedValues = new Set();
+                this.managerFilterText = '';
+                document.getElementById('managerSearchInput').value = '';
+                document.getElementById('managerRenameInput').value = '';
+                document.getElementById('managerTabGenres').classList.add('active');
+                document.getElementById('managerTabTags').classList.remove('active');
+                this.computeManagerData();
+                this.renderManagerList();
+                document.getElementById('managerModal').classList.add('active');
+            },
+
+            switchManagerTab(tab) {
+                this.managerTab = tab;
+                this.managerSelectedValues = new Set();
+                this.managerFilterText = '';
+                document.getElementById('managerSearchInput').value = '';
+                document.getElementById('managerRenameInput').value = '';
+                document.getElementById('managerTabGenres').classList.toggle('active', tab === 'genres');
+                document.getElementById('managerTabTags').classList.toggle('active', tab === 'tags');
+                this.computeManagerData();
+                this.renderManagerList();
+            },
+
+            computeManagerData() {
+                const counts = {};
+                let emptyCount = 0;
+                const targetIndices = this.getTargetRows();
+
+                if (this.managerTab === 'genres') {
+                    if (!this.genreField) { this.managerData = []; return; }
+                    targetIndices.forEach(idx => {
+                        const val = (this.data[idx][this.genreField] || '').trim();
+                        if (!val) { emptyCount++; } else { counts[val] = (counts[val] || 0) + 1; }
+                    });
+                } else {
+                    if (!this.tagsField) { this.managerData = []; return; }
+                    targetIndices.forEach(idx => {
+                        const raw = (this.data[idx][this.tagsField] || '').trim();
+                        if (!raw) { emptyCount++; return; }
+                        const tags = raw.split(';').map(t => t.trim()).filter(Boolean);
+                        if (tags.length === 0) { emptyCount++; return; }
+                        tags.forEach(tag => { counts[tag] = (counts[tag] || 0) + 1; });
+                    });
+                }
+
+                let sorted = Object.entries(counts)
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                    .map(([value, count]) => ({ value, count }));
+
+                if (emptyCount > 0) {
+                    sorted.unshift({ value: '', count: emptyCount, isEmpty: true });
+                }
+
+                this.managerData = sorted;
+            },
+
+            renderManagerList() {
+                const container = document.getElementById('managerList');
+                const filter = this.managerFilterText.toLowerCase();
+
+                let html = '';
+                this.managerData.forEach((item, index) => {
+                    if (filter && !item.isEmpty && !item.value.toLowerCase().includes(filter)) return;
+
+                    const isChecked = this.managerSelectedValues.has(item.isEmpty ? '' : item.value);
+                    const nameClass = item.isEmpty ? 'manager-item-name manager-item-name--empty' : 'manager-item-name';
+                    const displayName = item.isEmpty ? '(empty)' : item.value;
+
+                    html += `
+                        <div class="manager-item">
+                            <input type="checkbox" data-index="${index}"
+                                   onchange="app.toggleManagerItem(${index})"
+                                   ${isChecked ? 'checked' : ''}>
+                            <span class="${nameClass}">${displayName}</span>
+                            <span class="manager-item-count">${item.count}</span>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--color-text-muted);">No values found</div>';
+                this.updateManagerSelectedCount();
+            },
+
+            filterManagerList() {
+                this.managerFilterText = document.getElementById('managerSearchInput').value;
+                this.renderManagerList();
+            },
+
+            toggleManagerItem(index) {
+                const item = this.managerData[index];
+                if (!item) return;
+                const key = item.isEmpty ? '' : item.value;
+                if (this.managerSelectedValues.has(key)) {
+                    this.managerSelectedValues.delete(key);
+                } else {
+                    this.managerSelectedValues.add(key);
+                }
+                this.updateManagerSelectedCount();
+            },
+
+            updateManagerSelectedCount() {
+                document.getElementById('managerSelectedCount').textContent = this.managerSelectedValues.size;
+            },
+
+            closeManagerModal() {
+                document.getElementById('managerModal').classList.remove('active');
+                this.managerData = [];
+                this.managerSelectedValues = new Set();
+            },
+
+            applyManagerRename() {
+                const newName = document.getElementById('managerRenameInput').value.trim();
+
+                if (this.managerSelectedValues.size === 0) {
+                    this.showNotification('Please select at least one value to rename');
+                    return;
+                }
+
+                if (!newName) {
+                    this.showNotification('Please enter a name to rename to');
+                    return;
+                }
+
+                const selectedValues = new Set(this.managerSelectedValues);
+                const targetIndices = this.getTargetRows();
+
+                this.pushUndo('Manager Rename');
+                let count = 0;
+
+                if (this.managerTab === 'genres') {
+                    const field = this.genreField;
+                    targetIndices.forEach(idx => {
+                        const row = this.data[idx];
+                        const current = (row[field] || '').trim();
+                        if (selectedValues.has(current) || (selectedValues.has('') && !current)) {
+                            if (current !== newName) {
+                                row[field] = newName;
+                                count++;
+                            }
+                        }
+                    });
+                } else {
+                    const field = this.tagsField;
+                    targetIndices.forEach(idx => {
+                        const row = this.data[idx];
+                        const raw = (row[field] || '').trim();
+                        if (!raw && selectedValues.has('')) {
+                            row[field] = newName;
+                            count++;
+                            return;
+                        }
+                        const tags = raw.split(';').map(t => t.trim());
+                        let changed = false;
+                        const newTags = tags.map(tag => {
+                            if (selectedValues.has(tag)) { changed = true; return newName; }
+                            return tag;
+                        });
+                        if (changed) {
+                            const seen = new Set();
+                            const deduped = newTags.filter(t => {
+                                if (!t) return false;
+                                const lower = t.toLowerCase();
+                                if (seen.has(lower)) return false;
+                                seen.add(lower);
+                                return true;
+                            });
+                            row[field] = deduped.join(';');
+                            count++;
+                        }
+                    });
+                }
+
+                if (count === 0) {
+                    this.showNotification('No changes were needed');
+                    return;
+                }
+
+                this.modifiedCount += count;
+                const label = this.managerTab === 'genres' ? 'Genre' : 'Tag';
+                this.logChange(`${label} rename`, count);
+                this.analyzeData();
+                this.renderAll();
+
+                this.managerSelectedValues = new Set();
+                document.getElementById('managerRenameInput').value = '';
+                this.computeManagerData();
+                this.renderManagerList();
+
+                this.showNotification(`Renamed in ${count} row${count !== 1 ? 's' : ''}`);
             },
 
             exportCSV() {
