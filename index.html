@@ -1268,6 +1268,55 @@
             margin-right: 4px;
         }
 
+        /* ===== Preview Modal ===== */
+        .preview-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-sm);
+        }
+
+        .preview-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--color-border-light);
+            font-size: 13px;
+        }
+
+        .preview-row:last-child {
+            border-bottom: none;
+        }
+
+        .preview-row input[type="checkbox"] {
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        .preview-row-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .preview-row-label {
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: 2px;
+            word-break: break-word;
+        }
+
+        .preview-row-detail {
+            font-size: 12px;
+        }
+
+        .preview-summary {
+            padding: 8px 12px;
+            text-align: center;
+            color: var(--color-text-muted);
+            font-size: 13px;
+        }
+
         /* ===== Batch Tag Editor ===== */
         .batch-tag-tabs {
             display: flex;
@@ -2066,6 +2115,23 @@
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
                     Download CSV
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal (shared by Quick Clean, Standardize, Find & Replace) -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content" style="max-width: 620px;">
+            <h3 class="modal-title" id="previewModalTitle">Preview Changes</h3>
+            <p class="modal-desc" id="previewModalDesc"></p>
+            <div class="extraction-header">
+                <input type="checkbox" id="previewSelectAll" onchange="app.toggleAllPreviewItems()" checked>
+                <label for="previewSelectAll" style="cursor: pointer; user-select: none;">Select All</label>
+            </div>
+            <div class="preview-list" id="previewList"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closePreviewModal()">Cancel</button>
+                <button class="btn btn-primary" id="previewApplyBtn" onclick="app.applyPreviewChanges()">Apply Selected</button>
             </div>
         </div>
     </div>
@@ -3893,7 +3959,6 @@
 
                 if (!find) return;
 
-                // Map field type to actual field name
                 let actualField;
                 switch(fieldType) {
                     case 'composer': actualField = this.composerField; break;
@@ -3907,110 +3972,101 @@
                     return;
                 }
 
-                this.pushUndo('Find & Replace');
-                let count = 0;
-                const scopeLabel = this.getScopeLabel();
                 const targetIndices = this.getTargetRows();
+                const changes = [];
 
                 targetIndices.forEach(idx => {
                     const row = this.data[idx];
                     if (row[actualField] && row[actualField].includes(find)) {
-                        row[actualField] = row[actualField].replace(new RegExp(find, 'g'), replace);
-                        count++;
+                        const oldVal = row[actualField];
+                        const newVal = oldVal.replace(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replace);
+                        if (oldVal !== newVal) {
+                            changes.push({
+                                index: idx,
+                                label: `Row ${idx + 1}: ${actualField}`,
+                                detail: oldVal,
+                                newDetail: newVal,
+                                field: actualField,
+                                newVal
+                            });
+                        }
                     }
                 });
 
-                this.modifiedCount += count;
-                this.logChange('Find & replace edits', count);
-                this.closeModal();
-                this.analyzeData();
-                this.renderAll();
+                if (changes.length === 0) {
+                    this.showNotification('No matches found.');
+                    return;
+                }
 
-                const scope = scopeLabel ? ` (${scopeLabel})` : '';
-                this.showNotification(`Replaced in ${count} records${scope}`);
+                this.closeModal();
+                this._showPreview('Find & Replace Preview', `Found <strong>${changes.length}</strong> match${changes.length !== 1 ? 'es' : ''}.`, changes, 'Find & replace edits', 'Find & Replace');
             },
 
             quickClean() {
-                this.pushUndo('Quick Clean');
-                let trimmedComposers = 0;
-                let trimmedTitles = 0;
-                let fixedCommas = 0;
-                const scopeLabel = this.getScopeLabel();
                 const targetIndices = this.getTargetRows();
+                const changes = [];
 
                 targetIndices.forEach(idx => {
                     const row = this.data[idx];
+                    const rowChanges = [];
+
                     if (this.composerField) {
                         const composer = row[this.composerField] || '';
-                        // Trim whitespace
-                        const trimmed = composer.trim();
-                        if (trimmed !== composer) {
-                            row[this.composerField] = trimmed;
-                            trimmedComposers++;
+                        let result = composer.trim();
+                        if (result && result.includes(',') && result.split(',')[1].trim() === '') {
+                            result = result.replace(/,\s*$/, '');
                         }
-                        // Fix trailing commas
-                        if (trimmed && trimmed.includes(',') && trimmed.split(',')[1].trim() === '') {
-                            row[this.composerField] = trimmed.replace(/,\s*$/, '');
-                            fixedCommas++;
+                        if (result !== composer) {
+                            rowChanges.push({ field: this.composerField, newVal: result, desc: 'composer trimmed' });
                         }
                     }
                     if (this.titleField) {
                         const title = row[this.titleField] || '';
                         const trimmed = title.trim();
                         if (trimmed !== title) {
-                            row[this.titleField] = trimmed;
-                            trimmedTitles++;
+                            rowChanges.push({ field: this.titleField, newVal: trimmed, desc: 'title trimmed' });
                         }
                     }
+                    if (this.tagsField) {
+                        const raw = row[this.tagsField] || '';
+                        if (raw) {
+                            let tags = raw.split(';').map(t => t.trim()).filter(t => t.length > 0);
+                            const seen = new Map();
+                            const deduped = [];
+                            tags.forEach(tag => {
+                                const lower = tag.toLowerCase();
+                                if (!seen.has(lower)) {
+                                    seen.set(lower, tag);
+                                    deduped.push(tag);
+                                }
+                            });
+                            deduped.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                            const cleaned = deduped.join(';');
+                            if (cleaned !== raw) {
+                                rowChanges.push({ field: this.tagsField, newVal: cleaned, desc: 'tags tidied' });
+                            }
+                        }
+                    }
+
+                    rowChanges.forEach(c => {
+                        const titleVal = this.titleField ? (row[this.titleField] || '').trim() : '';
+                        changes.push({
+                            index: idx,
+                            label: `Row ${idx + 1}: ${titleVal || '(untitled)'}`,
+                            detail: row[c.field] || '',
+                            newDetail: c.newVal,
+                            field: c.field,
+                            newVal: c.newVal
+                        });
+                    });
                 });
 
-                // Tag cleanup: trim, deduplicate, sort
-                let cleanedTags = 0;
-                if (this.tagsField) {
-                    targetIndices.forEach(idx => {
-                        const row = this.data[idx];
-                        const raw = row[this.tagsField] || '';
-                        if (!raw) return;
-
-                        let tags = raw.split(';').map(t => t.trim()).filter(t => t.length > 0);
-                        // Deduplicate (case-insensitive, keep first casing)
-                        const seen = new Map();
-                        const deduped = [];
-                        tags.forEach(tag => {
-                            const lower = tag.toLowerCase();
-                            if (!seen.has(lower)) {
-                                seen.set(lower, tag);
-                                deduped.push(tag);
-                            }
-                        });
-                        // Sort alphabetically
-                        deduped.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-                        const cleaned = deduped.join(';');
-                        if (cleaned !== raw) {
-                            row[this.tagsField] = cleaned;
-                            cleanedTags++;
-                        }
-                    });
-                }
-
-                const total = trimmedComposers + trimmedTitles + fixedCommas + cleanedTags;
-                if (total === 0) {
+                if (changes.length === 0) {
                     this.showNotification('Already clean! No issues found.');
                     return;
                 }
 
-                this.modifiedCount += total;
-                this.analyzeData();
-                this.renderAll();
-
-                const parts = [];
-                if (trimmedComposers > 0) parts.push(`${trimmedComposers} composer${trimmedComposers !== 1 ? 's' : ''} trimmed`);
-                if (trimmedTitles > 0) parts.push(`${trimmedTitles} title${trimmedTitles !== 1 ? 's' : ''} trimmed`);
-                if (fixedCommas > 0) parts.push(`${fixedCommas} trailing comma${fixedCommas !== 1 ? 's' : ''} fixed`);
-                if (cleanedTags > 0) parts.push(`${cleanedTags} tag field${cleanedTags !== 1 ? 's' : ''} tidied`);
-                this.logChange('Whitespace, commas & tags cleaned', total);
-                const scope = scopeLabel ? ` (${scopeLabel})` : '';
-                this.showNotification(`Quick Clean${scope}: ${parts.join(', ')}`);
+                this._showPreview('Quick Clean Preview', `Found <strong>${changes.length}</strong> field${changes.length !== 1 ? 's' : ''} to clean.`, changes, 'Whitespace, commas & tags cleaned', 'Quick Clean');
             },
 
             standardizeComposers() {
@@ -4019,39 +4075,131 @@
                     return;
                 }
 
-                this.pushUndo('Standardize');
-                let count = 0;
-                const scopeLabel = this.getScopeLabel();
                 const targetIndices = this.getTargetRows();
+                const changes = [];
 
                 targetIndices.forEach(idx => {
                     const row = this.data[idx];
                     const composer = row[this.composerField];
                     if (!composer) return;
-
-                    // If it's already "Last, First" format, skip
                     if (composer.includes(',')) return;
 
-                    // Try to convert "First Last" to "Last, First"
                     const parts = composer.trim().split(' ');
                     if (parts.length >= 2) {
                         const last = parts.pop();
                         const first = parts.join(' ');
-                        row[this.composerField] = `${last}, ${first}`;
+                        const newVal = `${last}, ${first}`;
+                        changes.push({
+                            index: idx,
+                            label: `Row ${idx + 1}`,
+                            detail: composer,
+                            newDetail: newVal,
+                            field: this.composerField,
+                            newVal
+                        });
+                    }
+                });
+
+                if (changes.length === 0) {
+                    const scopeLabel = this.getScopeLabel();
+                    const scope = scopeLabel ? ` (${scopeLabel})` : '';
+                    this.showNotification(`No composers to standardize${scope}`);
+                    return;
+                }
+
+                this._showPreview('Standardize Composers Preview', `Found <strong>${changes.length}</strong> composer${changes.length !== 1 ? 's' : ''} to reformat to "Last, First".`, changes, 'Composers standardized', 'Standardize');
+            },
+
+            // ===== Shared Preview Modal =====
+
+            _showPreview(title, desc, changes, logCategory, undoLabel) {
+                this._previewChanges = changes;
+                this._previewSelected = new Set(changes.map((_, i) => i));
+                this._previewLogCategory = logCategory;
+                this._previewUndoLabel = undoLabel;
+
+                document.getElementById('previewModalTitle').textContent = title;
+                document.getElementById('previewModalDesc').innerHTML = desc;
+
+                const maxShow = 200;
+                const toShow = changes.slice(0, maxShow);
+                let html = '';
+                toShow.forEach((c, i) => {
+                    const oldEsc = (c.detail || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const newEsc = (c.newDetail || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    html += `<div class="preview-row">
+                        <input type="checkbox" checked onchange="app.togglePreviewItem(${i})">
+                        <div class="preview-row-content">
+                            <div class="preview-row-label">${c.label}</div>
+                            <div class="preview-row-detail">
+                                <span class="diff-old">${oldEsc || '(empty)'}</span>
+                                <span class="diff-arrow">&rarr;</span>
+                                <span class="diff-new">${newEsc || '(empty)'}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                if (changes.length > maxShow) {
+                    html += `<div class="preview-summary">&hellip; and ${changes.length - maxShow} more changes</div>`;
+                }
+
+                document.getElementById('previewList').innerHTML = html;
+                document.getElementById('previewSelectAll').checked = true;
+                document.getElementById('previewApplyBtn').textContent = `Apply ${changes.length} Change${changes.length !== 1 ? 's' : ''}`;
+                document.getElementById('previewModal').classList.add('active');
+            },
+
+            togglePreviewItem(i) {
+                if (this._previewSelected.has(i)) {
+                    this._previewSelected.delete(i);
+                } else {
+                    this._previewSelected.add(i);
+                }
+                document.getElementById('previewSelectAll').checked = this._previewSelected.size === this._previewChanges.length;
+                document.getElementById('previewApplyBtn').textContent = `Apply ${this._previewSelected.size} Change${this._previewSelected.size !== 1 ? 's' : ''}`;
+            },
+
+            toggleAllPreviewItems() {
+                const all = document.getElementById('previewSelectAll').checked;
+                const checkboxes = document.querySelectorAll('#previewList input[type="checkbox"]');
+                if (all) {
+                    this._previewSelected = new Set(this._previewChanges.map((_, i) => i));
+                    checkboxes.forEach(cb => cb.checked = true);
+                } else {
+                    this._previewSelected = new Set();
+                    checkboxes.forEach(cb => cb.checked = false);
+                }
+                document.getElementById('previewApplyBtn').textContent = `Apply ${this._previewSelected.size} Change${this._previewSelected.size !== 1 ? 's' : ''}`;
+            },
+
+            closePreviewModal() {
+                document.getElementById('previewModal').classList.remove('active');
+            },
+
+            applyPreviewChanges() {
+                const selected = this._previewSelected;
+                if (selected.size === 0) {
+                    this.showNotification('No changes selected.');
+                    return;
+                }
+
+                this.pushUndo(this._previewUndoLabel);
+                let count = 0;
+
+                selected.forEach(i => {
+                    const c = this._previewChanges[i];
+                    if (c) {
+                        this.data[c.index][c.field] = c.newVal;
                         count++;
                     }
                 });
 
-                const scope = scopeLabel ? ` (${scopeLabel})` : '';
-                if (count > 0) {
-                    this.modifiedCount += count;
-                    this.logChange('Composers standardized', count);
-                    this.analyzeData();
-                    this.renderAll();
-                    this.showNotification(`Standardized ${count} composer names${scope}`);
-                } else {
-                    this.showNotification(`No composers to standardize${scope}`);
-                }
+                this.modifiedCount += count;
+                this.logChange(this._previewLogCategory, count);
+                this.closePreviewModal();
+                this.analyzeData();
+                this.renderAll();
+                this.showNotification(`Applied ${count} change${count !== 1 ? 's' : ''}.`);
             },
 
             // ===== Genre & Tag Tools =====
