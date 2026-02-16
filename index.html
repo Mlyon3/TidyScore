@@ -1268,6 +1268,107 @@
             margin-right: 4px;
         }
 
+        /* ===== Batch Tag Editor ===== */
+        .batch-tag-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            background: var(--color-surface);
+            border-radius: var(--radius-sm);
+            padding: 3px;
+        }
+
+        .batch-tag-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .batch-tag-tab:hover {
+            color: var(--color-text);
+        }
+
+        .batch-tag-tab.active {
+            background: var(--color-bg);
+            color: var(--color-accent);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .batch-tag-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .batch-tag-input-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: 14px;
+        }
+
+        .tag-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .tag-chip:hover {
+            border-color: var(--color-accent);
+            background: var(--color-accent-subtle);
+        }
+
+        .tag-chip-count {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            margin-left: 2px;
+        }
+
+        .tag-chip-remove {
+            color: var(--color-text-muted);
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .tag-chip-remove:hover {
+            color: var(--color-danger, #e53e3e);
+        }
+
+        .batch-tag-pane {
+            display: none;
+        }
+
+        .batch-tag-pane.active {
+            display: block;
+        }
+
         /* ===== Diff View ===== */
         .diff-toggle {
             display: flex;
@@ -1826,6 +1927,13 @@
                                 <div class="tool-dropdown-item-desc">Detect tags from title keywords</div>
                             </div>
                         </button>
+                        <button class="tool-dropdown-item" onclick="app.openBatchTagEditor()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M2 8h12M2 12h12"/><circle cx="5" cy="4" r="1.5" fill="currentColor"/><circle cx="11" cy="8" r="1.5" fill="currentColor"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/></svg>
+                            <div>
+                                <div>Batch Tag Editor</div>
+                                <div class="tool-dropdown-item-desc">Add, remove, or replace tags in bulk</div>
+                            </div>
+                        </button>
                         <button class="tool-dropdown-item" onclick="app.openManagerModal()">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2L7.5 3.5 9 5"/><path d="M7.5 3.5H12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h1"/><path d="M5 8h6M5 11h4"/></svg>
                             <div>
@@ -1958,6 +2066,44 @@
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
                     Download CSV
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Tag Editor Modal -->
+    <div id="batchTagModal" class="modal">
+        <div class="modal-content" style="max-width: 560px;">
+            <h3 class="modal-title">Batch Tag Editor</h3>
+            <p class="modal-desc" id="batchTagScope"></p>
+            <div class="batch-tag-tabs">
+                <button class="batch-tag-tab active" onclick="app.switchBatchTagMode('add')">Add</button>
+                <button class="batch-tag-tab" onclick="app.switchBatchTagMode('remove')">Remove</button>
+                <button class="batch-tag-tab" onclick="app.switchBatchTagMode('replace')">Replace</button>
+            </div>
+
+            <div id="batchTagAdd" class="batch-tag-pane active">
+                <div class="batch-tag-input-row">
+                    <input type="text" id="batchTagAddInput" placeholder="Enter tag to add..." onkeydown="if(event.key==='Enter')app.batchAddTag()">
+                    <button class="btn btn-primary" onclick="app.batchAddTag()">Add Tag</button>
+                </div>
+            </div>
+
+            <div id="batchTagRemove" class="batch-tag-pane">
+                <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px;">Click a tag to remove it from all target rows:</p>
+                <div class="tag-chips" id="batchTagRemoveChips"></div>
+            </div>
+
+            <div id="batchTagReplace" class="batch-tag-pane">
+                <div class="batch-tag-input-row">
+                    <input type="text" id="batchTagReplaceFrom" placeholder="Find tag...">
+                    <span style="display:flex;align-items:center;color:var(--color-text-muted);">&rarr;</span>
+                    <input type="text" id="batchTagReplaceTo" placeholder="Replace with...">
+                </div>
+                <button class="btn btn-primary" onclick="app.batchReplaceTag()" style="width:100%;">Replace Tag</button>
+            </div>
+
+            <div class="modal-buttons" style="margin-top:16px;">
+                <button class="btn btn-secondary" onclick="app.closeBatchTagEditor()">Close</button>
             </div>
         </div>
     </div>
@@ -4232,6 +4378,176 @@
             managerData: [],
             managerSelectedValues: new Set(),
             managerFilterText: '',
+
+            openBatchTagEditor() {
+                this.closeGenreTagMenu();
+                if (!this.tagsField) {
+                    this.showNotification('Tags field is required for the Batch Tag Editor.');
+                    return;
+                }
+
+                const targetIndices = this.getTargetRows();
+                const scopeLabel = this.getScopeLabel();
+                const scope = scopeLabel ? scopeLabel : `all ${this.data.length} rows`;
+                document.getElementById('batchTagScope').innerHTML = `Editing tags for <strong>${targetIndices.length}</strong> rows (${scope}).`;
+
+                this.switchBatchTagMode('add');
+                document.getElementById('batchTagModal').classList.add('active');
+                document.getElementById('batchTagAddInput').value = '';
+                setTimeout(() => document.getElementById('batchTagAddInput').focus(), 100);
+            },
+
+            closeBatchTagEditor() {
+                document.getElementById('batchTagModal').classList.remove('active');
+            },
+
+            switchBatchTagMode(mode) {
+                document.querySelectorAll('.batch-tag-tab').forEach((tab, i) => {
+                    tab.classList.toggle('active', ['add', 'remove', 'replace'][i] === mode);
+                });
+                document.querySelectorAll('.batch-tag-pane').forEach(p => p.classList.remove('active'));
+                document.getElementById('batchTag' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+
+                if (mode === 'remove') {
+                    this._renderBatchTagRemoveChips();
+                }
+            },
+
+            _renderBatchTagRemoveChips() {
+                const targetIndices = this.getTargetRows();
+                const tagCounts = {};
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
+                    const tags = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
+                    tags.forEach(t => {
+                        tagCounts[t] = (tagCounts[t] || 0) + 1;
+                    });
+                });
+
+                const sorted = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+                const container = document.getElementById('batchTagRemoveChips');
+
+                if (sorted.length === 0) {
+                    container.innerHTML = '<p style="color:var(--color-text-muted);font-size:13px;">No tags found in target rows.</p>';
+                    return;
+                }
+
+                let html = '';
+                sorted.forEach(([tag, count]) => {
+                    const escaped = tag.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    html += `<span class="tag-chip" onclick="app.batchRemoveTag('${escaped}')">
+                        ${tag} <span class="tag-chip-count">(${count})</span>
+                        <span class="tag-chip-remove">&times;</span>
+                    </span>`;
+                });
+                container.innerHTML = html;
+            },
+
+            batchAddTag() {
+                const input = document.getElementById('batchTagAddInput');
+                const newTag = input.value.trim();
+                if (!newTag) return;
+
+                const targetIndices = this.getTargetRows();
+                this.saveUndoState();
+                let count = 0;
+
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
+                    const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
+                    if (!existing.some(t => t.toLowerCase() === newTag.toLowerCase())) {
+                        existing.push(newTag);
+                        row[this.tagsField] = existing.join('; ');
+                        count++;
+                    }
+                });
+
+                if (count > 0) {
+                    this.logChange('Batch add tag', count);
+                    this.updateModifiedCount();
+                    this.renderTable();
+                    this.showNotification(`Added "${newTag}" to ${count} row${count !== 1 ? 's' : ''}.`);
+                } else {
+                    this.showNotification(`All target rows already have the tag "${newTag}".`);
+                }
+                input.value = '';
+                input.focus();
+            },
+
+            batchRemoveTag(tag) {
+                const targetIndices = this.getTargetRows();
+                this.saveUndoState();
+                let count = 0;
+
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
+                    const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
+                    const filtered = existing.filter(t => t.toLowerCase() !== tag.toLowerCase());
+                    if (filtered.length !== existing.length) {
+                        row[this.tagsField] = filtered.join('; ');
+                        count++;
+                    }
+                });
+
+                if (count > 0) {
+                    this.logChange('Batch remove tag', count);
+                    this.updateModifiedCount();
+                    this.renderTable();
+                    this._renderBatchTagRemoveChips();
+                    this.showNotification(`Removed "${tag}" from ${count} row${count !== 1 ? 's' : ''}.`);
+                } else {
+                    this.showNotification(`Tag "${tag}" not found in target rows.`);
+                }
+            },
+
+            batchReplaceTag() {
+                const fromTag = document.getElementById('batchTagReplaceFrom').value.trim();
+                const toTag = document.getElementById('batchTagReplaceTo').value.trim();
+                if (!fromTag) {
+                    this.showNotification('Please enter a tag to find.');
+                    return;
+                }
+                if (!toTag) {
+                    this.showNotification('Please enter a replacement tag.');
+                    return;
+                }
+
+                const targetIndices = this.getTargetRows();
+                this.saveUndoState();
+                let count = 0;
+
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
+                    const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
+                    let changed = false;
+                    const updated = existing.map(t => {
+                        if (t.toLowerCase() === fromTag.toLowerCase()) {
+                            changed = true;
+                            return toTag;
+                        }
+                        return t;
+                    });
+                    // Deduplicate
+                    const unique = [...new Set(updated.map(t => t.toLowerCase()))].map(lower => {
+                        return updated.find(t => t.toLowerCase() === lower);
+                    });
+                    if (changed) {
+                        row[this.tagsField] = unique.join('; ');
+                        count++;
+                    }
+                });
+
+                if (count > 0) {
+                    this.logChange('Batch replace tag', count);
+                    this.updateModifiedCount();
+                    this.renderTable();
+                    this.showNotification(`Replaced "${fromTag}" with "${toTag}" in ${count} row${count !== 1 ? 's' : ''}.`);
+                    document.getElementById('batchTagReplaceFrom').value = '';
+                    document.getElementById('batchTagReplaceTo').value = '';
+                } else {
+                    this.showNotification(`Tag "${fromTag}" not found in target rows.`);
+                }
+            },
 
             openManagerModal() {
                 this.closeGenreTagMenu();
