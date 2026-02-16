@@ -379,6 +379,17 @@
             margin-bottom: 20px;
         }
 
+        .scope-indicator {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--color-text-muted);
+        }
+
+        .scope-indicator .scope-highlight {
+            color: var(--color-accent);
+            font-weight: 500;
+        }
+
         /* ===== Table Section ===== */
         .table-section {
             background: var(--color-surface);
@@ -1304,6 +1315,7 @@
         <div id="tableSection" class="table-section hidden">
             <div class="section-header">
                 <h2>Your Library</h2>
+                <span id="scopeIndicator" class="scope-indicator"></span>
             </div>
             
             <div id="bulkControls" class="bulk-controls">
@@ -1475,6 +1487,8 @@
             sortColumn: null,
             sortDirection: 'asc',
             selectedRows: new Set(),
+            currentFilter: '',
+            visibleIndices: [],
             undoStack: [],
             changeLog: [],
 
@@ -1951,10 +1965,27 @@
                 document.getElementById('modifiedCount').textContent = this.modifiedCount;
             },
 
-            renderTable(filteredData = null) {
+            renderTable() {
                 const tbody = document.getElementById('tableBody');
                 const thead = document.querySelector('thead');
-                const dataToRender = filteredData || this.data;
+
+                // Build entries with real data indices
+                let entries;
+                const query = this.currentFilter;
+                if (query) {
+                    entries = [];
+                    const q = query.toLowerCase();
+                    this.data.forEach((row, i) => {
+                        const searchStr = `${this.titleField ? row[this.titleField] : ''} ${this.composerField ? row[this.composerField] : ''} ${this.genreField ? row[this.genreField] : ''} ${this.tagsField ? row[this.tagsField] : ''}`.toLowerCase();
+                        if (searchStr.includes(q)) {
+                            entries.push({row, _i: i});
+                        }
+                    });
+                } else {
+                    entries = this.data.map((row, i) => ({row, _i: i}));
+                }
+
+                this.visibleIndices = entries.map(e => e._i);
 
                 // Update header with sort indicators and checkbox
                 const titleClass = this.sortColumn === this.titleField ? `sorted-${this.sortDirection}` : '';
@@ -1962,10 +1993,12 @@
                 const genreClass = this.sortColumn === this.genreField ? `sorted-${this.sortDirection}` : '';
                 const tagsClass = this.sortColumn === this.tagsField ? `sorted-${this.sortDirection}` : '';
 
+                const allVisibleSelected = this.visibleIndices.length > 0 && this.visibleIndices.every(i => this.selectedRows.has(i));
+
                 thead.innerHTML = `
                     <tr>
                         <th class="checkbox-cell">
-                            <input type="checkbox" id="selectAll" onchange="app.toggleSelectAll()" ${this.selectedRows.size === this.data.length && this.data.length > 0 ? 'checked' : ''}>
+                            <input type="checkbox" id="selectAll" onchange="app.toggleSelectAll()" ${allVisibleSelected ? 'checked' : ''}>
                         </th>
                         <th class="${titleClass}" onclick="app.sortBy('${this.titleField}')">Title</th>
                         <th class="${composerClass}" onclick="app.sortBy('${this.composerField}')">Composer</th>
@@ -1975,28 +2008,29 @@
                 `;
 
                 let html = '';
-                dataToRender.forEach((row, index) => {
+                entries.forEach(({row, _i}) => {
                     const title = this.titleField ? row[this.titleField] : '';
                     const composer = this.composerField ? row[this.composerField] : '';
                     const genre = this.genreField ? row[this.genreField] : '';
                     const tags = this.tagsField ? row[this.tagsField] : '';
-                    const isSelected = this.selectedRows.has(index);
-                    
+                    const isSelected = this.selectedRows.has(_i);
+
                     html += `
                         <tr class="${isSelected ? 'selected' : ''}">
                             <td class="checkbox-cell">
-                                <input type="checkbox" onchange="app.toggleRow(${index})" ${isSelected ? 'checked' : ''}>
+                                <input type="checkbox" onchange="app.toggleRow(${_i})" ${isSelected ? 'checked' : ''}>
                             </td>
-                            <td><span class="editable" onclick="app.editCell(${index}, '${this.titleField}')">${title}</span></td>
-                            <td><span class="editable" onclick="app.editCell(${index}, '${this.composerField}')">${composer}</span></td>
-                            <td><span class="editable" onclick="app.editCell(${index}, '${this.genreField}')">${genre}</span></td>
-                            <td><span class="editable" onclick="app.editCell(${index}, '${this.tagsField}')">${tags}</span></td>
+                            <td><span class="editable" onclick="app.editCell(${_i}, '${this.titleField}')">${title}</span></td>
+                            <td><span class="editable" onclick="app.editCell(${_i}, '${this.composerField}')">${composer}</span></td>
+                            <td><span class="editable" onclick="app.editCell(${_i}, '${this.genreField}')">${genre}</span></td>
+                            <td><span class="editable" onclick="app.editCell(${_i}, '${this.tagsField}')">${tags}</span></td>
                         </tr>
                     `;
                 });
 
                 tbody.innerHTML = html;
                 this.updateBulkControls();
+                this.updateScopeIndicator();
             },
 
             editCell(index, field) {
@@ -2101,22 +2135,8 @@
             },
 
             filterTable(query) {
-                if (!query) {
-                    this.renderTable();
-                    return;
-                }
-
-                const filtered = this.data.filter(row => {
-                    const title = this.titleField ? row[this.titleField] : '';
-                    const composer = this.composerField ? row[this.composerField] : '';
-                    const genre = this.genreField ? row[this.genreField] : '';
-                    const tags = this.tagsField ? row[this.tagsField] : '';
-                    
-                    const searchStr = `${title} ${composer} ${genre} ${tags}`.toLowerCase();
-                    return searchStr.includes(query.toLowerCase());
-                });
-
-                this.renderTable(filtered);
+                this.currentFilter = query || '';
+                this.renderTable();
             },
 
             sortBy(field) {
@@ -2160,13 +2180,11 @@
             toggleSelectAll() {
                 const selectAllCheckbox = document.getElementById('selectAll');
                 if (selectAllCheckbox.checked) {
-                    // Select all
-                    this.data.forEach((_, index) => {
-                        this.selectedRows.add(index);
-                    });
+                    // Select only visible rows
+                    this.visibleIndices.forEach(i => this.selectedRows.add(i));
                 } else {
-                    // Deselect all
-                    this.selectedRows.clear();
+                    // Deselect visible rows (preserve selections on hidden rows)
+                    this.visibleIndices.forEach(i => this.selectedRows.delete(i));
                 }
                 this.updateBulkControls();
                 this.renderTable();
@@ -2182,6 +2200,37 @@
                     bulkControls.classList.add('active');
                 } else {
                     bulkControls.classList.remove('active');
+                }
+            },
+
+            getTargetRows() {
+                if (this.selectedRows.size > 0) {
+                    return [...this.selectedRows];
+                }
+                return this.data.map((_, i) => i);
+            },
+
+            getScopeLabel() {
+                if (this.selectedRows.size > 0) {
+                    return `${this.selectedRows.size} selected`;
+                }
+                return null;
+            },
+
+            updateScopeIndicator() {
+                const el = document.getElementById('scopeIndicator');
+                if (!el) return;
+
+                const total = this.data.length;
+                const visible = this.visibleIndices.length;
+                const selected = this.selectedRows.size;
+
+                if (selected > 0) {
+                    el.innerHTML = `<span class="scope-highlight">${selected} selected</span> of ${total}`;
+                } else if (this.currentFilter && visible < total) {
+                    el.textContent = `${visible} of ${total} shown`;
+                } else {
+                    el.textContent = `${total} scores`;
                 }
             },
 
@@ -2246,11 +2295,13 @@
                     /^([A-Z][a-z]+)\s+\d/,
                 ];
 
-                console.log('Processing', this.data.length, 'entries');
+                const targetIndices = this.getTargetRows();
+                console.log('Processing', targetIndices.length, 'entries');
 
                 // === Pass 1: Extract composers from titles (empty composer field) ===
                 let titleExtractions = [];
-                this.data.forEach((row, index) => {
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
                     const title = row[this.titleField] || '';
                     const currentComposer = row[this.composerField] || '';
 
@@ -2269,7 +2320,7 @@
                             const suggestion = this.getSuggestion(potentialComposer);
                             if (suggestion) {
                                 titleExtractions.push({
-                                    index,
+                                    index: idx,
                                     title,
                                     extracted: potentialComposer,
                                     suggestion,
@@ -2288,7 +2339,7 @@
                             const suggestion = this.getSuggestion(firstWord);
                             if (suggestion) {
                                 titleExtractions.push({
-                                    index,
+                                    index: idx,
                                     title,
                                     extracted: firstWord,
                                     suggestion,
@@ -2301,7 +2352,8 @@
 
                 // === Pass 2: Detect incomplete/informal composer names ===
                 let nameCompletions = [];
-                this.data.forEach((row, index) => {
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
                     const currentComposer = row[this.composerField] || '';
                     const title = row[this.titleField] || '';
 
@@ -2310,7 +2362,7 @@
                     const suggestion = this.getSuggestion(currentComposer);
                     if (suggestion && suggestion !== currentComposer.trim()) {
                         nameCompletions.push({
-                            index,
+                            index: idx,
                             title,
                             extracted: currentComposer.trim(),
                             suggestion,
@@ -2322,7 +2374,7 @@
                 let extracted = [...titleExtractions, ...nameCompletions];
 
                 console.log('Results:', {
-                    total: this.data.length,
+                    scanned: targetIndices.length,
                     checked: checked,
                     skipped: skipped,
                     titleExtractions: titleExtractions.length,
@@ -2598,18 +2650,18 @@
                 }
 
                 let cleanable = [];
-                let checked = 0;
+                const targetIndices = this.getTargetRows();
 
-                this.data.forEach((row, index) => {
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
                     const title = row[this.titleField] || '';
-                    checked++;
-                    
+
                     // Check if this looks like an IMSLP title
                     if (this.needsImslpCleanup(title)) {
                         const cleaned = this.cleanImslpTitle(title);
                         if (cleaned !== title) {
                             cleanable.push({
-                                index,
+                                index: idx,
                                 original: title,
                                 cleaned
                             });
@@ -2618,8 +2670,7 @@
                 });
 
                 console.log('IMSLP cleanup results:', {
-                    total: this.data.length,
-                    checked: checked,
+                    scanned: targetIndices.length,
                     cleanable: cleanable.length
                 });
 
@@ -2820,7 +2871,11 @@
 
                 this.pushUndo('Find & Replace');
                 let count = 0;
-                this.data.forEach(row => {
+                const scopeLabel = this.getScopeLabel();
+                const targetIndices = this.getTargetRows();
+
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
                     if (row[actualField] && row[actualField].includes(find)) {
                         row[actualField] = row[actualField].replace(new RegExp(find, 'g'), replace);
                         count++;
@@ -2833,7 +2888,8 @@
                 this.analyzeData();
                 this.renderAll();
 
-                this.showNotification(`Replaced in ${count} records`);
+                const scope = scopeLabel ? ` (${scopeLabel})` : '';
+                this.showNotification(`Replaced in ${count} records${scope}`);
             },
 
             quickClean() {
@@ -2841,8 +2897,11 @@
                 let trimmedComposers = 0;
                 let trimmedTitles = 0;
                 let fixedCommas = 0;
+                const scopeLabel = this.getScopeLabel();
+                const targetIndices = this.getTargetRows();
 
-                this.data.forEach(row => {
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
                     if (this.composerField) {
                         const composer = row[this.composerField] || '';
                         // Trim whitespace
@@ -2882,7 +2941,8 @@
                 if (trimmedTitles > 0) parts.push(`${trimmedTitles} title${trimmedTitles !== 1 ? 's' : ''} trimmed`);
                 if (fixedCommas > 0) parts.push(`${fixedCommas} trailing comma${fixedCommas !== 1 ? 's' : ''} fixed`);
                 this.logChange('Whitespace & commas cleaned', total);
-                this.showNotification(`Quick Clean: ${parts.join(', ')}`);
+                const scope = scopeLabel ? ` (${scopeLabel})` : '';
+                this.showNotification(`Quick Clean${scope}: ${parts.join(', ')}`);
             },
 
             standardizeComposers() {
@@ -2893,8 +2953,11 @@
 
                 this.pushUndo('Standardize');
                 let count = 0;
+                const scopeLabel = this.getScopeLabel();
+                const targetIndices = this.getTargetRows();
 
-                this.data.forEach(row => {
+                targetIndices.forEach(idx => {
+                    const row = this.data[idx];
                     const composer = row[this.composerField];
                     if (!composer) return;
 
@@ -2911,14 +2974,15 @@
                     }
                 });
 
+                const scope = scopeLabel ? ` (${scopeLabel})` : '';
                 if (count > 0) {
                     this.modifiedCount += count;
                     this.logChange('Composers standardized', count);
                     this.analyzeData();
                     this.renderAll();
-                    this.showNotification(`Standardized ${count} composer names to "Last, First" format`);
+                    this.showNotification(`Standardized ${count} composer names${scope}`);
                 } else {
-                    this.showNotification('No composers to standardize');
+                    this.showNotification(`No composers to standardize${scope}`);
                 }
             },
 
