@@ -1268,6 +1268,83 @@
             margin-right: 4px;
         }
 
+        /* ===== Diff View ===== */
+        .diff-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            color: var(--color-accent);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 0;
+            margin-top: 8px;
+        }
+
+        .diff-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .diff-toggle svg {
+            transition: transform var(--transition-fast);
+        }
+
+        .diff-toggle.expanded svg {
+            transform: rotate(90deg);
+        }
+
+        .diff-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-sm);
+            margin-top: 8px;
+        }
+
+        .diff-row {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--color-border-light);
+            font-size: 13px;
+        }
+
+        .diff-row:last-child {
+            border-bottom: none;
+        }
+
+        .diff-row-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .diff-row-num {
+            color: var(--color-text-muted);
+            font-size: 12px;
+        }
+
+        .diff-field {
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .diff-old {
+            color: var(--color-danger, #e53e3e);
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .diff-new {
+            color: var(--color-success, #48bb78);
+        }
+
+        .diff-arrow {
+            color: var(--color-text-muted);
+            margin: 0 6px;
+        }
+
         /* ===== Help Guide ===== */
         .help-btn {
             background: rgba(255, 255, 255, 0.1);
@@ -1866,10 +1943,15 @@
 
     <!-- Export Summary Modal -->
     <div id="exportModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 620px;">
             <h3 class="modal-title">Export Summary</h3>
             <p class="modal-desc" id="exportSummaryDesc"></p>
             <div id="exportSummaryList" class="extraction-results" style="max-height: 260px;"></div>
+            <button class="diff-toggle" id="diffToggle" onclick="app.toggleDiffView()" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+                <span id="diffToggleLabel">Show all changes</span>
+            </button>
+            <div id="diffContainer" class="diff-list" style="display:none;"></div>
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="app.closeExportModal()">Cancel</button>
                 <button class="btn btn-primary btn-icon" onclick="app.doExport()">
@@ -4379,7 +4461,78 @@
                     list.style.display = 'none';
                 }
 
+                // Compute diff for diff view
+                this._exportDiffs = [];
+                const fields = this.headers;
+                this.data.forEach((row, i) => {
+                    const orig = this.originalData[i];
+                    if (!orig) return;
+                    fields.forEach(field => {
+                        const oldVal = orig[field] || '';
+                        const newVal = row[field] || '';
+                        if (oldVal !== newVal) {
+                            this._exportDiffs.push({ rowNum: i + 1, field, oldVal, newVal });
+                        }
+                    });
+                });
+
+                // Show/hide diff toggle
+                const diffToggle = document.getElementById('diffToggle');
+                const diffContainer = document.getElementById('diffContainer');
+                if (this._exportDiffs.length > 0) {
+                    diffToggle.style.display = '';
+                    diffToggle.classList.remove('expanded');
+                    document.getElementById('diffToggleLabel').textContent = `Show all changes (${this._exportDiffs.length})`;
+                    diffContainer.style.display = 'none';
+                    diffContainer.innerHTML = '';
+                } else {
+                    diffToggle.style.display = 'none';
+                    diffContainer.style.display = 'none';
+                }
+
                 modal.classList.add('active');
+            },
+
+            toggleDiffView() {
+                const toggle = document.getElementById('diffToggle');
+                const container = document.getElementById('diffContainer');
+
+                if (container.style.display === 'none') {
+                    toggle.classList.add('expanded');
+                    document.getElementById('diffToggleLabel').textContent = `Hide changes (${this._exportDiffs.length})`;
+
+                    const maxShow = 200;
+                    const diffs = this._exportDiffs;
+                    const toShow = diffs.slice(0, maxShow);
+
+                    let html = '';
+                    toShow.forEach(d => {
+                        const oldEsc = d.oldVal.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        const newEsc = d.newVal.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        html += `<div class="diff-row">
+                            <div class="diff-row-header">
+                                <span class="diff-row-num">Row ${d.rowNum}</span>
+                                <span class="diff-field">${d.field}</span>
+                            </div>
+                            <span class="diff-old">${oldEsc || '(empty)'}</span>
+                            <span class="diff-arrow">&rarr;</span>
+                            <span class="diff-new">${newEsc || '(empty)'}</span>
+                        </div>`;
+                    });
+
+                    if (diffs.length > maxShow) {
+                        html += `<div class="diff-row" style="text-align:center;color:var(--color-text-muted);">
+                            &hellip; and ${diffs.length - maxShow} more changes
+                        </div>`;
+                    }
+
+                    container.innerHTML = html;
+                    container.style.display = '';
+                } else {
+                    toggle.classList.remove('expanded');
+                    document.getElementById('diffToggleLabel').textContent = `Show all changes (${this._exportDiffs.length})`;
+                    container.style.display = 'none';
+                }
             },
 
             closeExportModal() {
