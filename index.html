@@ -684,6 +684,36 @@
             background: var(--color-text-muted);
         }
 
+        .mobile-sort {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .mobile-sort label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .mobile-sort select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        .mobile-sort select:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px var(--color-accent-light);
+            outline: none;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -772,11 +802,13 @@
 
         .editing {
             background: var(--color-surface);
+            color: var(--color-text);
             border: 2px solid var(--color-accent);
             padding: 4px 8px;
             border-radius: var(--radius-sm);
             outline: none;
             width: 100%;
+            font-size: 14px;
             box-shadow: 0 0 0 3px var(--color-accent-light);
         }
 
@@ -1652,9 +1684,115 @@
                 min-width: 0;
             }
 
-            th, td {
-                padding: 10px 12px;
-                font-size: 13px;
+            /* Card view transformation */
+            .table-wrapper {
+                overflow-x: visible;
+                max-height: none;
+            }
+
+            thead {
+                display: none;
+            }
+
+            table, tbody {
+                display: block;
+                width: 100%;
+            }
+
+            tr {
+                display: block;
+                background: var(--color-surface);
+                border: 1px solid var(--color-border-light);
+                border-radius: var(--radius-md);
+                padding: 12px 16px;
+                margin-bottom: 10px;
+                position: relative;
+            }
+
+            tr.selected {
+                background: var(--color-accent-light);
+                border-color: var(--color-accent);
+            }
+
+            tr.selected td {
+                background: transparent;
+            }
+
+            td {
+                display: block;
+                padding: 4px 0;
+                border-bottom: none;
+                font-size: 14px;
+                text-align: left;
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--color-text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
+            }
+
+            /* Checkbox & row number: positioned at top of card */
+            td.checkbox-cell {
+                position: absolute;
+                top: 14px;
+                left: 16px;
+                width: auto;
+                padding: 0;
+            }
+
+            td.row-num-cell {
+                position: absolute;
+                top: 14px;
+                right: 16px;
+                width: auto;
+                padding: 0;
+                text-align: right;
+                font-size: 12px;
+            }
+
+            /* Title as card heading */
+            td[data-label="Title"] {
+                margin-top: 28px;
+                padding-top: 0;
+                font-size: 15px;
+                font-weight: 600;
+            }
+
+            td[data-label="Title"]::before {
+                display: none;
+            }
+
+            /* Visual separator before Composer */
+            td[data-label="Composer"] {
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid var(--color-border-light);
+            }
+
+            /* Modified cell indicator in card layout */
+            td.cell-modified {
+                border-left: 3px solid var(--color-success, #48bb78);
+                padding-left: 10px;
+                background: rgba(72, 187, 120, 0.06);
+                border-radius: 4px;
+            }
+
+            /* Editable tap targets */
+            td .editable {
+                display: block;
+                padding: 4px 8px;
+                margin: -4px -8px;
+            }
+
+            /* Show mobile sort dropdown */
+            .mobile-sort {
+                display: flex;
             }
 
             .export-section {
@@ -1913,9 +2051,7 @@
             
             <div id="bulkControls" class="bulk-controls">
                 <span class="bulk-label"><span id="selectedCount">0</span> selected</span>
-                <input type="text" id="bulkComposerInput" class="bulk-input" placeholder="Enter composer name...">
-                <button class="btn btn-primary" onclick="app.applyBulkComposer()">Apply to Selected</button>
-                <button class="btn btn-secondary" onclick="app.clearSelection()">Clear Selection</button>
+                <button class="btn btn-secondary btn-sm" onclick="app.clearSelection()">Clear</button>
             </div>
 
             <div class="search-wrapper">
@@ -1924,6 +2060,21 @@
                 </svg>
                 <input type="text" id="searchInput" class="search-input" placeholder="Search...">
                 <button id="searchClear" class="search-clear hidden" onclick="app.clearSearch()">&times;</button>
+            </div>
+
+            <div class="mobile-sort">
+                <label for="mobileSortSelect">Sort by:</label>
+                <select id="mobileSortSelect" onchange="app.mobileSortChanged(this.value)">
+                    <option value="">Default order</option>
+                    <option value="title-asc">Title A-Z</option>
+                    <option value="title-desc">Title Z-A</option>
+                    <option value="composer-asc">Composer A-Z</option>
+                    <option value="composer-desc">Composer Z-A</option>
+                    <option value="genre-asc">Genre A-Z</option>
+                    <option value="genre-desc">Genre Z-A</option>
+                    <option value="tags-asc">Tags A-Z</option>
+                    <option value="tags-desc">Tags Z-A</option>
+                </select>
             </div>
 
             <div class="table-controls">
@@ -2086,6 +2237,10 @@
                 Found <strong id="imslpCount">0</strong> IMSLP titles to clean.
                 <span id="imslpSelectedCount" class="modal-desc-accent"></span>
             </p>
+            <div class="extraction-header" style="margin-bottom: 4px;">
+                <input type="checkbox" id="imslpAddLabel" onchange="app.toggleImslpLabel()" checked>
+                <label for="imslpAddLabel" style="cursor: pointer; user-select: none;">Add (IMSLP) label to cleaned titles</label>
+            </div>
             <div class="extraction-header">
                 <input type="checkbox" id="selectAllImslp" onchange="app.toggleSelectAllImslp()" checked>
                 <label for="selectAllImslp" style="cursor: pointer; user-select: none;">Select All</label>
@@ -3060,10 +3215,10 @@
                                 <input type="checkbox" onchange="app.toggleRow(${_id})" ${isSelected ? 'checked' : ''}>
                             </td>
                             <td class="row-num-cell">${_id + 1}</td>
-                            <td class="${titleMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.titleField}')">${title}</span></td>
-                            <td class="${composerMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.composerField}')">${composer}</span></td>
-                            <td class="${genreMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.genreField}')">${genre}</span></td>
-                            <td class="${tagsMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.tagsField}')">${tags}</span></td>
+                            <td data-label="Title" class="${titleMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.titleField}')">${title}</span></td>
+                            <td data-label="Composer" class="${composerMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.composerField}')">${composer}</span></td>
+                            <td data-label="Genre" class="${genreMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.genreField}')">${genre}</span></td>
+                            <td data-label="Tags" class="${tagsMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.tagsField}')">${tags}</span></td>
                         </tr>
                     `;
                 });
@@ -3071,6 +3226,22 @@
                 tbody.innerHTML = html;
                 this.updateBulkControls();
                 this.updateScopeIndicator();
+
+                // Sync mobile sort dropdown with current sort state
+                const mobileSort = document.getElementById('mobileSortSelect');
+                if (mobileSort) {
+                    if (!this.sortColumn) {
+                        mobileSort.value = '';
+                    } else {
+                        const rmap = {};
+                        rmap[this.titleField] = 'title';
+                        rmap[this.composerField] = 'composer';
+                        rmap[this.genreField] = 'genre';
+                        rmap[this.tagsField] = 'tags';
+                        const key = rmap[this.sortColumn];
+                        mobileSort.value = key ? `${key}-${this.sortDirection}` : '';
+                    }
+                }
             },
 
             editCell(id, field) {
@@ -3201,6 +3372,24 @@
                 this.renderTable();
             },
 
+            mobileSortChanged(value) {
+                if (!value) {
+                    this.sortColumn = null;
+                    this.sortDirection = 'asc';
+                } else {
+                    const fieldMap = {
+                        title: this.titleField,
+                        composer: this.composerField,
+                        genre: this.genreField,
+                        tags: this.tagsField
+                    };
+                    const [key, dir] = value.split('-');
+                    this.sortColumn = fieldMap[key];
+                    this.sortDirection = dir;
+                }
+                this.renderTable();
+            },
+
             toggleRow(id) {
                 if (this.selectedIds.has(id)) {
                     this.selectedIds.delete(id);
@@ -3240,14 +3429,17 @@
                 if (this.selectedIds.size > 0) {
                     return [...this.selectedIds];
                 }
-                return this.data.map(row => row.__id);
+                return [...this.visibleIds];
             },
 
             getScopeLabel() {
                 if (this.selectedIds.size > 0) {
                     return `${this.selectedIds.size} selected`;
                 }
-                return null;
+                if (this.currentFilter && this.visibleIds.length < this.data.length) {
+                    return `${this.visibleIds.length} filtered`;
+                }
+                return `all ${this.data.length}`;
             },
 
             updateScopeIndicator() {
@@ -3271,38 +3463,6 @@
                 this.selectedIds.clear();
                 this.updateBulkControls();
                 this.renderTable();
-            },
-
-            applyBulkComposer() {
-                const composerInput = document.getElementById('bulkComposerInput');
-                const composer = composerInput.value.trim();
-                
-                if (!composer) {
-                    this.showNotification('Please enter a composer name');
-                    return;
-                }
-
-                if (!this.composerField) {
-                    this.showNotification('Composer field not found');
-                    return;
-                }
-
-                this.pushUndo('Bulk Composer');
-                let count = 0;
-                this.selectedIds.forEach(id => {
-                    this.dataById.get(id)[this.composerField] = composer;
-                    count++;
-                });
-
-                this.modifiedCount += count;
-                this.logChange('Bulk composer assignments', count);
-                this.selectedIds.clear();
-                composerInput.value = '';
-
-                this.analyzeData();
-                this.renderAll();
-
-                this.showNotification(`Applied composer to ${count} entries`);
             },
 
             smartExtract() {
@@ -3801,7 +3961,7 @@
                        title.split('_').length > 3;  // Has multiple underscores
             },
 
-            cleanImslpTitle(title) {
+            cleanImslpTitle(title, addLabel = true) {
                 let cleaned = title;
                 
                 // Remove IMSLP and PMLP prefixes with numbers
@@ -3821,8 +3981,8 @@
                 // Remove .pdf extension if present
                 cleaned = cleaned.replace(/\.pdf$/i, '');
                 
-                // Add (IMSLP) suffix if not already there and if it looked like an IMSLP file
-                if (title.match(/IMSLP\d+|PMLP\d+/) && !cleaned.includes('(IMSLP)')) {
+                // Add (IMSLP) suffix if option enabled and it looked like an IMSLP file
+                if (addLabel && title.match(/IMSLP\d+|PMLP\d+/) && !cleaned.includes('(IMSLP)')) {
                     cleaned = cleaned + ' (IMSLP)';
                 }
                 
@@ -3833,21 +3993,28 @@
                 const modal = document.getElementById('imslpModal');
                 const resultsDiv = document.getElementById('imslpResults');
                 const countSpan = document.getElementById('imslpCount');
-                
-                // Initialize all as selected
-                this.selectedImslpCleanups = new Set(this.pendingImslpCleanup.map((_, i) => i));
-                
+
+                // Preserve label checkbox and selection state across re-renders
+                const addLabelEl = document.getElementById('imslpAddLabel');
+                const addLabel = addLabelEl ? addLabelEl.checked : true;
+                const existingSelections = this.selectedImslpCleanups;
+
+                if (!existingSelections || existingSelections.size === 0) {
+                    this.selectedImslpCleanups = new Set(this.pendingImslpCleanup.map((_, i) => i));
+                }
+
                 countSpan.textContent = this.pendingImslpCleanup.length;
                 this.updateImslpSelectedCount();
-                
+
                 let html = '';
                 this.pendingImslpCleanup.forEach((item, index) => {
+                    const isChecked = this.selectedImslpCleanups.has(index) ? 'checked' : '';
                     html += `
                         <div class="extraction-item">
-                            <input type="checkbox" class="extraction-checkbox" 
-                                   id="imslp_${index}" 
-                                   onchange="app.toggleImslpCleanup(${index})" 
-                                   checked>
+                            <input type="checkbox" class="extraction-checkbox"
+                                   id="imslp_${index}"
+                                   onchange="app.toggleImslpCleanup(${index})"
+                                   ${isChecked}>
                             <div class="extraction-content">
                                 <div class="extraction-title">Original: ${item.original.substring(0, 60)}${item.original.length > 60 ? '...' : ''}</div>
                                 <div class="extraction-mapping">
@@ -3857,9 +4024,13 @@
                         </div>
                     `;
                 });
-                
+
                 resultsDiv.innerHTML = html;
                 modal.classList.add('active');
+
+                // Restore label checkbox state after rendering
+                document.getElementById('imslpAddLabel').checked = addLabel;
+                this.updateImslpSelectAllCheckbox();
             },
 
             toggleImslpCleanup(index) {
@@ -3870,6 +4041,14 @@
                 }
                 this.updateImslpSelectedCount();
                 this.updateImslpSelectAllCheckbox();
+            },
+
+            toggleImslpLabel() {
+                const addLabel = document.getElementById('imslpAddLabel').checked;
+                this.pendingImslpCleanup.forEach(item => {
+                    item.cleaned = this.cleanImslpTitle(item.original, addLabel);
+                });
+                this.showImslpModal();
             },
 
             toggleSelectAllImslp() {
