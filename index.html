@@ -684,6 +684,36 @@
             background: var(--color-text-muted);
         }
 
+        .mobile-sort {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .mobile-sort label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .mobile-sort select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        .mobile-sort select:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px var(--color-accent-light);
+            outline: none;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -1654,9 +1684,115 @@
                 min-width: 0;
             }
 
-            th, td {
-                padding: 10px 12px;
-                font-size: 13px;
+            /* Card view transformation */
+            .table-wrapper {
+                overflow-x: visible;
+                max-height: none;
+            }
+
+            thead {
+                display: none;
+            }
+
+            table, tbody {
+                display: block;
+                width: 100%;
+            }
+
+            tr {
+                display: block;
+                background: var(--color-surface);
+                border: 1px solid var(--color-border-light);
+                border-radius: var(--radius-md);
+                padding: 12px 16px;
+                margin-bottom: 10px;
+                position: relative;
+            }
+
+            tr.selected {
+                background: var(--color-accent-light);
+                border-color: var(--color-accent);
+            }
+
+            tr.selected td {
+                background: transparent;
+            }
+
+            td {
+                display: block;
+                padding: 4px 0;
+                border-bottom: none;
+                font-size: 14px;
+                text-align: left;
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--color-text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
+            }
+
+            /* Checkbox & row number: positioned at top of card */
+            td.checkbox-cell {
+                position: absolute;
+                top: 14px;
+                left: 16px;
+                width: auto;
+                padding: 0;
+            }
+
+            td.row-num-cell {
+                position: absolute;
+                top: 14px;
+                right: 16px;
+                width: auto;
+                padding: 0;
+                text-align: right;
+                font-size: 12px;
+            }
+
+            /* Title as card heading */
+            td[data-label="Title"] {
+                margin-top: 28px;
+                padding-top: 0;
+                font-size: 15px;
+                font-weight: 600;
+            }
+
+            td[data-label="Title"]::before {
+                display: none;
+            }
+
+            /* Visual separator before Composer */
+            td[data-label="Composer"] {
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid var(--color-border-light);
+            }
+
+            /* Modified cell indicator in card layout */
+            td.cell-modified {
+                border-left: 3px solid var(--color-success, #48bb78);
+                padding-left: 10px;
+                background: rgba(72, 187, 120, 0.06);
+                border-radius: 4px;
+            }
+
+            /* Editable tap targets */
+            td .editable {
+                display: block;
+                padding: 4px 8px;
+                margin: -4px -8px;
+            }
+
+            /* Show mobile sort dropdown */
+            .mobile-sort {
+                display: flex;
             }
 
             .export-section {
@@ -1924,6 +2060,21 @@
                 </svg>
                 <input type="text" id="searchInput" class="search-input" placeholder="Search...">
                 <button id="searchClear" class="search-clear hidden" onclick="app.clearSearch()">&times;</button>
+            </div>
+
+            <div class="mobile-sort">
+                <label for="mobileSortSelect">Sort by:</label>
+                <select id="mobileSortSelect" onchange="app.mobileSortChanged(this.value)">
+                    <option value="">Default order</option>
+                    <option value="title-asc">Title A-Z</option>
+                    <option value="title-desc">Title Z-A</option>
+                    <option value="composer-asc">Composer A-Z</option>
+                    <option value="composer-desc">Composer Z-A</option>
+                    <option value="genre-asc">Genre A-Z</option>
+                    <option value="genre-desc">Genre Z-A</option>
+                    <option value="tags-asc">Tags A-Z</option>
+                    <option value="tags-desc">Tags Z-A</option>
+                </select>
             </div>
 
             <div class="table-controls">
@@ -3064,10 +3215,10 @@
                                 <input type="checkbox" onchange="app.toggleRow(${_id})" ${isSelected ? 'checked' : ''}>
                             </td>
                             <td class="row-num-cell">${_id + 1}</td>
-                            <td class="${titleMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.titleField}')">${title}</span></td>
-                            <td class="${composerMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.composerField}')">${composer}</span></td>
-                            <td class="${genreMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.genreField}')">${genre}</span></td>
-                            <td class="${tagsMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.tagsField}')">${tags}</span></td>
+                            <td data-label="Title" class="${titleMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.titleField}')">${title}</span></td>
+                            <td data-label="Composer" class="${composerMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.composerField}')">${composer}</span></td>
+                            <td data-label="Genre" class="${genreMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.genreField}')">${genre}</span></td>
+                            <td data-label="Tags" class="${tagsMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.tagsField}')">${tags}</span></td>
                         </tr>
                     `;
                 });
@@ -3075,6 +3226,22 @@
                 tbody.innerHTML = html;
                 this.updateBulkControls();
                 this.updateScopeIndicator();
+
+                // Sync mobile sort dropdown with current sort state
+                const mobileSort = document.getElementById('mobileSortSelect');
+                if (mobileSort) {
+                    if (!this.sortColumn) {
+                        mobileSort.value = '';
+                    } else {
+                        const rmap = {};
+                        rmap[this.titleField] = 'title';
+                        rmap[this.composerField] = 'composer';
+                        rmap[this.genreField] = 'genre';
+                        rmap[this.tagsField] = 'tags';
+                        const key = rmap[this.sortColumn];
+                        mobileSort.value = key ? `${key}-${this.sortDirection}` : '';
+                    }
+                }
             },
 
             editCell(id, field) {
@@ -3202,6 +3369,24 @@
                     this.sortDirection = 'asc';
                 }
 
+                this.renderTable();
+            },
+
+            mobileSortChanged(value) {
+                if (!value) {
+                    this.sortColumn = null;
+                    this.sortDirection = 'asc';
+                } else {
+                    const fieldMap = {
+                        title: this.titleField,
+                        composer: this.composerField,
+                        genre: this.genreField,
+                        tags: this.tagsField
+                    };
+                    const [key, dir] = value.split('-');
+                    this.sortColumn = fieldMap[key];
+                    this.sortDirection = dir;
+                }
                 this.renderTable();
             },
 
