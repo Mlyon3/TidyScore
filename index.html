@@ -650,6 +650,24 @@
             color: var(--color-accent);
         }
 
+        .btn-tool-menu-caret {
+            transition: transform var(--transition-base);
+        }
+
+        .btn-tool.active {
+            border-color: var(--color-accent);
+            background: var(--color-accent-subtle);
+            color: var(--color-accent);
+        }
+
+        .btn-tool.active .btn-tool-desc {
+            color: var(--color-accent);
+        }
+
+        .btn-tool.active .btn-tool-menu-caret {
+            transform: rotate(180deg);
+        }
+
         .btn-tool:disabled {
             opacity: 0.4;
             cursor: not-allowed;
@@ -2107,13 +2125,16 @@
                     <span class="btn-tool-desc">Apply Last, First name format to composers</span>
                 </button>
                 <div class="btn-tool-wrapper">
-                    <button class="btn btn-secondary btn-tool" onclick="app.toggleGenreTagMenu(event)">
+                    <button id="genreTagMenuTrigger" class="btn btn-secondary btn-tool" onclick="app.toggleGenreTagMenu(event)" aria-expanded="false" aria-controls="genreTagDropdown">
                         <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 2h6l2 2h5a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2z"/>
                             <path d="M5 9h6M5 12h3"/>
                         </svg>
                         <span class="btn-tool-label">Genre & Tags</span>
-                        <span class="btn-tool-desc">Suggest, browse & manage</span>
+                        <span class="btn-tool-desc">Open tools menu</span>
+                        <svg class="btn-tool-menu-caret" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 6l4 4 4-4"/>
+                        </svg>
                     </button>
                     <div id="genreTagDropdown" class="tool-dropdown">
                         <button class="tool-dropdown-item" onclick="app.suggestGenres()">
@@ -4459,12 +4480,18 @@
             toggleGenreTagMenu(e) {
                 e.stopPropagation();
                 const dropdown = document.getElementById('genreTagDropdown');
+                const trigger = document.getElementById('genreTagMenuTrigger');
                 const isOpen = dropdown.classList.contains('active');
-                dropdown.classList.toggle('active');
+                const nextOpenState = !isOpen;
+                dropdown.classList.toggle('active', nextOpenState);
+                trigger.classList.toggle('active', nextOpenState);
+                trigger.setAttribute('aria-expanded', nextOpenState ? 'true' : 'false');
                 if (!isOpen) {
                     const closeHandler = (event) => {
-                        if (!dropdown.contains(event.target)) {
+                        if (!dropdown.contains(event.target) && !trigger.contains(event.target)) {
                             dropdown.classList.remove('active');
+                            trigger.classList.remove('active');
+                            trigger.setAttribute('aria-expanded', 'false');
                             document.removeEventListener('click', closeHandler);
                         }
                     };
@@ -4474,6 +4501,9 @@
 
             closeGenreTagMenu() {
                 document.getElementById('genreTagDropdown').classList.remove('active');
+                const trigger = document.getElementById('genreTagMenuTrigger');
+                trigger.classList.remove('active');
+                trigger.setAttribute('aria-expanded', 'false');
             },
 
             getComposerEra(composerValue) {
