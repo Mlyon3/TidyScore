@@ -786,7 +786,8 @@
 
         .editable {
             cursor: pointer;
-            padding: 4px 8px;
+            padding: 2px 6px;
+            border: 2px solid transparent;
             border-radius: 4px;
             transition: background var(--transition-fast);
         }
@@ -804,7 +805,7 @@
             background: var(--color-surface);
             color: var(--color-text);
             border: 2px solid var(--color-accent);
-            padding: 4px 8px;
+            padding: 2px 6px;
             border-radius: var(--radius-sm);
             outline: none;
             width: 100%;
@@ -1786,7 +1787,6 @@
             /* Editable tap targets */
             td .editable {
                 display: block;
-                padding: 4px 8px;
                 margin: -4px -8px;
             }
 
@@ -2466,6 +2466,7 @@
             sortColumn: null,
             sortDirection: 'asc',
             selectedIds: new Set(),
+            lastToggled: null,
             currentFilter: '',
             visibleIds: [],
             undoStack: [],
@@ -3212,7 +3213,7 @@
                     html += `
                         <tr class="${isSelected ? 'selected' : ''}">
                             <td class="checkbox-cell">
-                                <input type="checkbox" onchange="app.toggleRow(${_id})" ${isSelected ? 'checked' : ''}>
+                                <input type="checkbox" onchange="app.toggleRow(${_id}, event)" ${isSelected ? 'checked' : ''}>
                             </td>
                             <td class="row-num-cell">${_id + 1}</td>
                             <td data-label="Title" class="${titleMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.titleField}')">${title}</span></td>
@@ -3325,7 +3326,39 @@
 
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
+                        e.preventDefault();
                         input.blur();
+                        // Move down: edit same field in next visible row
+                        const idx = this.visibleIds.indexOf(id);
+                        if (idx !== -1 && idx + 1 < this.visibleIds.length) {
+                            const fieldIndex = this.getFieldIndex(field);
+                            setTimeout(() => {
+                                const tbody = document.getElementById('tableBody');
+                                const nextRow = tbody && tbody.children[idx + 1];
+                                if (nextRow) {
+                                    const cells = nextRow.querySelectorAll('.editable');
+                                    if (cells[fieldIndex]) cells[fieldIndex].click();
+                                }
+                            }, 50);
+                        }
+                    }
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        input.blur();
+                        const fields = [this.titleField, this.composerField, this.genreField, this.tagsField];
+                        const curIdx = fields.indexOf(field);
+                        const nextFieldIdx = e.shiftKey
+                            ? (curIdx > 0 ? curIdx - 1 : fields.length - 1)
+                            : (curIdx < fields.length - 1 ? curIdx + 1 : 0);
+                        setTimeout(() => {
+                            const tbody = document.getElementById('tableBody');
+                            const visIdx = this.visibleIds.indexOf(id);
+                            const row = tbody && tbody.children[visIdx];
+                            if (row) {
+                                const cells = row.querySelectorAll('.editable');
+                                if (cells[nextFieldIdx]) cells[nextFieldIdx].click();
+                            }
+                        }, 50);
                     }
                     if (e.key === 'Escape') {
                         isEscaping = true;
@@ -3390,12 +3423,30 @@
                 this.renderTable();
             },
 
-            toggleRow(id) {
-                if (this.selectedIds.has(id)) {
-                    this.selectedIds.delete(id);
+            getFieldIndex(field) {
+                const fields = [this.titleField, this.composerField, this.genreField, this.tagsField];
+                return fields.indexOf(field);
+            },
+
+            toggleRow(id, event) {
+                if (event && event.shiftKey && this.lastToggled !== null && this.lastToggled !== id) {
+                    const start = this.visibleIds.indexOf(this.lastToggled);
+                    const end = this.visibleIds.indexOf(id);
+                    if (start !== -1 && end !== -1) {
+                        const lo = Math.min(start, end);
+                        const hi = Math.max(start, end);
+                        for (let i = lo; i <= hi; i++) {
+                            this.selectedIds.add(this.visibleIds[i]);
+                        }
+                    }
                 } else {
-                    this.selectedIds.add(id);
+                    if (this.selectedIds.has(id)) {
+                        this.selectedIds.delete(id);
+                    } else {
+                        this.selectedIds.add(id);
+                    }
                 }
+                this.lastToggled = id;
                 this.updateBulkControls();
                 this.renderTable();
             },
