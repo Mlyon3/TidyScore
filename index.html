@@ -408,7 +408,7 @@
         }
 
         .bulk-controls {
-            display: none;
+            display: flex;
             align-items: center;
             gap: 12px;
             padding: 14px 18px;
@@ -416,10 +416,13 @@
             border: 1px solid var(--color-accent-light);
             border-radius: var(--radius-sm);
             margin-bottom: 16px;
+            opacity: 0;
+            pointer-events: none;
         }
 
         .bulk-controls.active {
-            display: flex;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .bulk-label {
@@ -3249,6 +3252,16 @@
             editCell(id, field) {
                 this.editGeneration++;
                 const myGeneration = this.editGeneration;
+
+                // Clean up any previously-editing cell
+                const prev = document.querySelector('#tableBody .editing');
+                if (prev) {
+                    const span = document.createElement('span');
+                    span.className = 'editable';
+                    span.textContent = prev.value;
+                    prev.parentNode.replaceChild(span, prev);
+                }
+
                 const cell = event.target;
                 const row = this.dataById.get(id);
                 const currentValue = row[field] || '';
