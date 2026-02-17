@@ -2467,6 +2467,7 @@
             sortDirection: 'asc',
             selectedIds: new Set(),
             lastToggled: null,
+            editGeneration: 0,
             currentFilter: '',
             visibleIds: [],
             undoStack: [],
@@ -3246,6 +3247,8 @@
             },
 
             editCell(id, field) {
+                this.editGeneration++;
+                const myGeneration = this.editGeneration;
                 const cell = event.target;
                 const row = this.dataById.get(id);
                 const currentValue = row[field] || '';
@@ -3319,8 +3322,10 @@
                             this.analyzeData();
                             this.updateStats();
                         }
-                        // Always re-render the table to restore the cell
-                        this.renderTable();
+                        // Only re-render if no other cell started editing
+                        if (this.editGeneration === myGeneration) {
+                            this.renderTable();
+                        }
                     }, 200);
                 });
 
