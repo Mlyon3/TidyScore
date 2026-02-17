@@ -1913,9 +1913,12 @@
             
             <div id="bulkControls" class="bulk-controls">
                 <span class="bulk-label"><span id="selectedCount">0</span> selected</span>
-                <input type="text" id="bulkComposerInput" class="bulk-input" placeholder="Enter composer name...">
-                <button class="btn btn-primary" onclick="app.applyBulkComposer()">Apply to Selected</button>
-                <button class="btn btn-secondary" onclick="app.clearSelection()">Clear Selection</button>
+                <button class="btn btn-secondary btn-sm" onclick="app.showBulkComposerInput()">Set Composer</button>
+                <button class="btn btn-secondary btn-sm" onclick="app.clearSelection()">Clear</button>
+                <div id="bulkComposerPanel" style="display:none;align-items:center;gap:8px;margin-left:4px;">
+                    <input type="text" id="bulkComposerInput" class="bulk-input" placeholder="Composer name..." onkeydown="if(event.key==='Enter')app.applyBulkComposer()">
+                    <button class="btn btn-primary btn-sm" onclick="app.applyBulkComposer()">Apply</button>
+                </div>
             </div>
 
             <div class="search-wrapper">
@@ -3240,14 +3243,17 @@
                 if (this.selectedIds.size > 0) {
                     return [...this.selectedIds];
                 }
-                return this.data.map(row => row.__id);
+                return [...this.visibleIds];
             },
 
             getScopeLabel() {
                 if (this.selectedIds.size > 0) {
                     return `${this.selectedIds.size} selected`;
                 }
-                return null;
+                if (this.currentFilter && this.visibleIds.length < this.data.length) {
+                    return `${this.visibleIds.length} filtered`;
+                }
+                return `all ${this.data.length}`;
             },
 
             updateScopeIndicator() {
@@ -3269,8 +3275,16 @@
 
             clearSelection() {
                 this.selectedIds.clear();
+                document.getElementById('bulkComposerPanel').style.display = 'none';
                 this.updateBulkControls();
                 this.renderTable();
+            },
+
+            showBulkComposerInput() {
+                const panel = document.getElementById('bulkComposerPanel');
+                const isVisible = panel.style.display === 'flex';
+                panel.style.display = isVisible ? 'none' : 'flex';
+                if (!isVisible) document.getElementById('bulkComposerInput').focus();
             },
 
             applyBulkComposer() {
@@ -3298,6 +3312,7 @@
                 this.logChange('Bulk composer assignments', count);
                 this.selectedIds.clear();
                 composerInput.value = '';
+                document.getElementById('bulkComposerPanel').style.display = 'none';
 
                 this.analyzeData();
                 this.renderAll();
