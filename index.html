@@ -866,6 +866,72 @@
             margin-top: 20px;
         }
 
+        .export-section .btn-action {
+            min-height: 56px;
+            padding: 10px 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .btn-action-content {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            text-align: left;
+        }
+
+        .btn-action-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .btn-action-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            line-height: 1.2;
+        }
+
+        .btn-action-label {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .btn-action-desc {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
+        .btn-primary .btn-action-desc {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .btn-secondary:hover .btn-action-desc {
+            color: var(--color-accent);
+        }
+
+        .btn-action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-action:disabled:hover {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-text-secondary);
+        }
+
+        .btn-action:disabled .btn-action-desc {
+            color: var(--color-text-muted);
+        }
+
         /* ===== Modals ===== */
         .modal {
             display: flex;
@@ -1802,7 +1868,7 @@
                 flex-wrap: wrap;
             }
 
-            .export-section .btn-primary {
+            .export-section .btn-action {
                 width: 100%;
             }
 
@@ -1909,6 +1975,15 @@
             .export-section .btn {
                 width: 100%;
                 justify-content: center;
+            }
+
+            .export-section .btn-action-content {
+                width: 100%;
+            }
+
+            .export-section .btn-action-label,
+            .export-section .btn-action-desc {
+                white-space: normal;
             }
 
             .bulk-controls.active {
@@ -2163,13 +2238,33 @@
             </div>
 
             <div class="export-section">
-                <button class="btn btn-primary" onclick="app.exportCSV()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>Export Cleaned CSV</span></button>
-                <button id="undoBtn" class="btn btn-secondary btn-tool" onclick="app.undo()" disabled>
-                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7a4 4 0 0 1 0 8H7"/><path d="M6 4L3 7l3 3"/></svg>
-                    <span class="btn-tool-label">Undo</span>
-                    <span class="btn-tool-desc">Reverse last action</span>
+                <button class="btn btn-primary btn-action" onclick="app.exportCSV()">
+                    <span class="btn-action-content">
+                        <svg class="btn-action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
+                        <span class="btn-action-text">
+                            <span class="btn-action-label">Export Cleaned CSV</span>
+                            <span class="btn-action-desc">Download updated library</span>
+                        </span>
+                    </span>
                 </button>
-                <button class="btn btn-secondary" onclick="app.reset()"><span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8a7 7 0 0 1 13.3-3M15 8a7 7 0 0 1-13.3 3"/><path d="M14.3 1v4h-4M1.7 15v-4h4"/></svg>Start Over</span></button>
+                <button id="undoBtn" class="btn btn-secondary btn-action" onclick="app.undo()" disabled>
+                    <span class="btn-action-content">
+                        <svg class="btn-action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7a4 4 0 0 1 0 8H7"/><path d="M6 4L3 7l3 3"/></svg>
+                        <span class="btn-action-text">
+                            <span class="btn-action-label btn-tool-label">Undo</span>
+                            <span class="btn-action-desc">Reverse last action</span>
+                        </span>
+                    </span>
+                </button>
+                <button class="btn btn-secondary btn-action" onclick="app.reset()">
+                    <span class="btn-action-content">
+                        <svg class="btn-action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8a7 7 0 0 1 13.3-3M15 8a7 7 0 0 1-13.3 3"/><path d="M14.3 1v4h-4M1.7 15v-4h4"/></svg>
+                        <span class="btn-action-text">
+                            <span class="btn-action-label">Start Over</span>
+                            <span class="btn-action-desc">Clear imported data</span>
+                        </span>
+                    </span>
+                </button>
             </div>
         </div>
     </div>
