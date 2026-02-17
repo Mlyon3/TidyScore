@@ -2607,6 +2607,22 @@
     </div>
 
     <script>
+        const SETTINGS_VERSION = 1;
+        const DEFAULT_SETTINGS = {
+            version: SETTINGS_VERSION,
+            composer: {
+                nameDisplayFormat: 'last_first',
+                library: {
+                    mode: 'builtin_plus_custom',
+                    customAliases: {},
+                    blacklistedAliases: []
+                }
+            },
+            normalization: {
+                opusStyle: 'preserve'
+            }
+        };
+
         const app = {
             data: [],
             originalData: [],
@@ -2621,9 +2637,11 @@
             visibleIds: [],
             undoStack: [],
             changeLog: [],
+            settingsStorageKey: 'tidyscore-settings',
+            settings: null,
 
             // Composer database with common variations mapping to full names
-            composerDatabase: {
+            builtInComposerDatabase: {
                 'bach': 'Bach, Johann Sebastian',
                 'j.s. bach': 'Bach, Johann Sebastian',
                 'js bach': 'Bach, Johann Sebastian',
@@ -3086,7 +3104,203 @@
                 { pattern: /\blied(?:er)?\b/i, tag: 'lied' },
             ],
 
+            _deepClone(obj) {
+                return JSON.parse(JSON.stringify(obj));
+            },
+
+            _isPlainObject(value) {
+                return value && typeof value === 'object' && !Array.isArray(value);
+            },
+
+            _deepMerge(base, override) {
+                if (!this._isPlainObject(base)) return this._deepClone(override);
+                const merged = this._deepClone(base);
+                if (!this._isPlainObject(override)) return merged;
+
+                Object.keys(override).forEach(key => {
+                    const sourceVal = override[key];
+                    if (Array.isArray(sourceVal)) {
+                        merged[key] = sourceVal.slice();
+                    } else if (this._isPlainObject(sourceVal) && this._isPlainObject(merged[key])) {
+                        merged[key] = this._deepMerge(merged[key], sourceVal);
+                    } else {
+                        merged[key] = sourceVal;
+                    }
+                });
+
+                return merged;
+            },
+
+            _normalizeComposerAliasKey(value) {
+                return (value || '').toString().toLowerCase().trim();
+            },
+
+            _sanitizeSettings(input) {
+                const merged = this._deepMerge(DEFAULT_SETTINGS, input || {});
+                merged.version = SETTINGS_VERSION;
+
+                const format = merged.composer?.nameDisplayFormat;
+                if (!['last_first', 'first_last', 'preserve'].includes(format)) {
+                    merged.composer.nameDisplayFormat = DEFAULT_SETTINGS.composer.nameDisplayFormat;
+                }
+
+                const mode = merged.composer?.library?.mode;
+                if (!['builtin', 'builtin_plus_custom'].includes(mode)) {
+                    merged.composer.library.mode = DEFAULT_SETTINGS.composer.library.mode;
+                }
+
+                const customAliases = {};
+                const rawAliases = merged.composer?.library?.customAliases;
+                if (rawAliases && typeof rawAliases === 'object' && !Array.isArray(rawAliases)) {
+                    Object.entries(rawAliases).forEach(([key, canonical]) => {
+                        const normalizedKey = this._normalizeComposerAliasKey(key);
+                        const cleanedCanonical = (canonical || '').toString().trim();
+                        if (normalizedKey && cleanedCanonical) {
+                            customAliases[normalizedKey] = cleanedCanonical;
+                        }
+                    });
+                }
+                merged.composer.library.customAliases = customAliases;
+
+                const rawBlacklist = merged.composer?.library?.blacklistedAliases;
+                const blacklist = Array.isArray(rawBlacklist)
+                    ? [...new Set(rawBlacklist.map(a => this._normalizeComposerAliasKey(a)).filter(Boolean))]
+                    : [];
+                merged.composer.library.blacklistedAliases = blacklist;
+
+                const opusStyle = merged.normalization?.opusStyle;
+                if (!['op', 'opus', 'preserve'].includes(opusStyle)) {
+                    merged.normalization.opusStyle = DEFAULT_SETTINGS.normalization.opusStyle;
+                }
+
+                return merged;
+            },
+
+            _migrateSettings(rawSettings) {
+                const source = rawSettings && typeof rawSettings === 'object' ? rawSettings : {};
+                const version = Number.isInteger(source.version) ? source.version : 0;
+
+                // v0 -> v1: establish first formal schema
+                if (version < 1) {
+                    return {
+                        version: 1,
+                        composer: {
+                            nameDisplayFormat: source.composer?.nameDisplayFormat || DEFAULT_SETTINGS.composer.nameDisplayFormat,
+                            library: {
+                                mode: source.composer?.library?.mode || DEFAULT_SETTINGS.composer.library.mode,
+                                customAliases: source.composer?.library?.customAliases || {},
+                                blacklistedAliases: source.composer?.library?.blacklistedAliases || []
+                            }
+                        },
+                        normalization: {
+                            opusStyle: source.normalization?.opusStyle || DEFAULT_SETTINGS.normalization.opusStyle
+                        }
+                    };
+                }
+
+                return source;
+            },
+
+            loadSettings() {
+                try {
+                    const raw = localStorage.getItem(this.settingsStorageKey);
+                    if (!raw) {
+                        this.settings = this._deepClone(DEFAULT_SETTINGS);
+                        return this.settings;
+                    }
+
+                    const parsed = JSON.parse(raw);
+                    const migrated = this._migrateSettings(parsed);
+                    const sanitized = this._sanitizeSettings(migrated);
+                    this.settings = sanitized;
+
+                    if (JSON.stringify(parsed) !== JSON.stringify(sanitized)) {
+                        localStorage.setItem(this.settingsStorageKey, JSON.stringify(sanitized));
+                    }
+
+                    return this.settings;
+                } catch (e) {
+                    this.settings = this._deepClone(DEFAULT_SETTINGS);
+                    return this.settings;
+                }
+            },
+
+            saveSettings(patch = {}) {
+                const current = this.settings || this._deepClone(DEFAULT_SETTINGS);
+                const next = this._sanitizeSettings(this._deepMerge(current, patch));
+                this.settings = next;
+                try {
+                    localStorage.setItem(this.settingsStorageKey, JSON.stringify(next));
+                } catch (e) {}
+                return this.settings;
+            },
+
+            getComposerAliasMap() {
+                const settings = this.settings || DEFAULT_SETTINGS;
+                const mode = settings.composer?.library?.mode || 'builtin_plus_custom';
+                const customAliases = settings.composer?.library?.customAliases || {};
+                const blacklist = new Set(settings.composer?.library?.blacklistedAliases || []);
+
+                let aliases = {};
+                if (mode !== 'builtin') {
+                    aliases = this._deepMerge(this.builtInComposerDatabase, customAliases);
+                } else {
+                    aliases = this._deepClone(this.builtInComposerDatabase);
+                }
+
+                blacklist.forEach(alias => {
+                    delete aliases[alias];
+                });
+
+                return aliases;
+            },
+
+            parseComposerName(value) {
+                const raw = (value || '').toString().trim();
+                if (!raw) {
+                    return { raw: '', first: '', last: '' };
+                }
+
+                if (raw.includes(',')) {
+                    const [lastPart, ...firstParts] = raw.split(',');
+                    return {
+                        raw,
+                        last: (lastPart || '').trim(),
+                        first: firstParts.join(',').trim()
+                    };
+                }
+
+                const parts = raw.split(/\s+/).filter(Boolean);
+                if (parts.length === 1) {
+                    return { raw, first: '', last: parts[0] };
+                }
+
+                const last = parts.pop();
+                return {
+                    raw,
+                    first: parts.join(' ').trim(),
+                    last: (last || '').trim()
+                };
+            },
+
+            formatComposerName(value, mode = null) {
+                const composer = this.parseComposerName(value);
+                if (!composer.raw) return '';
+
+                const selectedMode = mode || this.settings?.composer?.nameDisplayFormat || 'last_first';
+                const formatters = {
+                    last_first: (c) => c.first ? `${c.last}, ${c.first}` : c.last,
+                    first_last: (c) => c.first ? `${c.first} ${c.last}` : c.last,
+                    preserve: (c) => c.raw
+                };
+
+                const formatter = formatters[selectedMode] || formatters.last_first;
+                return formatter(composer).trim();
+            },
+
             init() {
+                this.loadSettings();
+
                 // Restore saved theme
                 try {
                     const saved = localStorage.getItem('tidyscore-theme');
@@ -3253,8 +3467,9 @@
 
             getSuggestion(composer) {
                 if (!composer) return null;
-                const normalized = composer.toLowerCase().trim();
-                return this.composerDatabase[normalized] || null;
+                const normalized = this._normalizeComposerAliasKey(composer);
+                const aliasMap = this.getComposerAliasMap();
+                return aliasMap[normalized] || null;
             },
 
             detectField(possibleNames) {
@@ -3933,7 +4148,8 @@
                 let count = 0;
                 this.selectedExtractions.forEach(index => {
                     const extraction = this.pendingExtraction[index];
-                    this.dataById.get(extraction.id)[this.composerField] = extraction.suggestion;
+                    const formatted = this.formatComposerName(extraction.suggestion);
+                    this.dataById.get(extraction.id)[this.composerField] = formatted || extraction.suggestion;
                     this.modifiedCount++;
                     count++;
                 });
@@ -4475,27 +4691,27 @@
 
                 const targetIndices = this.getTargetIds();
                 const changes = [];
+                const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
 
                 targetIndices.forEach(idx => {
                     const row = this.dataById.get(idx);
                     const composer = row[this.composerField];
                     if (!composer) return;
-                    if (composer.includes(',')) return;
 
-                    const parts = composer.trim().split(' ');
-                    if (parts.length >= 2) {
-                        const last = parts.pop();
-                        const first = parts.join(' ');
-                        const newVal = `${last}, ${first}`;
-                        changes.push({
-                            id: idx,
-                            label: `Row ${idx + 1}`,
-                            detail: composer,
-                            newDetail: newVal,
-                            field: this.composerField,
-                            newVal
-                        });
-                    }
+                    const normalized = composer.trim();
+                    if (!normalized) return;
+
+                    const newVal = this.formatComposerName(normalized, mode);
+                    if (!newVal || newVal === normalized) return;
+
+                    changes.push({
+                        id: idx,
+                        label: `Row ${idx + 1}`,
+                        detail: composer,
+                        newDetail: newVal,
+                        field: this.composerField,
+                        newVal
+                    });
                 });
 
                 if (changes.length === 0) {
@@ -4505,7 +4721,8 @@
                     return;
                 }
 
-                this._showPreview('Standardize Composers Preview', `Found <strong>${changes.length}</strong> composer${changes.length !== 1 ? 's' : ''} to reformat to "Last, First".`, changes, 'Composers standardized', 'Standardize');
+                const modeLabel = mode === 'first_last' ? '"First Last"' : mode === 'preserve' ? 'the current formatting policy' : '"Last, First"';
+                this._showPreview('Standardize Composers Preview', `Found <strong>${changes.length}</strong> composer${changes.length !== 1 ? 's' : ''} to reformat using ${modeLabel}.`, changes, 'Composers standardized', 'Standardize');
             },
 
             // ===== Shared Preview Modal =====
