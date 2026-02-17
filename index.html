@@ -412,6 +412,13 @@
             flex: 1 1 150px;
         }
 
+        .toolbar-helper-hint {
+            margin-top: -8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
         .btn-tool-wrapper > .btn-tool {
             width: 100%;
         }
@@ -2183,30 +2190,25 @@
             </div>
 
             <div class="table-controls">
-                <button class="btn btn-secondary btn-tool" onclick="app.quickClean()">
-                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z"/><path d="M11 8l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z"/></svg>
-                    <span class="btn-tool-label">Quick Clean</span>
-                    <span class="btn-tool-desc">Fix whitespace & commas</span>
-                </button>
-                <button class="btn btn-secondary btn-tool" onclick="app.cleanImslpTitles()">
-                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14l3-6h4l3 6H3zM8 8V2M5 5h6"/></svg>
-                    <span class="btn-tool-label">Clean IMSLP</span>
-                    <span class="btn-tool-desc">Simplify imported titles</span>
-                </button>
                 <button class="btn btn-secondary btn-tool" onclick="app.smartExtract()">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 14L14 2"/><circle cx="5" cy="2" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="5" r="0.7" fill="currentColor" stroke="none"/></svg>
                     <span class="btn-tool-label">Smart Extract</span>
                     <span class="btn-tool-desc">Find and correct incomplete composer names</span>
+                </button>
+                <button class="btn btn-secondary btn-tool" onclick="app.standardizeComposers()">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3h10M3 8h7M3 13h4"/><path d="M13 8v6l2-2M13 14l-2-2"/></svg>
+                    <span class="btn-tool-label">Standardize</span>
+                    <span class="btn-tool-desc">Apply Last, First name format to composers</span>
                 </button>
                 <button class="btn btn-secondary btn-tool" onclick="app.findReplace()">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><path d="M9 9l4 4"/></svg>
                     <span class="btn-tool-label">Find & Replace</span>
                     <span class="btn-tool-desc">Search and edit in bulk</span>
                 </button>
-                <button class="btn btn-secondary btn-tool" onclick="app.standardizeComposers()">
-                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3h10M3 8h7M3 13h4"/><path d="M13 8v6l2-2M13 14l-2-2"/></svg>
-                    <span class="btn-tool-label">Standardize</span>
-                    <span class="btn-tool-desc">Apply Last, First name format to composers</span>
+                <button class="btn btn-secondary btn-tool" onclick="app.cleanImslpTitles()">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14l3-6h4l3 6H3zM8 8V2M5 5h6"/></svg>
+                    <span class="btn-tool-label">Clean IMSLP</span>
+                    <span class="btn-tool-desc">Simplify imported titles</span>
                 </button>
                 <div class="btn-tool-wrapper">
                     <button id="genreTagMenuTrigger" class="btn btn-secondary btn-tool" onclick="app.toggleGenreTagMenu(event)" aria-expanded="false" aria-controls="genreTagDropdown">
@@ -2214,13 +2216,20 @@
                             <path d="M1 2h6l2 2h5a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2z"/>
                             <path d="M5 9h6M5 12h3"/>
                         </svg>
-                        <span class="btn-tool-label">Genre & Tags</span>
-                        <span class="btn-tool-desc">Open tools menu</span>
+                        <span class="btn-tool-label">More Tools</span>
+                        <span class="btn-tool-desc">Genre, tags & cleanup</span>
                         <svg class="btn-tool-menu-caret" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M4 6l4 4 4-4"/>
                         </svg>
                     </button>
                     <div id="genreTagDropdown" class="tool-dropdown">
+                        <button class="tool-dropdown-item" onclick="app.quickClean()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z"/><path d="M11 8l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z"/></svg>
+                            <div>
+                                <div>Quick Clean</div>
+                                <div class="tool-dropdown-item-desc">Minor formatting cleanup</div>
+                            </div>
+                        </button>
                         <button class="tool-dropdown-item" onclick="app.suggestGenres()">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M2 7h8M2 11h5"/><circle cx="12" cy="10" r="3"/><path d="M12 9v2M11 10h2"/></svg>
                             <div>
@@ -2252,6 +2261,7 @@
                     </div>
                 </div>
             </div>
+            <div class="toolbar-helper-hint">Suggested flow: <strong>Smart Extract</strong> → <strong>Standardize</strong> → <strong>Optional cleanup</strong>.</div>
 
             <div class="table-wrapper">
                 <table>
