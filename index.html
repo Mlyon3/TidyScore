@@ -2086,6 +2086,10 @@
                 Found <strong id="imslpCount">0</strong> IMSLP titles to clean.
                 <span id="imslpSelectedCount" class="modal-desc-accent"></span>
             </p>
+            <div class="extraction-header" style="margin-bottom: 4px;">
+                <input type="checkbox" id="imslpAddLabel" onchange="app.toggleImslpLabel()" checked>
+                <label for="imslpAddLabel" style="cursor: pointer; user-select: none;">Add (IMSLP) label to cleaned titles</label>
+            </div>
             <div class="extraction-header">
                 <input type="checkbox" id="selectAllImslp" onchange="app.toggleSelectAllImslp()" checked>
                 <label for="selectAllImslp" style="cursor: pointer; user-select: none;">Select All</label>
@@ -3772,7 +3776,7 @@
                        title.split('_').length > 3;  // Has multiple underscores
             },
 
-            cleanImslpTitle(title) {
+            cleanImslpTitle(title, addLabel = true) {
                 let cleaned = title;
                 
                 // Remove IMSLP and PMLP prefixes with numbers
@@ -3792,8 +3796,8 @@
                 // Remove .pdf extension if present
                 cleaned = cleaned.replace(/\.pdf$/i, '');
                 
-                // Add (IMSLP) suffix if not already there and if it looked like an IMSLP file
-                if (title.match(/IMSLP\d+|PMLP\d+/) && !cleaned.includes('(IMSLP)')) {
+                // Add (IMSLP) suffix if option enabled and it looked like an IMSLP file
+                if (addLabel && title.match(/IMSLP\d+|PMLP\d+/) && !cleaned.includes('(IMSLP)')) {
                     cleaned = cleaned + ' (IMSLP)';
                 }
                 
@@ -3804,21 +3808,28 @@
                 const modal = document.getElementById('imslpModal');
                 const resultsDiv = document.getElementById('imslpResults');
                 const countSpan = document.getElementById('imslpCount');
-                
-                // Initialize all as selected
-                this.selectedImslpCleanups = new Set(this.pendingImslpCleanup.map((_, i) => i));
-                
+
+                // Preserve label checkbox and selection state across re-renders
+                const addLabelEl = document.getElementById('imslpAddLabel');
+                const addLabel = addLabelEl ? addLabelEl.checked : true;
+                const existingSelections = this.selectedImslpCleanups;
+
+                if (!existingSelections || existingSelections.size === 0) {
+                    this.selectedImslpCleanups = new Set(this.pendingImslpCleanup.map((_, i) => i));
+                }
+
                 countSpan.textContent = this.pendingImslpCleanup.length;
                 this.updateImslpSelectedCount();
-                
+
                 let html = '';
                 this.pendingImslpCleanup.forEach((item, index) => {
+                    const isChecked = this.selectedImslpCleanups.has(index) ? 'checked' : '';
                     html += `
                         <div class="extraction-item">
-                            <input type="checkbox" class="extraction-checkbox" 
-                                   id="imslp_${index}" 
-                                   onchange="app.toggleImslpCleanup(${index})" 
-                                   checked>
+                            <input type="checkbox" class="extraction-checkbox"
+                                   id="imslp_${index}"
+                                   onchange="app.toggleImslpCleanup(${index})"
+                                   ${isChecked}>
                             <div class="extraction-content">
                                 <div class="extraction-title">Original: ${item.original.substring(0, 60)}${item.original.length > 60 ? '...' : ''}</div>
                                 <div class="extraction-mapping">
@@ -3828,9 +3839,13 @@
                         </div>
                     `;
                 });
-                
+
                 resultsDiv.innerHTML = html;
                 modal.classList.add('active');
+
+                // Restore label checkbox state after rendering
+                document.getElementById('imslpAddLabel').checked = addLabel;
+                this.updateImslpSelectAllCheckbox();
             },
 
             toggleImslpCleanup(index) {
@@ -3841,6 +3856,14 @@
                 }
                 this.updateImslpSelectedCount();
                 this.updateImslpSelectAllCheckbox();
+            },
+
+            toggleImslpLabel() {
+                const addLabel = document.getElementById('imslpAddLabel').checked;
+                this.pendingImslpCleanup.forEach(item => {
+                    item.cleaned = this.cleanImslpTitle(item.original, addLabel);
+                });
+                this.showImslpModal();
             },
 
             toggleSelectAllImslp() {
