@@ -772,11 +772,13 @@
 
         .editing {
             background: var(--color-surface);
+            color: var(--color-text);
             border: 2px solid var(--color-accent);
             padding: 4px 8px;
             border-radius: var(--radius-sm);
             outline: none;
             width: 100%;
+            font-size: 14px;
             box-shadow: 0 0 0 3px var(--color-accent-light);
         }
 
@@ -1913,12 +1915,7 @@
             
             <div id="bulkControls" class="bulk-controls">
                 <span class="bulk-label"><span id="selectedCount">0</span> selected</span>
-                <button class="btn btn-secondary btn-sm" onclick="app.showBulkComposerInput()">Set Composer</button>
                 <button class="btn btn-secondary btn-sm" onclick="app.clearSelection()">Clear</button>
-                <div id="bulkComposerPanel" style="display:none;align-items:center;gap:8px;margin-left:4px;">
-                    <input type="text" id="bulkComposerInput" class="bulk-input" placeholder="Composer name..." onkeydown="if(event.key==='Enter')app.applyBulkComposer()">
-                    <button class="btn btn-primary btn-sm" onclick="app.applyBulkComposer()">Apply</button>
-                </div>
             </div>
 
             <div class="search-wrapper">
@@ -3275,49 +3272,8 @@
 
             clearSelection() {
                 this.selectedIds.clear();
-                document.getElementById('bulkComposerPanel').style.display = 'none';
                 this.updateBulkControls();
                 this.renderTable();
-            },
-
-            showBulkComposerInput() {
-                const panel = document.getElementById('bulkComposerPanel');
-                const isVisible = panel.style.display === 'flex';
-                panel.style.display = isVisible ? 'none' : 'flex';
-                if (!isVisible) document.getElementById('bulkComposerInput').focus();
-            },
-
-            applyBulkComposer() {
-                const composerInput = document.getElementById('bulkComposerInput');
-                const composer = composerInput.value.trim();
-                
-                if (!composer) {
-                    this.showNotification('Please enter a composer name');
-                    return;
-                }
-
-                if (!this.composerField) {
-                    this.showNotification('Composer field not found');
-                    return;
-                }
-
-                this.pushUndo('Bulk Composer');
-                let count = 0;
-                this.selectedIds.forEach(id => {
-                    this.dataById.get(id)[this.composerField] = composer;
-                    count++;
-                });
-
-                this.modifiedCount += count;
-                this.logChange('Bulk composer assignments', count);
-                this.selectedIds.clear();
-                composerInput.value = '';
-                document.getElementById('bulkComposerPanel').style.display = 'none';
-
-                this.analyzeData();
-                this.renderAll();
-
-                this.showNotification(`Applied composer to ${count} entries`);
             },
 
             smartExtract() {
