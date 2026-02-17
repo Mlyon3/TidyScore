@@ -823,6 +823,9 @@
 
         .editable {
             cursor: pointer;
+            display: block;
+            width: 100%;
+            min-height: 1.4em;
             padding: 2px 6px;
             border: 2px solid transparent;
             border-radius: 4px;
@@ -3355,10 +3358,10 @@
                                 <input type="checkbox" onchange="app.toggleRow(${_id}, event)" ${isSelected ? 'checked' : ''}>
                             </td>
                             <td class="row-num-cell">${_id + 1}</td>
-                            <td data-label="Title" class="${titleMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.titleField}')">${title}</span></td>
-                            <td data-label="Composer" class="${composerMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.composerField}')">${composer}</span></td>
-                            <td data-label="Genre" class="${genreMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.genreField}')">${genre}</span></td>
-                            <td data-label="Tags" class="${tagsMod}"><span class="editable" onclick="app.editCell(${_id}, '${this.tagsField}')">${tags}</span></td>
+                            <td data-label="Title" data-editable="true" class="${titleMod}" onclick="app.editCell(${_id}, '${this.titleField}', this)"><span class="editable">${title}</span></td>
+                            <td data-label="Composer" data-editable="true" class="${composerMod}" onclick="app.editCell(${_id}, '${this.composerField}', this)"><span class="editable">${composer}</span></td>
+                            <td data-label="Genre" data-editable="true" class="${genreMod}" onclick="app.editCell(${_id}, '${this.genreField}', this)"><span class="editable">${genre}</span></td>
+                            <td data-label="Tags" data-editable="true" class="${tagsMod}" onclick="app.editCell(${_id}, '${this.tagsField}', this)"><span class="editable">${tags}</span></td>
                         </tr>
                     `;
                 });
@@ -3384,7 +3387,7 @@
                 }
             },
 
-            editCell(id, field) {
+            editCell(id, field, cellElement) {
                 this.editGeneration++;
                 const myGeneration = this.editGeneration;
 
@@ -3397,7 +3400,7 @@
                     prev.parentNode.replaceChild(span, prev);
                 }
 
-                const cell = event.target;
+                const cell = cellElement;
                 const row = this.dataById.get(id);
                 const currentValue = row[field] || '';
                 
@@ -3489,7 +3492,7 @@
                                 const tbody = document.getElementById('tableBody');
                                 const nextRow = tbody && tbody.children[idx + 1];
                                 if (nextRow) {
-                                    const cells = nextRow.querySelectorAll('.editable');
+                                    const cells = nextRow.querySelectorAll('td[data-editable="true"]');
                                     if (cells[fieldIndex]) cells[fieldIndex].click();
                                 }
                             }, 50);
@@ -3508,7 +3511,7 @@
                             const visIdx = this.visibleIds.indexOf(id);
                             const row = tbody && tbody.children[visIdx];
                             if (row) {
-                                const cells = row.querySelectorAll('.editable');
+                                const cells = row.querySelectorAll('td[data-editable="true"]');
                                 if (cells[nextFieldIdx]) cells[nextFieldIdx].click();
                             }
                         }, 50);
