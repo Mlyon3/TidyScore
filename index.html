@@ -407,6 +407,92 @@
             flex-wrap: wrap;
         }
 
+        .scan-results-panel {
+            margin: 14px 0 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: linear-gradient(180deg, var(--color-accent-subtle), transparent 55%);
+            padding: 14px;
+        }
+
+        .scan-results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .scan-results-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .scan-results-subtitle {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .scan-results-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .scan-result-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border: 1px solid var(--color-border-light);
+            background: var(--color-surface);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+        }
+
+        .scan-result-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .scan-result-copy {
+            min-width: 0;
+        }
+
+        .scan-result-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text);
+            line-height: 1.3;
+        }
+
+        .scan-result-desc {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            line-height: 1.3;
+        }
+
+        .scan-count-badge {
+            flex-shrink: 0;
+            min-width: 34px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--color-accent-light);
+            color: var(--color-accent);
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .scan-fix-btn {
+            flex-shrink: 0;
+            min-width: 84px;
+        }
+
         .table-controls > .btn-tool,
         .table-controls > .btn-tool-wrapper {
             flex: 1 1 150px;
@@ -1971,6 +2057,19 @@
                 gap: 10px;
             }
 
+            .scan-result-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .scan-result-meta {
+                width: 100%;
+            }
+
+            .scan-fix-btn {
+                width: 100%;
+            }
+
             .btn-tool {
                 min-width: 0;
             }
@@ -2382,6 +2481,57 @@
                     <option value="tags-asc">Tags A-Z</option>
                     <option value="tags-desc">Tags Z-A</option>
                 </select>
+            </div>
+
+            <div class="scan-results-panel" aria-label="Scan results">
+                <div class="scan-results-header">
+                    <div>
+                        <div class="scan-results-title">Scan results</div>
+                        <div class="scan-results-subtitle">Start with these quick fixes, then use advanced tools below.</div>
+                    </div>
+                </div>
+                <div class="scan-results-list">
+                    <div class="scan-result-row">
+                        <div class="scan-result-meta">
+                            <span id="scanCountMissingComposer" class="scan-count-badge">0</span>
+                            <div class="scan-result-copy">
+                                <div class="scan-result-label">Missing composer (composer visible in title)</div>
+                                <div class="scan-result-desc">Detects blank composer fields where title text appears to include composer info.</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('missingComposer')">Fix composers</button>
+                    </div>
+                    <div class="scan-result-row">
+                        <div class="scan-result-meta">
+                            <span id="scanCountVariantComposer" class="scan-count-badge">0</span>
+                            <div class="scan-result-copy">
+                                <div class="scan-result-label">Composer variants / inconsistent formatting</div>
+                                <div class="scan-result-desc">Finds names that can be standardized to a consistent composer format.</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('composerFormatting')">Fix composers</button>
+                    </div>
+                    <div class="scan-result-row">
+                        <div class="scan-result-meta">
+                            <span id="scanCountImslpTitles" class="scan-count-badge">0</span>
+                            <div class="scan-result-copy">
+                                <div class="scan-result-label">Titles with IMSLP / file-name junk</div>
+                                <div class="scan-result-desc">Spots IMSLP IDs, underscores, and imported filename artifacts in titles.</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('imslpTitles')">Fix titles</button>
+                    </div>
+                    <div class="scan-result-row">
+                        <div class="scan-result-meta">
+                            <span id="scanCountGenreTagGaps" class="scan-count-badge">0</span>
+                            <div class="scan-result-copy">
+                                <div class="scan-result-label">Empty genre/tags opportunities</div>
+                                <div class="scan-result-desc">Highlights rows that still have blank genre or tags fields.</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('genreTagGaps')">Fix metadata</button>
+                    </div>
+                </div>
             </div>
 
             <div class="table-controls">
@@ -4052,9 +4202,121 @@
                 document.getElementById('totalScores').textContent = this.data.length;
                 document.getElementById('uniqueComposers').textContent = composers.size;
                 document.getElementById('modifiedCount').textContent = this.modifiedCount;
+                this.updateScanResults();
+            },
+
+            getScanResultCounts() {
+                const counts = {
+                    missingComposer: 0,
+                    composerFormatting: 0,
+                    imslpTitles: 0,
+                    genreTagGaps: 0
+                };
+
+                this.data.forEach(row => {
+                    const title = this.titleField ? (row[this.titleField] || '') : '';
+                    const composer = this.composerField ? (row[this.composerField] || '') : '';
+                    const genre = this.genreField ? (row[this.genreField] || '') : '';
+                    const tags = this.tagsField ? (row[this.tagsField] || '') : '';
+
+                    if (this.composerField && !composer.trim() && this.titleField && this.detectComposerFromTitle(title)) {
+                        counts.missingComposer++;
+                    }
+
+                    if (this.composerField && composer.trim() && this.needsComposerStandardization(composer)) {
+                        counts.composerFormatting++;
+                    }
+
+                    if (this.titleField && this.needsImslpCleanup(title)) {
+                        counts.imslpTitles++;
+                    }
+
+                    if ((this.genreField && !genre.trim()) || (this.tagsField && !tags.trim())) {
+                        counts.genreTagGaps++;
+                    }
+                });
+
+                return counts;
+            },
+
+            detectComposerFromTitle(title = '') {
+                if (!title) return false;
+
+                const patterns = [
+                    /^([A-Z][a-z]+(?:\s+[A-Z]\.?\s*[A-Z]\.?\s*)?(?:\s+[A-Z][a-z]+)?)\s*[-–—]\s*/,
+                    /^([A-Z][a-z]+)_/,
+                    /^([A-Z][a-z]+)\s+(?:Suite|Sonata|Symphony|Concerto|Quartet|Quintet|Prelude|Fugue|Cantata|Mass|Requiem)/i,
+                    /^([A-Z][a-z]+)\s+\d/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = title.match(pattern);
+                    if (match && this.getSuggestion(match[1].trim())) {
+                        return true;
+                    }
+                }
+
+                const firstWord = title.split(/[\s\-–—_]/)[0].trim();
+                return firstWord.length > 2 && Boolean(this.getSuggestion(firstWord));
+            },
+
+            needsComposerStandardization(composer = '') {
+                const normalized = composer.trim();
+                if (!normalized) return false;
+
+                const suggestion = this.getSuggestion(normalized);
+                const formattedSuggestion = suggestion ? (this.formatComposerName(suggestion) || suggestion) : null;
+                const currentFormatted = this.formatComposerName(normalized) || normalized;
+                if (formattedSuggestion && formattedSuggestion !== currentFormatted) {
+                    return true;
+                }
+
+                const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
+                const standardized = this.formatComposerName(normalized, mode);
+                return Boolean(standardized && standardized !== normalized);
+            },
+
+            updateScanResults() {
+                const counts = this.getScanResultCounts();
+                const targets = {
+                    scanCountMissingComposer: counts.missingComposer,
+                    scanCountVariantComposer: counts.composerFormatting,
+                    scanCountImslpTitles: counts.imslpTitles,
+                    scanCountGenreTagGaps: counts.genreTagGaps
+                };
+
+                Object.entries(targets).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = value;
+                });
+            },
+
+            runScanFix(type) {
+                if (type === 'missingComposer') {
+                    this.smartExtract();
+                    return;
+                }
+                if (type === 'composerFormatting') {
+                    this.standardizeComposers();
+                    return;
+                }
+                if (type === 'imslpTitles') {
+                    this.cleanImslpTitles();
+                    return;
+                }
+                if (type === 'genreTagGaps') {
+                    if (this.genreField) {
+                        this.suggestGenres();
+                    } else if (this.tagsField) {
+                        this.suggestTags();
+                    } else {
+                        this.showNotification('Genre/Tags fields not found in your CSV');
+                    }
+                }
             },
 
             renderTable() {
+                this.updateScanResults();
                 const tbody = document.getElementById('tableBody');
                 const thead = document.querySelector('thead');
 
