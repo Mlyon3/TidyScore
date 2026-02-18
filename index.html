@@ -1659,6 +1659,32 @@
             color: #ffffff;
         }
 
+        .settings-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background var(--transition-base), color var(--transition-base), border-color var(--transition-base);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+        }
+
+        .settings-btn:focus-visible {
+            outline-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(42, 125, 140, 0.45);
+        }
+
         .help-link {
             text-align: center;
             margin-top: 12px;
@@ -2084,6 +2110,13 @@
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="settings-btn" onclick="app.openSettingsModal()" aria-label="Open settings" aria-haspopup="dialog" aria-controls="settingsModal">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="10" cy="10" r="3"/>
+                        <path d="M16.6 12a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V16a1.2 1.2 0 0 1-1.2 1.2h-.2A1.2 1.2 0 0 1 10.7 16v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H6a1.2 1.2 0 0 1-1.2-1.2v-.2A1.2 1.2 0 0 1 6 9.1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2h0a1 1 0 0 0 .6-.9V4a1.2 1.2 0 0 1 1.2-1.2h.2A1.2 1.2 0 0 1 13.1 4v.2a1 1 0 0 0 .6.9h0a1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1v0a1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 19 9.3v.2a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.6Z"/>
+                    </svg>
+                    <span>Settings</span>
+                </button>
                 <button class="help-btn" onclick="app.showHelp()" aria-label="How it works">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="10" cy="10" r="8"/>
@@ -2602,6 +2635,32 @@
             </a>
             <div class="modal-buttons" style="margin-top: 16px;">
                 <button class="btn btn-secondary" onclick="app.closeHelp()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal" onclick="if(event.target===this)app.closeSettingsModal()">
+        <div class="modal-content" style="max-width: 560px;">
+            <h3 class="modal-title">Settings</h3>
+            <p class="modal-desc">Adjust composer formatting and alias-library behavior for cleanup tools.</p>
+            <div class="form-group">
+                <label class="form-label" for="settingsComposerNameDisplayFormat">Composer display format</label>
+                <select id="settingsComposerNameDisplayFormat" class="form-input">
+                    <option value="last_first">Last, First</option>
+                    <option value="first_last">First Last</option>
+                    <option value="preserve">Preserve input</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="settingsComposerLibraryMode">Composer alias library</label>
+                <select id="settingsComposerLibraryMode" class="form-input">
+                    <option value="builtin">Built-in aliases only</option>
+                    <option value="builtin_plus_custom">Built-in + custom aliases</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeSettingsModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="app.saveSettingsFromModal()">Save settings</button>
             </div>
         </div>
     </div>
@@ -3233,6 +3292,32 @@
                     localStorage.setItem(this.settingsStorageKey, JSON.stringify(next));
                 } catch (e) {}
                 return this.settings;
+            },
+
+            openSettingsModal() {
+                const settings = this.settings || this.loadSettings();
+                document.getElementById('settingsComposerNameDisplayFormat').value = settings.composer?.nameDisplayFormat || 'last_first';
+                document.getElementById('settingsComposerLibraryMode').value = settings.composer?.library?.mode || 'builtin_plus_custom';
+                document.getElementById('settingsModal').classList.add('active');
+            },
+
+            closeSettingsModal() {
+                document.getElementById('settingsModal').classList.remove('active');
+            },
+
+            saveSettingsFromModal() {
+                const patch = {
+                    composer: {
+                        nameDisplayFormat: document.getElementById('settingsComposerNameDisplayFormat').value,
+                        library: {
+                            mode: document.getElementById('settingsComposerLibraryMode').value
+                        }
+                    }
+                };
+
+                this.saveSettings(patch);
+                this.closeSettingsModal();
+                this.showNotification('Settings saved. New tools will use the updated preferences immediately.');
             },
 
             getComposerAliasMap() {
