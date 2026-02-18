@@ -3039,6 +3039,7 @@
             settings: null,
             _notificationQueue: [],
             _notificationActive: false,
+            scanResults: null,
 
             // Composer database with common variations mapping to full names
             builtInComposerDatabase: {
@@ -4202,41 +4203,155 @@
                 document.getElementById('totalScores').textContent = this.data.length;
                 document.getElementById('uniqueComposers').textContent = composers.size;
                 document.getElementById('modifiedCount').textContent = this.modifiedCount;
+                this.scanResults = this.computeScanResults();
                 this.updateScanResults();
             },
 
-            getScanResultCounts() {
-                const counts = {
-                    missingComposer: 0,
-                    composerFormatting: 0,
-                    imslpTitles: 0,
-                    genreTagGaps: 0
+            getComposerExtractionSignals(targetIds = []) {
+                const signals = {
+                    titleExtractions: [],
+                    nameCompletions: [],
+                    checked: 0,
+                    skipped: 0
                 };
 
-                this.data.forEach(row => {
-                    const title = this.titleField ? (row[this.titleField] || '') : '';
-                    const composer = this.composerField ? (row[this.composerField] || '') : '';
-                    const genre = this.genreField ? (row[this.genreField] || '') : '';
-                    const tags = this.tagsField ? (row[this.tagsField] || '') : '';
+                if (!this.composerField || !this.titleField) {
+                    return signals;
+                }
 
-                    if (this.composerField && !composer.trim() && this.titleField && this.detectComposerFromTitle(title)) {
-                        counts.missingComposer++;
+                // Improved patterns - more specific to avoid over-matching
+                const patterns = [
+                    // "Bach - Prelude" or "J.S. Bach - Air"
+                    /^([A-Z][a-z]+(?:\s+[A-Z]\.?\s*[A-Z]\.?\s*)?(?:\s+[A-Z][a-z]+)?)\s*[-–—]\s*/,
+                    // "Dvorak_SQ12"
+                    /^([A-Z][a-z]+)_/,
+                    // "Bach Suite" or "Beethoven Sonata" - but just extract the name
+                    /^([A-Z][a-z]+)\s+(?:Suite|Sonata|Symphony|Concerto|Quartet|Quintet|Prelude|Fugue|Cantata|Mass|Requiem)/i,
+                    // "Bach 3rd" or "Beethoven 5th"
+                    /^([A-Z][a-z]+)\s+\d/
+                ];
+
+                targetIds.forEach(id => {
+                    const row = this.dataById.get(id);
+                    if (!row) return;
+
+                    const title = row[this.titleField] || '';
+                    const currentComposer = row[this.composerField] || '';
+
+                    if (currentComposer) {
+                        signals.skipped++;
+                    } else {
+                        signals.checked++;
+
+                        let matched = false;
+                        for (const pattern of patterns) {
+                            const match = title.match(pattern);
+                            if (match) {
+                                const potentialComposer = match[1].trim();
+                                const suggestion = this.getSuggestion(potentialComposer);
+                                if (suggestion) {
+                                    signals.titleExtractions.push({
+                                        id,
+                                        title,
+                                        extracted: potentialComposer,
+                                        suggestion,
+                                        type: 'title'
+                                    });
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!matched) {
+                            const firstWord = title.split(/[\s\-–—_]/)[0].trim();
+                            if (firstWord.length > 2) {
+                                const suggestion = this.getSuggestion(firstWord);
+                                if (suggestion) {
+                                    signals.titleExtractions.push({
+                                        id,
+                                        title,
+                                        extracted: firstWord,
+                                        suggestion,
+                                        type: 'title'
+                                    });
+                                }
+                            }
+                        }
                     }
 
-                    if (this.composerField && composer.trim() && this.needsComposerStandardization(composer)) {
-                        counts.composerFormatting++;
-                    }
-
-                    if (this.titleField && this.needsImslpCleanup(title)) {
-                        counts.imslpTitles++;
-                    }
-
-                    if ((this.genreField && !genre.trim()) || (this.tagsField && !tags.trim())) {
-                        counts.genreTagGaps++;
+                    if (currentComposer) {
+                        const suggestion = this.getSuggestion(currentComposer);
+                        const formattedSuggestion = suggestion ? this.formatComposerName(suggestion) || suggestion : null;
+                        const currentFormatted = this.formatComposerName(currentComposer.trim()) || currentComposer.trim();
+                        if (formattedSuggestion && formattedSuggestion !== currentFormatted) {
+                            signals.nameCompletions.push({
+                                id,
+                                title,
+                                extracted: currentComposer.trim(),
+                                suggestion,
+                                type: 'completion'
+                            });
+                        }
                     }
                 });
 
-                return counts;
+                return signals;
+            },
+
+            computeScanResults(targetIds = null) {
+                const ids = Array.isArray(targetIds)
+                    ? targetIds
+                    : this.data.map(row => row.__id);
+
+                const candidates = {
+                    missingComposer: [],
+                    composerFormatting: [],
+                    imslpTitles: [],
+                    genreTagGaps: []
+                };
+
+                const extractionSignals = this.getComposerExtractionSignals(ids);
+
+                extractionSignals.titleExtractions.forEach(item => {
+                    candidates.missingComposer.push(item.id);
+                });
+                extractionSignals.nameCompletions.forEach(item => {
+                    candidates.composerFormatting.push(item.id);
+                });
+
+                ids.forEach(id => {
+                    const row = this.dataById.get(id);
+                    if (!row) return;
+
+                    const title = this.titleField ? (row[this.titleField] || '') : '';
+                    const genre = this.genreField ? (row[this.genreField] || '') : '';
+                    const tags = this.tagsField ? (row[this.tagsField] || '') : '';
+
+                    if (this.titleField && this.needsImslpCleanup(title) && this.cleanImslpTitle(title) !== title) {
+                        candidates.imslpTitles.push(id);
+                    }
+
+                    if ((this.genreField && !genre.trim()) || (this.tagsField && !tags.trim())) {
+                        candidates.genreTagGaps.push(id);
+                    }
+                });
+
+                return {
+                    counts: {
+                        missingComposer: candidates.missingComposer.length,
+                        composerFormatting: candidates.composerFormatting.length,
+                        imslpTitles: candidates.imslpTitles.length,
+                        genreTagGaps: candidates.genreTagGaps.length
+                    },
+                    candidates,
+                    extractionSignals: {
+                        checked: extractionSignals.checked,
+                        skipped: extractionSignals.skipped,
+                        titleCount: extractionSignals.titleExtractions.length,
+                        completionCount: extractionSignals.nameCompletions.length
+                    }
+                };
             },
 
             detectComposerFromTitle(title = '') {
@@ -4277,7 +4392,12 @@
             },
 
             updateScanResults() {
-                const counts = this.getScanResultCounts();
+                const counts = this.scanResults?.counts || {
+                    missingComposer: 0,
+                    composerFormatting: 0,
+                    imslpTitles: 0,
+                    genreTagGaps: 0
+                };
                 const targets = {
                     scanCountMissingComposer: counts.missingComposer,
                     scanCountVariantComposer: counts.composerFormatting,
@@ -4316,7 +4436,6 @@
             },
 
             renderTable() {
-                this.updateScanResults();
                 const tbody = document.getElementById('tableBody');
                 const thead = document.querySelector('thead');
 
@@ -4728,100 +4847,15 @@
                     return;
                 }
 
-                let checked = 0;
-                let skipped = 0;
-
-                // Improved patterns - more specific to avoid over-matching
-                const patterns = [
-                    // "Bach - Prelude" or "J.S. Bach - Air"
-                    /^([A-Z][a-z]+(?:\s+[A-Z]\.?\s*[A-Z]\.?\s*)?(?:\s+[A-Z][a-z]+)?)\s*[-–—]\s*/,
-                    // "Dvorak_SQ12"
-                    /^([A-Z][a-z]+)_/,
-                    // "Bach Suite" or "Beethoven Sonata" - but just extract the name
-                    /^([A-Z][a-z]+)\s+(?:Suite|Sonata|Symphony|Concerto|Quartet|Quintet|Prelude|Fugue|Cantata|Mass|Requiem)/i,
-                    // "Bach 3rd" or "Beethoven 5th"
-                    /^([A-Z][a-z]+)\s+\d/,
-                ];
-
                 const targetIndices = this.getTargetIds();
                 console.log('Processing', targetIndices.length, 'entries');
 
-                // === Pass 1: Extract composers from titles (empty composer field) ===
-                let titleExtractions = [];
-                targetIndices.forEach(idx => {
-                    const row = this.dataById.get(idx);
-                    const title = row[this.titleField] || '';
-                    const currentComposer = row[this.composerField] || '';
-
-                    if (currentComposer) {
-                        skipped++;
-                        return;
-                    }
-
-                    checked++;
-
-                    let matched = false;
-                    for (let pattern of patterns) {
-                        const match = title.match(pattern);
-                        if (match) {
-                            const potentialComposer = match[1].trim();
-                            const suggestion = this.getSuggestion(potentialComposer);
-                            if (suggestion) {
-                                titleExtractions.push({
-                                    id: idx,
-                                    title,
-                                    extracted: potentialComposer,
-                                    suggestion,
-                                    type: 'title'
-                                });
-                                matched = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    // Fallback: check if first word is a known composer
-                    if (!matched) {
-                        const firstWord = title.split(/[\s\-–—_]/)[0].trim();
-                        if (firstWord.length > 2) {
-                            const suggestion = this.getSuggestion(firstWord);
-                            if (suggestion) {
-                                titleExtractions.push({
-                                    id: idx,
-                                    title,
-                                    extracted: firstWord,
-                                    suggestion,
-                                    type: 'title'
-                                });
-                            }
-                        }
-                    }
-                });
-
-                // === Pass 2: Detect incomplete/informal composer names ===
-                let nameCompletions = [];
-                targetIndices.forEach(idx => {
-                    const row = this.dataById.get(idx);
-                    const currentComposer = row[this.composerField] || '';
-                    const title = row[this.titleField] || '';
-
-                    if (!currentComposer) return;
-
-                    const suggestion = this.getSuggestion(currentComposer);
-                    const formattedSuggestion = suggestion ? this.formatComposerName(suggestion) || suggestion : null;
-                    const currentFormatted = this.formatComposerName(currentComposer.trim()) || currentComposer.trim();
-                    if (formattedSuggestion && formattedSuggestion !== currentFormatted) {
-                        nameCompletions.push({
-                            id: idx,
-                            title,
-                            extracted: currentComposer.trim(),
-                            suggestion,
-                            type: 'completion'
-                        });
-                    }
-                });
-
-                let extracted = [...titleExtractions, ...nameCompletions];
+                const signals = this.getComposerExtractionSignals(targetIndices);
+                const titleExtractions = signals.titleExtractions;
+                const nameCompletions = signals.nameCompletions;
+                const checked = signals.checked;
+                const skipped = signals.skipped;
+                const extracted = [...titleExtractions, ...nameCompletions];
 
                 console.log('Results:', {
                     scanned: targetIndices.length,
@@ -4832,7 +4866,13 @@
                 });
 
                 if (extracted.length === 0) {
-                    this.showNotification(`Smart Extract checked ${checked} entries with blank composers and ${skipped} with existing composers, but found no suggestions.\n\nThis works best with titles like:\n• "Bach - Prelude"\n• "Beethoven Symphony"\n\nIt also detects incomplete names like "bach" or "beethoven" in the composer field.`);
+                    this.showNotification(`Smart Extract checked ${checked} entries with blank composers and ${skipped} with existing composers, but found no suggestions.
+
+This works best with titles like:
+• "Bach - Prelude"
+• "Beethoven Symphony"
+
+It also detects incomplete names like "bach" or "beethoven" in the composer field.`);
                     return;
                 }
 
