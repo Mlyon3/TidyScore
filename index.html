@@ -3900,9 +3900,7 @@
                     if (e.key === 'Escape') {
                         const openModals = [...document.querySelectorAll('.modal.active')];
                         if (openModals.length > 0) {
-                            const topModal = openModals[openModals.length - 1];
-                            // Dismiss the modal by clicking its backdrop (triggers existing onclick handlers)
-                            topModal.dispatchEvent(new MouseEvent('click', { bubbles: false }));
+                            openModals[openModals.length - 1].classList.remove('active');
                         }
                     }
                 });
