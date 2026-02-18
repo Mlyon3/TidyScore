@@ -76,6 +76,12 @@ All tools are scope-aware:
 
 TidyScore recognizes 170+ composer name variations and maps them to their canonical forms. Coverage spans Baroque through Contemporary classical, Jazz, Film/Game scores, Musical Theatre, and crossover artists. Common abbreviations ("J.S. Bach"), informal names ("beethoven"), and misspellings are handled automatically.
 
+## Regression Coverage
+
+- Lightweight deterministic QA checklist for composer-settings regressions: `docs/regression-checklist.md`.
+
+---
+
 ## Privacy
 
 All processing happens in your browser. Your CSV data is never uploaded, transmitted, or stored anywhere. The only thing saved is your light/dark mode preference (in localStorage).
