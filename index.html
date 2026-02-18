@@ -4086,9 +4086,12 @@
                         }
                         
                         const newValue = input.value;
-                        if (newValue !== currentValue) {
+                        const valueToSave = field === this.composerField
+                            ? this.formatComposerName(newValue)
+                            : newValue;
+                        if (valueToSave !== currentValue) {
                             this.pushUndo('Edit');
-                            row[field] = newValue;
+                            row[field] = valueToSave;
                             this.modifiedCount++;
                             this.logChange('Manual edits', 1);
                             this.analyzeData();
@@ -5202,7 +5205,10 @@
                 selected.forEach(i => {
                     const c = this._previewChanges[i];
                     if (c) {
-                        this.dataById.get(c.id)[c.field] = c.newVal;
+                        const newValue = c.field === this.composerField
+                            ? this.formatComposerName(c.newVal)
+                            : c.newVal;
+                        this.dataById.get(c.id)[c.field] = newValue;
                         count++;
                     }
                 });
