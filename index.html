@@ -2313,7 +2313,7 @@
                 <button class="btn btn-secondary btn-tool" onclick="app.standardizeComposers()">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3h10M3 8h7M3 13h4"/><path d="M13 8v6l2-2M13 14l-2-2"/></svg>
                     <span class="btn-tool-label">Standardize</span>
-                    <span class="btn-tool-desc">Apply Last, First name format to composers</span>
+                    <span id="standardizeToolDesc" class="btn-tool-desc">Apply Last, First name format to composers</span>
                 </button>
                 <button class="btn btn-secondary btn-tool" onclick="app.findReplace()">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><path d="M9 9l4 4"/></svg>
@@ -3600,6 +3600,7 @@
                 };
 
                 this.saveSettings(patch);
+                this.updateComposerToolDescriptions();
                 this._setSettingsComposerWarnings(composerLibraryDraft.warnings);
                 if (composerLibraryDraft.warnings.length) {
                     this.showNotification('Settings saved with composer alias collision warnings.');
@@ -3625,6 +3626,7 @@
                 };
 
                 const next = this.saveSettings(patch);
+                this.updateComposerToolDescriptions();
                 document.getElementById('settingsComposerNameDisplayFormat').value = next.composer?.nameDisplayFormat || DEFAULT_SETTINGS.composer.nameDisplayFormat;
                 document.getElementById('settingsComposerLibraryMode').value = next.composer?.library?.mode || DEFAULT_SETTINGS.composer.library.mode;
                 this.renderComposerAliasRows(next.composer?.library?.customAliases || {});
@@ -3696,8 +3698,33 @@
                 return formatter(composer).trim();
             },
 
+            getComposerFormatLabel(mode = null) {
+                const selectedMode = mode || this.settings?.composer?.nameDisplayFormat || 'last_first';
+                const labels = {
+                    last_first: 'Last, First',
+                    first_last: 'First Last',
+                    preserve: 'preserve existing'
+                };
+                return labels[selectedMode] || labels.last_first;
+            },
+
+            updateComposerToolDescriptions() {
+                const standardizeDesc = document.getElementById('standardizeToolDesc');
+                if (!standardizeDesc) return;
+
+                const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
+                if (mode === 'preserve') {
+                    standardizeDesc.textContent = 'Normalize spacing and punctuation while preserving current name order';
+                    return;
+                }
+
+                const label = this.getComposerFormatLabel(mode);
+                standardizeDesc.textContent = `Apply ${label} name format to composers`;
+            },
+
             init() {
                 this.loadSettings();
+                this.updateComposerToolDescriptions();
 
                 // Restore saved theme
                 try {
@@ -4039,7 +4066,8 @@
                     if (field !== this.composerField) return;
                     
                     const suggestion = this.getSuggestion(input.value);
-                    if (!suggestion || suggestion === input.value) {
+                    const formattedSuggestion = suggestion ? this.formatComposerName(suggestion) || suggestion : null;
+                    if (!formattedSuggestion || formattedSuggestion === input.value) {
                         if (suggestionsDropdown) {
                             suggestionsDropdown.remove();
                             suggestionsDropdown = null;
@@ -4063,12 +4091,12 @@
                     suggestionsDropdown.innerHTML = `
                         <div class="suggestion-item">
                             <div class="suggestion-label">Suggested full name:</div>
-                            <div class="suggestion-value">${suggestion}</div>
+                            <div class="suggestion-value">${formattedSuggestion}</div>
                         </div>
                     `;
                     
                     suggestionsDropdown.querySelector('.suggestion-item').addEventListener('click', () => {
-                        input.value = suggestion;
+                        input.value = formattedSuggestion;
                         input.blur();
                     });
                 };
@@ -4384,7 +4412,9 @@
                     if (!currentComposer) return;
 
                     const suggestion = this.getSuggestion(currentComposer);
-                    if (suggestion && suggestion !== currentComposer.trim()) {
+                    const formattedSuggestion = suggestion ? this.formatComposerName(suggestion) || suggestion : null;
+                    const currentFormatted = this.formatComposerName(currentComposer.trim()) || currentComposer.trim();
+                    if (formattedSuggestion && formattedSuggestion !== currentFormatted) {
                         nameCompletions.push({
                             id: idx,
                             title,
@@ -4464,7 +4494,7 @@
                             <div class="extraction-content">
                                 <div class="extraction-title">${titleDisplay}</div>
                                 <div class="extraction-mapping">
-                                    "${e.extracted}"<span class="extraction-arrow">\u2192</span><strong>${e.suggestion}</strong>
+                                    "${e.extracted}"<span class="extraction-arrow">\u2192</span><strong>${this.formatComposerName(e.suggestion) || e.suggestion}</strong>
                                 </div>
                             </div>
                         </div>
