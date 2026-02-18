@@ -581,6 +581,13 @@
             display: none;
         }
 
+        .row-count-indicator {
+            font-size: 12px;
+            color: var(--color-text-light);
+            white-space: nowrap;
+            padding: 2px 0;
+        }
+
         /* ===== Buttons ===== */
         .btn {
             padding: 10px 20px;
@@ -1229,7 +1236,7 @@
             right: 20px;
             background: var(--color-header-from);
             color: #ffffff;
-            padding: 14px 22px;
+            padding: 12px 14px 12px 18px;
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-lg);
             z-index: 10000;
@@ -1238,6 +1245,30 @@
             font-size: 14px;
             line-height: 1.5;
             animation: toast-slide-in 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .toast-notification .toast-message {
+            flex: 1;
+        }
+
+        .toast-notification .toast-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            padding: 0 2px;
+            margin-top: -1px;
+            transition: color 0.15s;
+        }
+
+        .toast-notification .toast-close:hover {
+            color: #ffffff;
         }
 
         .toast-notification.toast-exit {
@@ -1856,6 +1887,54 @@
             text-decoration: none;
         }
 
+        .help-shortcuts {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border-light);
+        }
+
+        .help-shortcuts-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+
+        .help-shortcuts-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .help-shortcuts-table td {
+            padding: 5px 0;
+            vertical-align: middle;
+        }
+
+        .help-shortcuts-table td:first-child {
+            width: 180px;
+            white-space: nowrap;
+        }
+
+        .help-shortcuts-table td:last-child {
+            color: var(--color-text-secondary);
+        }
+
+        kbd {
+            display: inline-block;
+            padding: 1px 6px;
+            font-size: 11px;
+            font-family: inherit;
+            line-height: 1.6;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 3px;
+            box-shadow: 0 1px 0 var(--color-border);
+            color: var(--color-text);
+        }
+
         /* ===== Responsive: Tablet & Landscape Phone ===== */
         @media (max-width: 768px) {
             .container {
@@ -2288,6 +2367,7 @@
                 <input type="text" id="searchInput" class="search-input" placeholder="Search...">
                 <button id="searchClear" class="search-clear hidden" onclick="app.clearSearch()">&times;</button>
             </div>
+            <span id="rowCountIndicator" class="row-count-indicator" aria-live="polite"></span>
 
             <div class="mobile-sort">
                 <label for="mobileSortSelect">Sort by:</label>
@@ -2706,6 +2786,16 @@
             <a href="https://docs.google.com/document/d/e/2PACX-1vQEVFozrRtt7usL06Ia6t7XY2WcAPXYQh9ml-zqVDgAk9yuA1gTERkWWYHryDBFj1GCTqk1ULqa32Mt/pub" target="_blank" rel="noopener noreferrer" class="help-guide-link">
                 View full guide with screenshots &rarr;
             </a>
+            <div class="help-shortcuts">
+                <div class="help-shortcuts-title">Keyboard shortcuts</div>
+                <table class="help-shortcuts-table">
+                    <tbody>
+                        <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></td><td>Undo last change</td></tr>
+                        <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>F</kbd></td><td>Focus search bar</td></tr>
+                        <tr><td><kbd>Esc</kbd></td><td>Close active dialog</td></tr>
+                    </tbody>
+                </table>
+            </div>
             <div class="modal-buttons" style="margin-top: 16px;">
                 <button class="btn btn-secondary" onclick="app.closeHelp()">Close</button>
             </div>
@@ -2758,7 +2848,7 @@
                 <button class="btn btn-secondary" type="button" onclick="app.resetComposerSettingsToDefaults()">Reset composer settings to defaults</button>
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeSettingsModal()">Cancel</button>
+                <button id="settingsCancelBtn" class="btn btn-secondary" onclick="app.closeSettingsModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="app.saveSettingsFromModal()">Save settings</button>
             </div>
         </div>
@@ -2797,6 +2887,8 @@
             changeLog: [],
             settingsStorageKey: 'tidyscore-settings',
             settings: null,
+            _notificationQueue: [],
+            _notificationActive: false,
 
             // Composer database with common variations mapping to full names
             builtInComposerDatabase: {
@@ -3293,6 +3385,16 @@
                 return (value || '').toString().toLowerCase().trim();
             },
 
+            escapeHtml(str) {
+                if (str == null) return '';
+                return str.toString()
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            },
+
             _sanitizeSettings(input) {
                 const merged = this._deepMerge(DEFAULT_SETTINGS, input || {});
                 merged.version = SETTINGS_VERSION;
@@ -3400,6 +3502,8 @@
                 this.renderComposerAliasRows(settings.composer?.library?.customAliases || {});
                 this.renderComposerBlacklistRows(settings.composer?.library?.blacklistedAliases || []);
                 this._setSettingsComposerWarnings([]);
+                const cancelBtn = document.getElementById('settingsCancelBtn');
+                if (cancelBtn) cancelBtn.textContent = 'Cancel';
                 document.getElementById('settingsModal').classList.add('active');
             },
 
@@ -3603,6 +3707,8 @@
                 this.updateComposerToolDescriptions();
                 this._setSettingsComposerWarnings(composerLibraryDraft.warnings);
                 if (composerLibraryDraft.warnings.length) {
+                    const cancelBtn = document.getElementById('settingsCancelBtn');
+                    if (cancelBtn) cancelBtn.textContent = 'Close';
                     this.showNotification('Settings saved with composer alias collision warnings.');
                     return;
                 }
@@ -3778,6 +3884,26 @@
                     if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.target.classList.contains('editing')) {
                         e.preventDefault();
                         this.undo();
+                        return;
+                    }
+                    // Cmd/Ctrl+F to focus the search input
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'f' && !e.target.classList.contains('editing')) {
+                        const searchInput = document.getElementById('searchInput');
+                        if (searchInput) {
+                            e.preventDefault();
+                            searchInput.focus();
+                            searchInput.select();
+                        }
+                        return;
+                    }
+                    // Escape to close the topmost active modal
+                    if (e.key === 'Escape') {
+                        const openModals = [...document.querySelectorAll('.modal.active')];
+                        if (openModals.length > 0) {
+                            const topModal = openModals[openModals.length - 1];
+                            // Dismiss the modal by clicking its backdrop (triggers existing onclick handlers)
+                            topModal.dispatchEvent(new MouseEvent('click', { bubbles: false }));
+                        }
                     }
                 });
             },
@@ -3965,6 +4091,16 @@
 
                 this.visibleIds = entries.map(e => e._id);
 
+                // Update row count indicator
+                const countEl = document.getElementById('rowCountIndicator');
+                if (countEl) {
+                    if (query) {
+                        countEl.textContent = `Showing ${entries.length} of ${this.data.length}`;
+                    } else {
+                        countEl.textContent = this.data.length === 1 ? '1 row' : `${this.data.length} rows`;
+                    }
+                }
+
                 // Update header with sort indicators and checkbox
                 const titleClass = this.sortColumn === this.titleField ? `sorted-${this.sortDirection}` : '';
                 const composerClass = this.sortColumn === this.composerField ? `sorted-${this.sortDirection}` : '';
@@ -4091,7 +4227,7 @@
                     suggestionsDropdown.innerHTML = `
                         <div class="suggestion-item">
                             <div class="suggestion-label">Suggested full name:</div>
-                            <div class="suggestion-value">${formattedSuggestion}</div>
+                            <div class="suggestion-value">${this.escapeHtml(formattedSuggestion)}</div>
                         </div>
                     `;
                     
@@ -4482,7 +4618,7 @@
                         html += `<div class="extraction-section-header">Incomplete Composer Names (${cc})</div>`;
                     }
 
-                    const titleDisplay = e.title.substring(0, 60) + (e.title.length > 60 ? '...' : '');
+                    const titleDisplay = this.escapeHtml(e.title.substring(0, 60)) + (e.title.length > 60 ? '...' : '');
                     const itemClass = e.type === 'completion' ? 'extraction-item extraction-item--completion' : 'extraction-item';
 
                     html += `
@@ -4494,7 +4630,7 @@
                             <div class="extraction-content">
                                 <div class="extraction-title">${titleDisplay}</div>
                                 <div class="extraction-mapping">
-                                    "${e.extracted}"<span class="extraction-arrow">\u2192</span><strong>${this.formatComposerName(e.suggestion) || e.suggestion}</strong>
+                                    "${this.escapeHtml(e.extracted)}"<span class="extraction-arrow">\u2192</span><strong>${this.escapeHtml(this.formatComposerName(e.suggestion) || e.suggestion)}</strong>
                                 </div>
                             </div>
                         </div>
@@ -4760,15 +4896,50 @@
             },
 
             showNotification(message) {
+                this._notificationQueue.push(message);
+                if (!this._notificationActive) this._drainNotificationQueue();
+            },
+
+            _drainNotificationQueue() {
+                if (this._notificationQueue.length === 0) {
+                    this._notificationActive = false;
+                    return;
+                }
+                this._notificationActive = true;
+                const message = this._notificationQueue.shift();
+
                 const notification = document.createElement('div');
                 notification.className = 'toast-notification';
-                notification.textContent = message;
+
+                const msgSpan = document.createElement('span');
+                msgSpan.className = 'toast-message';
+                msgSpan.textContent = message;
+
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'toast-close';
+                closeBtn.setAttribute('aria-label', 'Dismiss notification');
+                closeBtn.textContent = '×';
+
+                notification.appendChild(msgSpan);
+                notification.appendChild(closeBtn);
                 document.body.appendChild(notification);
 
-                setTimeout(() => {
+                let dismissTimer;
+                const dismiss = () => {
+                    clearTimeout(dismissTimer);
                     notification.classList.add('toast-exit');
-                    notification.addEventListener('animationend', () => notification.remove());
-                }, 4000);
+                    notification.addEventListener('animationend', () => {
+                        notification.remove();
+                        this._drainNotificationQueue();
+                    }, { once: true });
+                };
+
+                const startTimer = () => { dismissTimer = setTimeout(dismiss, 4000); };
+                startTimer();
+
+                notification.addEventListener('mouseenter', () => clearTimeout(dismissTimer));
+                notification.addEventListener('mouseleave', startTimer);
+                closeBtn.addEventListener('click', dismiss);
             },
 
             cleanImslpTitles() {
@@ -4878,9 +5049,9 @@
                                    onchange="app.toggleImslpCleanup(${index})"
                                    ${isChecked}>
                             <div class="extraction-content">
-                                <div class="extraction-title">Original: ${item.original.substring(0, 60)}${item.original.length > 60 ? '...' : ''}</div>
+                                <div class="extraction-title">Original: ${this.escapeHtml(item.original.substring(0, 60))}${item.original.length > 60 ? '...' : ''}</div>
                                 <div class="extraction-mapping">
-                                    <span class="extraction-arrow">→</span><strong>${item.cleaned}</strong>
+                                    <span class="extraction-arrow">→</span><strong>${this.escapeHtml(item.cleaned)}</strong>
                                 </div>
                             </div>
                         </div>
@@ -5346,11 +5517,11 @@
                                    onchange="app.toggleGenreSuggestion(${index})" checked>
                             <label for="genre_${index}" class="extraction-label">
                                 <div class="extraction-mapping">
-                                    <span class="extraction-original">${item.composer}</span>
+                                    <span class="extraction-original">${this.escapeHtml(item.composer)}</span>
                                     <span class="extraction-arrow">&rarr;</span>
-                                    <span class="extraction-suggestion">${item.suggestedGenre}</span>
+                                    <span class="extraction-suggestion">${this.escapeHtml(item.suggestedGenre)}</span>
                                 </div>
-                                <div class="extraction-title">${item.title}</div>
+                                <div class="extraction-title">${this.escapeHtml(item.title)}</div>
                             </label>
                         </div>
                     `;
@@ -5495,14 +5666,14 @@
 
                 let html = '';
                 this.pendingTagSuggestions.forEach((item, index) => {
-                    const tagBadges = item.suggestedTags.map(t => `<span class="tag-suggest-new">+ ${t}</span>`).join(' ');
+                    const tagBadges = item.suggestedTags.map(t => `<span class="tag-suggest-new">+ ${this.escapeHtml(t)}</span>`).join(' ');
                     html += `
                         <div class="extraction-item">
                             <input type="checkbox" class="extraction-checkbox"
                                    id="tagsug_${index}"
                                    onchange="app.toggleTagSuggestion(${index})" checked>
                             <label for="tagsug_${index}" class="extraction-label">
-                                <div class="extraction-title">${item.title}</div>
+                                <div class="extraction-title">${this.escapeHtml(item.title)}</div>
                                 <div class="extraction-mapping" style="margin-top:4px">${tagBadges}</div>
                             </label>
                         </div>
