@@ -2495,8 +2495,8 @@
                         <div class="scan-result-meta">
                             <span id="scanCountMissingComposer" class="scan-count-badge">0</span>
                             <div class="scan-result-copy">
-                                <div class="scan-result-label">Missing composer (composer visible in title)</div>
-                                <div class="scan-result-desc">Detects blank composer fields where title text appears to include composer info.</div>
+                                <div class="scan-result-label">Complete missing/incomplete composers</div>
+                                <div class="scan-result-desc">Includes title-based extraction and incomplete composer-name completion (same scope as Smart Extract).</div>
                             </div>
                         </div>
                         <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('missingComposer')">Fix composers</button>
@@ -4299,6 +4299,33 @@
                 return signals;
             },
 
+            getStandardizeComposerCandidateIds(targetIds = []) {
+                if (!this.composerField) {
+                    return [];
+                }
+
+                const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
+                const candidates = [];
+
+                targetIds.forEach(id => {
+                    const row = this.dataById.get(id);
+                    if (!row) return;
+
+                    const composer = row[this.composerField];
+                    if (!composer) return;
+
+                    const normalized = composer.trim();
+                    if (!normalized) return;
+
+                    const newVal = this.formatComposerName(normalized, mode);
+                    if (!newVal || newVal === normalized) return;
+
+                    candidates.push(id);
+                });
+
+                return candidates;
+            },
+
             computeScanResults(targetIds = null) {
                 const ids = Array.isArray(targetIds)
                     ? targetIds
@@ -4312,13 +4339,13 @@
                 };
 
                 const extractionSignals = this.getComposerExtractionSignals(ids);
+                const extractionCandidateIds = new Set([
+                    ...extractionSignals.titleExtractions.map(item => item.id),
+                    ...extractionSignals.nameCompletions.map(item => item.id)
+                ]);
+                candidates.missingComposer = [...extractionCandidateIds];
 
-                extractionSignals.titleExtractions.forEach(item => {
-                    candidates.missingComposer.push(item.id);
-                });
-                extractionSignals.nameCompletions.forEach(item => {
-                    candidates.composerFormatting.push(item.id);
-                });
+                candidates.composerFormatting = this.getStandardizeComposerCandidateIds(ids);
 
                 ids.forEach(id => {
                     const row = this.dataById.get(id);
