@@ -3835,7 +3835,7 @@
                 // Restore saved theme
                 try {
                     const saved = localStorage.getItem('tidyscore-theme');
-                    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    if (saved !== 'light') {
                         document.documentElement.setAttribute('data-theme', 'dark');
                         document.querySelector('.theme-icon--light').style.display = 'none';
                         document.querySelector('.theme-icon--dark').style.display = '';
