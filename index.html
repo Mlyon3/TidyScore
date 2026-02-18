@@ -1064,6 +1064,79 @@
             margin-top: 30px;
         }
 
+        .settings-advanced {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border-light);
+        }
+
+        .settings-advanced-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .settings-advanced-desc {
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+
+        .settings-kv-table {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .settings-kv-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .settings-remove-btn {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .settings-remove-btn:hover {
+            color: var(--color-danger);
+            border-color: var(--color-danger);
+            background: var(--color-danger-bg);
+        }
+
+        .settings-helper-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .settings-warning-box {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--color-warning-bg);
+            color: var(--color-warning);
+            font-size: 13px;
+            line-height: 1.4;
+            white-space: pre-line;
+        }
+
+        .settings-danger-zone {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border-light);
+        }
+
         /* ===== Extraction Results ===== */
         .extraction-results {
             max-height: 400px;
@@ -2640,7 +2713,7 @@
     </div>
 
     <div id="settingsModal" class="modal" onclick="if(event.target===this)app.closeSettingsModal()">
-        <div class="modal-content" style="max-width: 560px;">
+        <div class="modal-content" style="max-width: 760px;">
             <h3 class="modal-title">Settings</h3>
             <p class="modal-desc">Adjust composer formatting and alias-library behavior for cleanup tools.</p>
             <div class="form-group">
@@ -2657,6 +2730,32 @@
                     <option value="builtin">Built-in aliases only</option>
                     <option value="builtin_plus_custom">Built-in + custom aliases</option>
                 </select>
+            </div>
+            <div class="settings-advanced">
+                <div class="settings-advanced-title">Advanced composer library edits</div>
+                <div class="settings-advanced-desc">Define alias mappings and blacklist entries. Alias keys are normalized to lowercase + trimmed on input and save.</div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label">Editable alias table (alias key → canonical composer)</label>
+                    <div id="settingsAliasTable" class="settings-kv-table"></div>
+                    <div class="settings-helper-row">
+                        <button class="btn btn-secondary" type="button" onclick="app.addComposerAliasRow()">+ Add alias mapping</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Editable blacklist list (alias values to suppress)</label>
+                    <div id="settingsBlacklistTable" class="settings-kv-table"></div>
+                    <div class="settings-helper-row">
+                        <button class="btn btn-secondary" type="button" onclick="app.addComposerBlacklistRow()">+ Add blacklist entry</button>
+                    </div>
+                </div>
+
+                <div id="settingsComposerWarnings" class="settings-warning-box" style="display:none;"></div>
+            </div>
+
+            <div class="settings-danger-zone">
+                <button class="btn btn-secondary" type="button" onclick="app.resetComposerSettingsToDefaults()">Reset composer settings to defaults</button>
             </div>
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="app.closeSettingsModal()">Cancel</button>
@@ -3298,6 +3397,9 @@
                 const settings = this.settings || this.loadSettings();
                 document.getElementById('settingsComposerNameDisplayFormat').value = settings.composer?.nameDisplayFormat || 'last_first';
                 document.getElementById('settingsComposerLibraryMode').value = settings.composer?.library?.mode || 'builtin_plus_custom';
+                this.renderComposerAliasRows(settings.composer?.library?.customAliases || {});
+                this.renderComposerBlacklistRows(settings.composer?.library?.blacklistedAliases || []);
+                this._setSettingsComposerWarnings([]);
                 document.getElementById('settingsModal').classList.add('active');
             },
 
@@ -3305,19 +3407,230 @@
                 document.getElementById('settingsModal').classList.remove('active');
             },
 
+            _setSettingsComposerWarnings(messages = []) {
+                const box = document.getElementById('settingsComposerWarnings');
+                if (!box) return;
+
+                const cleaned = messages.filter(Boolean);
+                if (cleaned.length === 0) {
+                    box.style.display = 'none';
+                    box.textContent = '';
+                    return;
+                }
+
+                box.style.display = 'block';
+                box.textContent = cleaned.join('\n');
+            },
+
+            _createComposerAliasRow(key = '', canonical = '') {
+                const row = document.createElement('div');
+                row.className = 'settings-kv-row';
+
+                const keyInput = document.createElement('input');
+                keyInput.type = 'text';
+                keyInput.className = 'form-input settings-alias-key';
+                keyInput.placeholder = 'Alias key (e.g. beeth.)';
+                keyInput.value = this._normalizeComposerAliasKey(key);
+
+                const canonicalInput = document.createElement('input');
+                canonicalInput.type = 'text';
+                canonicalInput.className = 'form-input settings-alias-canonical';
+                canonicalInput.placeholder = 'Canonical composer (e.g. Beethoven, Ludwig van)';
+                canonicalInput.value = (canonical || '').toString().trim();
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'settings-remove-btn';
+                removeBtn.setAttribute('aria-label', 'Remove alias mapping');
+                removeBtn.textContent = '✕';
+
+                row.appendChild(keyInput);
+                row.appendChild(canonicalInput);
+                row.appendChild(removeBtn);
+
+                keyInput.addEventListener('blur', () => {
+                    keyInput.value = this._normalizeComposerAliasKey(keyInput.value);
+                });
+                removeBtn.addEventListener('click', () => row.remove());
+
+                return row;
+            },
+
+            _createComposerBlacklistRow(value = '') {
+                const row = document.createElement('div');
+                row.className = 'settings-kv-row';
+
+                const valueInput = document.createElement('input');
+                valueInput.type = 'text';
+                valueInput.className = 'form-input settings-blacklist-value';
+                valueInput.placeholder = 'Alias value to suppress';
+                valueInput.value = this._normalizeComposerAliasKey(value);
+                valueInput.style.gridColumn = '1 / span 2';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'settings-remove-btn';
+                removeBtn.setAttribute('aria-label', 'Remove blacklist entry');
+                removeBtn.textContent = '✕';
+
+                row.appendChild(valueInput);
+                row.appendChild(removeBtn);
+
+                valueInput.addEventListener('blur', () => {
+                    valueInput.value = this._normalizeComposerAliasKey(valueInput.value);
+                });
+                removeBtn.addEventListener('click', () => row.remove());
+
+                return row;
+            },
+
+            renderComposerAliasRows(aliases = {}) {
+                const container = document.getElementById('settingsAliasTable');
+                if (!container) return;
+                container.innerHTML = '';
+
+                const entries = Object.entries(aliases);
+                if (entries.length === 0) {
+                    container.appendChild(this._createComposerAliasRow('', ''));
+                    return;
+                }
+
+                entries.forEach(([key, canonical]) => {
+                    container.appendChild(this._createComposerAliasRow(key, canonical));
+                });
+            },
+
+            renderComposerBlacklistRows(values = []) {
+                const container = document.getElementById('settingsBlacklistTable');
+                if (!container) return;
+                container.innerHTML = '';
+
+                if (!values.length) {
+                    container.appendChild(this._createComposerBlacklistRow(''));
+                    return;
+                }
+
+                values.forEach(value => {
+                    container.appendChild(this._createComposerBlacklistRow(value));
+                });
+            },
+
+            addComposerAliasRow() {
+                const container = document.getElementById('settingsAliasTable');
+                if (!container) return;
+                container.appendChild(this._createComposerAliasRow('', ''));
+            },
+
+            addComposerBlacklistRow() {
+                const container = document.getElementById('settingsBlacklistTable');
+                if (!container) return;
+                container.appendChild(this._createComposerBlacklistRow(''));
+            },
+
+            _collectComposerLibrarySettingsFromModal() {
+                const aliasRows = [...document.querySelectorAll('#settingsAliasTable .settings-kv-row')];
+                const blacklistRows = [...document.querySelectorAll('#settingsBlacklistTable .settings-kv-row')];
+
+                const customAliases = {};
+                const blacklistedAliases = [];
+                const blockingErrors = [];
+
+                aliasRows.forEach((row, idx) => {
+                    const rawKey = row.querySelector('.settings-alias-key')?.value || '';
+                    const rawCanonical = row.querySelector('.settings-alias-canonical')?.value || '';
+                    const key = this._normalizeComposerAliasKey(rawKey);
+                    const canonical = rawCanonical.toString().trim();
+                    const isEmptyRow = !rawKey.trim() && !rawCanonical.trim();
+                    if (isEmptyRow) return;
+
+                    if (!key) {
+                        blockingErrors.push(`Alias row ${idx + 1}: alias key cannot be empty.`);
+                        return;
+                    }
+                    if (!canonical) {
+                        blockingErrors.push(`Alias row ${idx + 1}: canonical composer cannot be empty.`);
+                        return;
+                    }
+
+                    customAliases[key] = canonical;
+                });
+
+                blacklistRows.forEach((row, idx) => {
+                    const rawValue = row.querySelector('.settings-blacklist-value')?.value || '';
+                    const normalized = this._normalizeComposerAliasKey(rawValue);
+                    if (!rawValue.trim()) return;
+                    if (!normalized) {
+                        blockingErrors.push(`Blacklist row ${idx + 1}: alias value cannot be empty.`);
+                        return;
+                    }
+                    blacklistedAliases.push(normalized);
+                });
+
+                const dedupedBlacklist = [...new Set(blacklistedAliases)];
+                const collisionKeys = Object.keys(customAliases).filter(key => Object.prototype.hasOwnProperty.call(this.builtInComposerDatabase, key));
+                const warnings = collisionKeys.length
+                    ? [`Warning: ${collisionKeys.length} custom alias${collisionKeys.length !== 1 ? 'es' : ''} override built-in keys: ${collisionKeys.join(', ')}`]
+                    : [];
+
+                return {
+                    customAliases,
+                    blacklistedAliases: dedupedBlacklist,
+                    blockingErrors,
+                    warnings
+                };
+            },
+
             saveSettingsFromModal() {
+                const composerLibraryDraft = this._collectComposerLibrarySettingsFromModal();
+                if (composerLibraryDraft.blockingErrors.length) {
+                    this._setSettingsComposerWarnings(composerLibraryDraft.blockingErrors);
+                    this.showNotification('Could not save settings. Resolve composer library validation errors.');
+                    return;
+                }
+
                 const patch = {
                     composer: {
                         nameDisplayFormat: document.getElementById('settingsComposerNameDisplayFormat').value,
                         library: {
-                            mode: document.getElementById('settingsComposerLibraryMode').value
+                            mode: document.getElementById('settingsComposerLibraryMode').value,
+                            customAliases: composerLibraryDraft.customAliases,
+                            blacklistedAliases: composerLibraryDraft.blacklistedAliases
                         }
                     }
                 };
 
                 this.saveSettings(patch);
+                this._setSettingsComposerWarnings(composerLibraryDraft.warnings);
+                if (composerLibraryDraft.warnings.length) {
+                    this.showNotification('Settings saved with composer alias collision warnings.');
+                    return;
+                }
                 this.closeSettingsModal();
                 this.showNotification('Settings saved. New tools will use the updated preferences immediately.');
+            },
+
+            resetComposerSettingsToDefaults() {
+                const confirmed = window.confirm('Reset composer settings to defaults? This keeps unrelated settings (like normalization) unchanged.');
+                if (!confirmed) return;
+
+                const patch = {
+                    composer: {
+                        nameDisplayFormat: DEFAULT_SETTINGS.composer.nameDisplayFormat,
+                        library: {
+                            mode: DEFAULT_SETTINGS.composer.library.mode,
+                            customAliases: this._deepClone(DEFAULT_SETTINGS.composer.library.customAliases),
+                            blacklistedAliases: this._deepClone(DEFAULT_SETTINGS.composer.library.blacklistedAliases)
+                        }
+                    }
+                };
+
+                const next = this.saveSettings(patch);
+                document.getElementById('settingsComposerNameDisplayFormat').value = next.composer?.nameDisplayFormat || DEFAULT_SETTINGS.composer.nameDisplayFormat;
+                document.getElementById('settingsComposerLibraryMode').value = next.composer?.library?.mode || DEFAULT_SETTINGS.composer.library.mode;
+                this.renderComposerAliasRows(next.composer?.library?.customAliases || {});
+                this.renderComposerBlacklistRows(next.composer?.library?.blacklistedAliases || []);
+                this._setSettingsComposerWarnings([]);
+                this.showNotification('Composer settings reset to defaults.');
             },
 
             getComposerAliasMap() {
