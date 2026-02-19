@@ -3060,7 +3060,8 @@
                 incrementEndpoint: '/counter/increment',
                 storageKeys: {
                     clientId: 'tidyscore-counter-client-id',
-                    pendingQueue: 'tidyscore-counter-pending-queue'
+                    pendingQueue: 'tidyscore-counter-pending-queue',
+                    localTotal: 'tidyscore-counter-local-total'
                 },
                 maxPendingQueue: 50
             },
@@ -5385,12 +5386,26 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                 }
 
                 this.loadCounterQueueFromStorage();
+
+                if (!this.isCounterApiConfigured()) {
+                    try {
+                        const stored = localStorage.getItem(this.counterConfig.storageKeys.localTotal);
+                        const parsed = Number(stored);
+                        this.globalCleanedCount = (Number.isFinite(parsed) && parsed >= 0) ? parsed : 0;
+                    } catch (e) {
+                        this.globalCleanedCount = 0;
+                    }
+                }
             },
 
             buildCounterUrl(path) {
                 const base = (this.counterConfig.apiBaseUrl || '').trim().replace(/\/$/, '');
                 const endpoint = path.startsWith('/') ? path : `/${path}`;
                 return `${base}${endpoint}`;
+            },
+
+            isCounterApiConfigured() {
+                return !!this.counterConfig.apiBaseUrl;
             },
 
             renderGlobalCleanedCount() {
@@ -5409,10 +5424,15 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                 this.counterSyncOnline = !!isOnline;
                 const statusEl = document.getElementById('counterSyncStatus');
                 if (!statusEl) return;
+                if (!this.isCounterApiConfigured()) {
+                    statusEl.hidden = true;
+                    return;
+                }
                 statusEl.hidden = this.counterSyncOnline;
             },
 
             async fetchGlobalCleanedCount() {
+                if (!this.isCounterApiConfigured()) return;
                 try {
                     const response = await fetch(this.buildCounterUrl(this.counterConfig.totalEndpoint), {
                         method: 'GET',
@@ -5463,6 +5483,18 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
             },
 
             enqueueCounterIncrement(delta) {
+                if (!this.isCounterApiConfigured()) {
+                    if (!Number.isFinite(this.globalCleanedCount)) this.globalCleanedCount = 0;
+                    this.globalCleanedCount += delta;
+                    try {
+                        localStorage.setItem(
+                            this.counterConfig.storageKeys.localTotal,
+                            String(this.globalCleanedCount)
+                        );
+                    } catch (e) {}
+                    this.renderGlobalCleanedCount();
+                    return;
+                }
                 this.counterPendingQueue.push({
                     delta,
                     clientId: this.anonymousClientId,
@@ -5482,6 +5514,7 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
             },
 
             async flushCounterQueue() {
+                if (!this.isCounterApiConfigured()) return;
                 if (this._counterFlushInFlight || this.counterPendingQueue.length === 0) return;
                 this._counterFlushInFlight = true;
 
