@@ -3257,7 +3257,7 @@
                 'heitor villa-lobos': 'Villa-Lobos, Heitor',
                 'ginastera': 'Ginastera, Alberto',
                 'alberto ginastera': 'Ginastera, Alberto',
-                'barток': 'Bartók, Béla',
+                'bartók': 'Bartók, Béla',
                 'bartok': 'Bartók, Béla',
                 'bela bartok': 'Bartók, Béla',
                 'béla bartók': 'Bartók, Béla',
@@ -3534,6 +3534,10 @@
 
             _normalizeComposerAliasKey(value) {
                 return (value || '').toString().toLowerCase().trim();
+            },
+
+            _stripDiacritics(str) {
+                return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             },
 
             escapeHtml(str) {
@@ -4165,11 +4169,28 @@
                 this.tagsField = this.detectField(['tags', 'Tags', 'tag', 'Tag']);
             },
 
-            getSuggestion(composer) {
+            getSuggestion(composer, aliasMap = null) {
                 if (!composer) return null;
                 const normalized = this._normalizeComposerAliasKey(composer);
-                const aliasMap = this.getComposerAliasMap();
-                return aliasMap[normalized] || null;
+                aliasMap = aliasMap || this.getComposerAliasMap();
+
+                // 1. Exact normalized match (current behavior)
+                if (aliasMap[normalized]) return aliasMap[normalized];
+
+                // 2. Strip diacritics from input and try direct lookup
+                const strippedInput = this._stripDiacritics(normalized);
+                if (strippedInput !== normalized && aliasMap[strippedInput]) {
+                    return aliasMap[strippedInput];
+                }
+
+                // 3. Strip diacritics from map keys and compare
+                for (const key in aliasMap) {
+                    if (this._stripDiacritics(key) === strippedInput) {
+                        return aliasMap[key];
+                    }
+                }
+
+                return null;
             },
 
             detectField(possibleNames) {
@@ -4207,6 +4228,133 @@
                 this.updateScanResults();
             },
 
+            // Ambiguous single-word aliases that are common English words.
+            // These require stronger evidence (full segment, parenthesized, or "by" attribution)
+            // to avoid false positives like "Barber of Seville" → Samuel Barber.
+            _ambiguousAliases: new Set([
+                'part', 'glass', 'cage', 'monk', 'reich', 'barber',
+                'weber', 'adams', 'davis', 'williams', 'parker', 'holst'
+            ]),
+
+            _isAmbiguousSingleWord(candidate) {
+                const words = candidate.trim().split(/\s+/);
+                return words.length === 1 && this._ambiguousAliases.has(candidate.toLowerCase().trim());
+            },
+
+            _tryGetSuggestion(candidate, aliasMap, allowAmbiguous = false) {
+                if (!candidate || !candidate.trim()) return null;
+                const trimmed = candidate.trim();
+                if (!allowAmbiguous && this._isAmbiguousSingleWord(trimmed)) return null;
+                const suggestion = this.getSuggestion(trimmed, aliasMap);
+                return suggestion ? { extracted: trimmed, suggestion } : null;
+            },
+
+            _extractComposerFromTitle(title, aliasMap = null) {
+                if (!title || !title.trim()) return null;
+                title = title.trim();
+                aliasMap = aliasMap || this.getComposerAliasMap();
+
+                // Strategy 1: Separator-based segment scanning
+                // Split on spaced dashes (preserving hyphenated names), underscore, colon, pipe, slash
+                const separatorPattern = /\s+[-\u2013\u2014]\s+|[_:|\/]/;
+                if (separatorPattern.test(title)) {
+                    const segments = title.split(separatorPattern).map(s => s.trim()).filter(Boolean);
+
+                    for (const segment of segments) {
+                        // Try full segment first (ambiguous words OK as full segments)
+                        const fullResult = this._tryGetSuggestion(segment, aliasMap, true);
+                        if (fullResult) return fullResult;
+
+                        // Try progressively shorter word prefixes within segment
+                        const words = segment.split(/\s+/);
+                        for (let len = Math.min(words.length - 1, 4); len >= 1; len--) {
+                            const candidate = words.slice(0, len).join(' ');
+                            const result = this._tryGetSuggestion(candidate, aliasMap, false);
+                            if (result) return result;
+                        }
+
+                        // Try progressively shorter word suffixes within segment
+                        for (let len = Math.min(words.length - 1, 4); len >= 1; len--) {
+                            const candidate = words.slice(-len).join(' ');
+                            const result = this._tryGetSuggestion(candidate, aliasMap, false);
+                            if (result) return result;
+                        }
+                    }
+                }
+
+                // Strategy 2: Parenthesized content
+                const parenMatches = title.match(/\(([^)]+)\)/);
+                if (parenMatches) {
+                    const inner = parenMatches[1].trim();
+                    // Ambiguous words OK in parentheses (explicit attribution)
+                    const fullResult = this._tryGetSuggestion(inner, aliasMap, true);
+                    if (fullResult) return fullResult;
+
+                    const words = inner.split(/\s+/);
+                    for (let len = Math.min(words.length - 1, 4); len >= 1; len--) {
+                        const candidate = words.slice(0, len).join(' ');
+                        const result = this._tryGetSuggestion(candidate, aliasMap, true);
+                        if (result) return result;
+                    }
+                }
+
+                // Strategy 3: "by" keyword
+                const byMatch = title.match(/\bby\s+([\p{L}][\p{L}.\s-]*?)(?:\s*[,)\u2013\u2014|]|\s*$)/iu);
+                if (byMatch) {
+                    const candidate = byMatch[1].trim();
+                    // Ambiguous words OK after "by" (explicit attribution)
+                    const fullResult = this._tryGetSuggestion(candidate, aliasMap, true);
+                    if (fullResult) return fullResult;
+
+                    const words = candidate.split(/\s+/);
+                    for (let len = Math.min(words.length - 1, 4); len >= 1; len--) {
+                        const cand = words.slice(0, len).join(' ');
+                        const result = this._tryGetSuggestion(cand, aliasMap, true);
+                        if (result) return result;
+                    }
+                }
+
+                // Strategy 4: Structural patterns (Unicode-aware, start-anchored)
+                const structuralPatterns = [
+                    // "Bach - Prelude" or "J.S. Bach - Air" (with Unicode letter support)
+                    /^([\p{Lu}][\p{Ll}]+(?:\s+[\p{Lu}]\.?\s*[\p{Lu}]\.?\s*)?(?:\s+[\p{Lu}][\p{Ll}]+)?)\s*[-\u2013\u2014]\s*/u,
+                    // "Dvorak_SQ12"
+                    /^([\p{Lu}][\p{Ll}]+)_/u,
+                    // "Bach Suite" or "Beethoven Sonata" (expanded form keywords)
+                    /^([\p{Lu}][\p{Ll}]+)\s+(?:[Ss]uite|[Ss]onata|[Ss]ymphony|[Cc]oncerto|[Qq]uartet|[Qq]uintet|[Pp]relude|[Ff]ugue|[Cc]antata|[Mm]ass|[Rr]equiem|[Oo]verture|[Rr]hapsody|[Nn]octurne|[EÉeé]tude|[Ww]altz|[Pp]olonaise|[Mm]azurka|[Bb]allade|[Ii]mpromptu|[Vv]ariations|[Ss]erenade|[Dd]ivertimento|[Tt]rio|[Oo]pus|Op\.|No\.)/u,
+                    // "Bach 3rd" or "Beethoven 5th"
+                    /^([\p{Lu}][\p{Ll}]+)\s+\d/u
+                ];
+
+                for (const pattern of structuralPatterns) {
+                    const match = title.match(pattern);
+                    if (match) {
+                        const potentialComposer = match[1].trim();
+                        const suggestion = this.getSuggestion(potentialComposer, aliasMap);
+                        if (suggestion) {
+                            return { extracted: potentialComposer, suggestion };
+                        }
+                    }
+                }
+
+                // Strategy 5: Multi-word prefix scan (for titles without separators)
+                const titleWords = title.split(/\s+/);
+                for (let len = Math.min(titleWords.length - 1, 5); len >= 2; len--) {
+                    const candidate = titleWords.slice(0, len).join(' ');
+                    const result = this._tryGetSuggestion(candidate, aliasMap, false);
+                    if (result) return result;
+                }
+
+                // Strategy 6: First-word fallback (ambiguous words blocked)
+                const firstWord = title.split(/[\s\-\u2013\u2014_]/)[0].trim();
+                if (firstWord.length > 2) {
+                    const result = this._tryGetSuggestion(firstWord, aliasMap, false);
+                    if (result) return result;
+                }
+
+                return null;
+            },
+
             getComposerExtractionSignals(targetIds = []) {
                 const signals = {
                     titleExtractions: [],
@@ -4219,17 +4367,7 @@
                     return signals;
                 }
 
-                // Improved patterns - more specific to avoid over-matching
-                const patterns = [
-                    // "Bach - Prelude" or "J.S. Bach - Air"
-                    /^([A-Z][a-z]+(?:\s+[A-Z]\.?\s*[A-Z]\.?\s*)?(?:\s+[A-Z][a-z]+)?)\s*[-–—]\s*/,
-                    // "Dvorak_SQ12"
-                    /^([A-Z][a-z]+)_/,
-                    // "Bach Suite" or "Beethoven Sonata" - but just extract the name
-                    /^([A-Z][a-z]+)\s+(?:Suite|Sonata|Symphony|Concerto|Quartet|Quintet|Prelude|Fugue|Cantata|Mass|Requiem)/i,
-                    // "Bach 3rd" or "Beethoven 5th"
-                    /^([A-Z][a-z]+)\s+\d/
-                ];
+                const aliasMap = this.getComposerAliasMap();
 
                 targetIds.forEach(id => {
                     const row = this.dataById.get(id);
@@ -4243,45 +4381,20 @@
                     } else {
                         signals.checked++;
 
-                        let matched = false;
-                        for (const pattern of patterns) {
-                            const match = title.match(pattern);
-                            if (match) {
-                                const potentialComposer = match[1].trim();
-                                const suggestion = this.getSuggestion(potentialComposer);
-                                if (suggestion) {
-                                    signals.titleExtractions.push({
-                                        id,
-                                        title,
-                                        extracted: potentialComposer,
-                                        suggestion,
-                                        type: 'title'
-                                    });
-                                    matched = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!matched) {
-                            const firstWord = title.split(/[\s\-–—_]/)[0].trim();
-                            if (firstWord.length > 2) {
-                                const suggestion = this.getSuggestion(firstWord);
-                                if (suggestion) {
-                                    signals.titleExtractions.push({
-                                        id,
-                                        title,
-                                        extracted: firstWord,
-                                        suggestion,
-                                        type: 'title'
-                                    });
-                                }
-                            }
+                        const result = this._extractComposerFromTitle(title, aliasMap);
+                        if (result) {
+                            signals.titleExtractions.push({
+                                id,
+                                title,
+                                extracted: result.extracted,
+                                suggestion: result.suggestion,
+                                type: 'title'
+                            });
                         }
                     }
 
                     if (currentComposer) {
-                        const suggestion = this.getSuggestion(currentComposer);
+                        const suggestion = this.getSuggestion(currentComposer, aliasMap);
                         const formattedSuggestion = suggestion ? this.formatComposerName(suggestion) || suggestion : null;
                         const currentFormatted = this.formatComposerName(currentComposer.trim()) || currentComposer.trim();
                         if (formattedSuggestion && formattedSuggestion !== currentFormatted) {
@@ -4382,24 +4495,7 @@
             },
 
             detectComposerFromTitle(title = '') {
-                if (!title) return false;
-
-                const patterns = [
-                    /^([A-Z][a-z]+(?:\s+[A-Z]\.?\s*[A-Z]\.?\s*)?(?:\s+[A-Z][a-z]+)?)\s*[-–—]\s*/,
-                    /^([A-Z][a-z]+)_/,
-                    /^([A-Z][a-z]+)\s+(?:Suite|Sonata|Symphony|Concerto|Quartet|Quintet|Prelude|Fugue|Cantata|Mass|Requiem)/i,
-                    /^([A-Z][a-z]+)\s+\d/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = title.match(pattern);
-                    if (match && this.getSuggestion(match[1].trim())) {
-                        return true;
-                    }
-                }
-
-                const firstWord = title.split(/[\s\-–—_]/)[0].trim();
-                return firstWord.length > 2 && Boolean(this.getSuggestion(firstWord));
+                return this._extractComposerFromTitle(title) !== null;
             },
 
             needsComposerStandardization(composer = '') {
@@ -4896,8 +4992,9 @@
                     this.showNotification(`Smart Extract checked ${checked} entries with blank composers and ${skipped} with existing composers, but found no suggestions.
 
 This works best with titles like:
-• "Bach - Prelude"
-• "Beethoven Symphony"
+• "Bach - Prelude" or "Prelude - Bach"
+• "Beethoven Symphony" or "Symphony (Beethoven)"
+• "Suite No. 1 by Bach"
 
 It also detects incomplete names like "bach" or "beethoven" in the composer field.`);
                     return;
