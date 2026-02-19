@@ -2506,8 +2506,8 @@
                         <div class="scan-result-meta">
                             <span id="scanCountMissingComposer" class="scan-count-badge">0</span>
                             <div class="scan-result-copy">
-                                <div class="scan-result-label">Complete missing/incomplete composers</div>
-                                <div class="scan-result-desc">Includes title-based extraction and incomplete composer-name completion (same scope as Smart Extract).</div>
+                                <div class="scan-result-label">Missing/incomplete composers</div>
+                                <div class="scan-result-desc">Fills blank composer fields by inferring from the title, and completes partial names.</div>
                             </div>
                         </div>
                         <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('missingComposer')">Fix composers</button>
@@ -2516,31 +2516,21 @@
                         <div class="scan-result-meta">
                             <span id="scanCountVariantComposer" class="scan-count-badge">0</span>
                             <div class="scan-result-copy">
-                                <div class="scan-result-label">Composer variants / inconsistent formatting</div>
+                                <div class="scan-result-label">Inconsistent composer formatting</div>
                                 <div class="scan-result-desc">Finds names that can be standardized to a consistent composer format.</div>
                             </div>
                         </div>
-                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('composerFormatting')">Fix composers</button>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('composerFormatting')">Standardize composer names</button>
                     </div>
                     <div class="scan-result-row">
                         <div class="scan-result-meta">
                             <span id="scanCountImslpTitles" class="scan-count-badge">0</span>
                             <div class="scan-result-copy">
-                                <div class="scan-result-label">Titles with IMSLP / file-name junk</div>
+                                <div class="scan-result-label">Titles with file-name junk (IMSLP IDs, underscores)</div>
                                 <div class="scan-result-desc">Spots IMSLP IDs, underscores, and imported filename artifacts in titles.</div>
                             </div>
                         </div>
                         <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('imslpTitles')">Fix titles</button>
-                    </div>
-                    <div class="scan-result-row">
-                        <div class="scan-result-meta">
-                            <span id="scanCountGenreTagGaps" class="scan-count-badge">0</span>
-                            <div class="scan-result-copy">
-                                <div class="scan-result-label">Empty genre/tags opportunities</div>
-                                <div class="scan-result-desc">Highlights rows that still have blank genre or tags fields.</div>
-                            </div>
-                        </div>
-                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('genreTagGaps')">Fix metadata</button>
                     </div>
                 </div>
             </div>
@@ -4517,8 +4507,7 @@
                 const candidates = {
                     missingComposer: [],
                     composerFormatting: [],
-                    imslpTitles: [],
-                    genreTagGaps: []
+                    imslpTitles: []
                 };
 
                 const extractionSignals = this.getComposerExtractionSignals(ids);
@@ -4535,24 +4524,18 @@
                     if (!row) return;
 
                     const title = this.titleField ? (row[this.titleField] || '') : '';
-                    const genre = this.genreField ? (row[this.genreField] || '') : '';
-                    const tags = this.tagsField ? (row[this.tagsField] || '') : '';
 
                     if (this.titleField && this.needsImslpCleanup(title) && this.cleanImslpTitle(title) !== title) {
                         candidates.imslpTitles.push(id);
                     }
 
-                    if ((this.genreField && !genre.trim()) || (this.tagsField && !tags.trim())) {
-                        candidates.genreTagGaps.push(id);
-                    }
                 });
 
                 return {
                     counts: {
                         missingComposer: candidates.missingComposer.length,
                         composerFormatting: candidates.composerFormatting.length,
-                        imslpTitles: candidates.imslpTitles.length,
-                        genreTagGaps: candidates.genreTagGaps.length
+                        imslpTitles: candidates.imslpTitles.length
                     },
                     candidates,
                     extractionSignals: {
@@ -4588,14 +4571,12 @@
                 const counts = this.scanResults?.counts || {
                     missingComposer: 0,
                     composerFormatting: 0,
-                    imslpTitles: 0,
-                    genreTagGaps: 0
+                    imslpTitles: 0
                 };
                 const targets = {
                     scanCountMissingComposer: counts.missingComposer,
                     scanCountVariantComposer: counts.composerFormatting,
-                    scanCountImslpTitles: counts.imslpTitles,
-                    scanCountGenreTagGaps: counts.genreTagGaps
+                    scanCountImslpTitles: counts.imslpTitles
                 };
 
                 Object.entries(targets).forEach(([id, value]) => {
@@ -4616,15 +4597,6 @@
                 if (type === 'imslpTitles') {
                     this.cleanImslpTitles();
                     return;
-                }
-                if (type === 'genreTagGaps') {
-                    if (this.genreField) {
-                        this.suggestGenres();
-                    } else if (this.tagsField) {
-                        this.suggestTags();
-                    } else {
-                        this.showNotification('Genre/Tags fields not found in your CSV');
-                    }
                 }
             },
 
