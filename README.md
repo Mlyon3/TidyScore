@@ -2,15 +2,53 @@
 
 A browser-based tool for cleaning up your [forScore](https://forscore.co) music library metadata. Upload your CSV export, fix inconsistencies, and re-import — all without your data ever leaving your browser.
 
+## Setup
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Create a production build:
+
+```bash
+npm run build
+```
+
+Preview the production build locally:
+
+```bash
+npm run preview
+```
+
 ## How to Use
 
-1. Export your metadata from forScore: **Menu → Share → CSV**
-2. Open `forscore-organizer (1).html` in any browser
-3. Upload your CSV (or drag and drop it)
-4. Clean up your data using the tools below
-5. Export the cleaned CSV and import it back into forScore
+1. Start the app with `npm run dev`.
+2. Export your metadata from forScore: **Menu → Share → CSV**.
+3. Upload your CSV (or drag and drop it).
+4. Clean up your data using the tools below.
+5. Export the cleaned CSV and import it back into forScore.
 
-No installation, no accounts, no server — just open the file and go.
+No accounts and no backend required for your data — all CSV processing remains browser-only.
+
+## Project Structure
+
+Application code now lives under `src/` in modular JavaScript and CSS files:
+
+- `src/data` — data definitions, mappings, and constants
+- `src/core` — app state and core processing logic
+- `src/ui` — rendering, events, and interaction wiring
+- `src/tools` — feature-specific cleanup tools (for example duplicate detection)
+- `src/styles` — modular stylesheet files imported in order
+
+> Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow use the npm scripts above.
 
 ---
 
@@ -33,6 +71,9 @@ Search and replace across any field (title, composer, genre, or tags). Works on 
 
 ### Standardize Composers
 Converts composer names from "First Last" to "Last, First" format. Handles complex names like "Ludwig van Beethoven" → "Beethoven, Ludwig van".
+
+### Find Duplicates
+Scans titles/composers for likely duplicate scores and groups them by confidence so you can review matches quickly. Select matches in the duplicate modal and apply duplicate tags in bulk.
 
 ---
 
