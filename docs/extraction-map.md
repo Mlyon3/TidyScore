@@ -4,9 +4,13 @@ This map tracks sections extracted from `index.html` into `src/` modules/partial
 
 ## JavaScript
 
-| Source section in `index.html` | Extracted target | Notes |
+### Duplicate detection (single source of truth)
+
+| Responsibility | Source of truth | Integration point |
 | --- | --- | --- |
-| `// ===== Duplicate Detection =====` block (`parseTitleForDedup` through `closeDuplicateModal`) | `src/tools/duplicate-tools.js` | Methods exported as `duplicateTools` and merged into `app` in `src/main.js` via `Object.assign(...)` so inline handlers continue to work. |
+| Duplicate parsing/detection/UI actions (`parseTitleForDedup` → `closeDuplicateModal`) | `src/tools/duplicate-tools.js` | `index.html` loads a module script, imports `mergeToolsIntoApp` from `src/main.js`, merges tools into the inline `app`, then sets `window.app = ...` so inline `onclick="app..."` handlers continue to work. |
+
+There is no duplicate-detection implementation left inside the inline `app` object in `index.html`.
 
 ## CSS
 

@@ -1,14 +1,12 @@
 import { duplicateTools } from './tools/duplicate-tools.js';
 
 /**
- * Attach extracted tools to the app object so existing inline handlers
- * (e.g. onclick="app.openDuplicateModal()") continue to resolve.
+ * Merge extracted tool modules into the inline app object.
+ *
+ * index.html owns app creation and assigns the merged object to window.app
+ * so existing inline handlers (onclick="app.method()") still resolve.
  */
 export function mergeToolsIntoApp(app) {
     Object.assign(app, duplicateTools);
     return app;
-}
-
-if (typeof window !== 'undefined' && window.app) {
-    Object.assign(window.app, duplicateTools);
 }
