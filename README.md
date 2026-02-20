@@ -48,9 +48,18 @@ Application code now lives under `src/` in modular JavaScript and CSS files:
 - `src/tools` — feature-specific cleanup tools (for example duplicate detection)
 - `src/styles` — modular stylesheet files imported in order
 
-> Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow use the npm scripts above.
+> Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow uses Vite via the npm scripts above.
 
 ---
+
+
+## Current migration status
+
+- ✅ **Modularized in `src/`**: core app logic, UI interactions, data definitions, feature tools (including duplicate tooling), and stylesheet modules.
+- ✅ **Vite-based local workflow**: repository root now includes `package.json` scripts (`dev`, `build`, `preview`) and Vite dependency entries as the source of truth for local startup/build.
+- ⚠️ **Still inline in `index.html`**: the application shell markup and static structure remain in the root HTML file while importing the modular runtime from `src/main.js`.
+
+This section should be updated as remaining inline structure is moved into fully componentized/modules-first architecture.
 
 ## Cleanup Tools
 
