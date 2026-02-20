@@ -696,9 +696,13 @@
 
         <script type="module">
         import app from './src/main.js';
-
         window.app = app;
-        document.addEventListener('DOMContentLoaded', () => app.init());
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => app.init());
+        } else {
+            app.init();
+        }
     </script>
 </body>
 </html>
