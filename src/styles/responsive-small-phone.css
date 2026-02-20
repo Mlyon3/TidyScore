@@ -1,0 +1,133 @@
+/* ===== Responsive: Small Phone ===== */
+@media (max-width: 480px) {
+    .container {
+        padding: 20px 12px;
+    }
+
+    .app-header-inner {
+        padding: 12px 16px;
+    }
+
+    .app-brand {
+        gap: 10px;
+    }
+
+    .app-title {
+        font-size: 18px;
+    }
+
+    .app-tagline {
+        font-size: 12px;
+    }
+
+    .upload-section {
+        padding: 32px 20px;
+        margin-bottom: 24px;
+    }
+
+    .upload-icon svg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .table-section {
+        padding: 16px 12px;
+        border-radius: var(--radius-md);
+    }
+
+    .table-controls {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .btn-tool-desc {
+        display: none;
+    }
+
+    .btn-tool {
+        padding: 10px 12px;
+        gap: 2px;
+    }
+
+    .modal-content {
+        padding: 24px 20px;
+        width: 95%;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        margin-bottom: 16px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .stat-card {
+        padding: 16px 18px;
+    }
+
+    .section-header {
+        margin-bottom: 14px;
+    }
+
+    h2 {
+        font-size: 16px;
+    }
+
+    .export-section {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .export-section .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .export-section .btn-action-content {
+        width: 100%;
+    }
+
+    .export-section .btn-action-label,
+    .export-section .btn-action-desc {
+        white-space: normal;
+    }
+
+    .bulk-controls.active {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .bulk-controls .btn {
+        width: 100%;
+    }
+
+    .suggestions-dropdown {
+        max-width: calc(100vw - 40px);
+    }
+
+    .table-wrapper {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .manager-modal-content {
+        max-width: none;
+    }
+
+    .manager-rename-row {
+        flex-wrap: wrap;
+    }
+
+    .manager-rename-input {
+        width: 100%;
+    }
+
+    .tool-dropdown {
+        left: auto;
+        right: 0;
+    }
+}
+    
+

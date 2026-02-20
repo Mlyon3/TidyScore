@@ -1,0 +1,77 @@
+/* ===== Diff View ===== */
+.diff-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-top: 8px;
+}
+
+.diff-toggle:hover {
+    text-decoration: underline;
+}
+
+.diff-toggle svg {
+    transition: transform var(--transition-fast);
+}
+
+.diff-toggle.expanded svg {
+    transform: rotate(90deg);
+}
+
+.diff-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+}
+
+.diff-row {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border-light);
+    font-size: 13px;
+}
+
+.diff-row:last-child {
+    border-bottom: none;
+}
+
+.diff-row-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.diff-row-num {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.diff-field {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.diff-old {
+    color: var(--color-danger, #e53e3e);
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.diff-new {
+    color: var(--color-success, #48bb78);
+}
+
+.diff-arrow {
+    color: var(--color-text-muted);
+    margin: 0 6px;
+}
+

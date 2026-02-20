@@ -1,0 +1,189 @@
+/* ===== Responsive: Tablet & Landscape Phone ===== */
+@media (max-width: 768px) {
+    .container {
+        padding: 24px 16px;
+    }
+
+    .upload-section {
+        padding: 40px 24px;
+    }
+
+    .table-section {
+        padding: 20px 16px;
+    }
+
+    .modal-content {
+        padding: 28px 24px;
+    }
+
+    .stat-dropdown {
+        min-width: 0;
+        max-width: 90vw;
+    }
+
+    .toast-notification {
+        left: 16px;
+        right: 16px;
+        max-width: none;
+        top: 12px;
+    }
+
+    .table-controls {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .scan-result-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .scan-result-meta {
+        width: 100%;
+    }
+
+    .scan-fix-btn {
+        width: 100%;
+    }
+
+    .btn-tool {
+        min-width: 0;
+    }
+
+    /* Card view transformation */
+    .table-wrapper {
+        overflow-x: visible;
+        max-height: none;
+    }
+
+    thead {
+        display: none;
+    }
+
+    table, tbody {
+        display: block;
+        width: 100%;
+    }
+
+    tr {
+        display: block;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border-light);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    tr.selected {
+        background: var(--color-accent-light);
+        border-color: var(--color-accent);
+    }
+
+    tr.selected td {
+        background: transparent;
+    }
+
+    td {
+        display: block;
+        padding: 4px 0;
+        border-bottom: none;
+        font-size: 14px;
+        text-align: left;
+    }
+
+    td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    /* Checkbox & row number: positioned at top of card */
+    td.checkbox-cell {
+        position: absolute;
+        top: 14px;
+        left: 16px;
+        width: auto;
+        padding: 0;
+    }
+
+    td.row-num-cell {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        width: auto;
+        padding: 0;
+        text-align: right;
+        font-size: 12px;
+    }
+
+    /* Title as card heading */
+    td[data-label="Title"] {
+        margin-top: 28px;
+        padding-top: 0;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    td[data-label="Title"]::before {
+        display: none;
+    }
+
+    /* Visual separator before Composer */
+    td[data-label="Composer"] {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--color-border-light);
+    }
+
+    /* Modified cell indicator in card layout */
+    td.cell-modified {
+        border-left: 3px solid var(--color-success, #48bb78);
+        padding-left: 10px;
+        background: rgba(72, 187, 120, 0.06);
+        border-radius: 4px;
+    }
+
+    /* Editable tap targets */
+    td .editable {
+        display: block;
+        margin: -4px -8px;
+    }
+
+    /* Show mobile sort dropdown */
+    .mobile-sort {
+        display: flex;
+    }
+
+    .export-section {
+        flex-wrap: wrap;
+    }
+
+    .export-section .btn-action {
+        width: 100%;
+    }
+
+    .bulk-controls.active {
+        flex-wrap: wrap;
+    }
+
+    .bulk-input {
+        max-width: none;
+        min-width: 0;
+    }
+
+    .stats-grid {
+        gap: 12px;
+    }
+
+    .app-footer {
+        margin-top: 40px;
+    }
+}
+
