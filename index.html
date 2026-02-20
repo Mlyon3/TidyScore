@@ -2597,6 +2597,13 @@
                                 <div class="tool-dropdown-item-desc">Add, remove, or replace tags in bulk</div>
                             </div>
                         </button>
+                        <button class="tool-dropdown-item" onclick="app.markDuplicateFilenames()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="8" height="10" rx="1.5"/><rect x="6" y="1" width="8" height="10" rx="1.5"/></svg>
+                            <div>
+                                <div>Tag Duplicate Filenames</div>
+                                <div class="tool-dropdown-item-desc">Adds “duplicate” tag where filenames repeat</div>
+                            </div>
+                        </button>
                         <button class="tool-dropdown-item" onclick="app.openManagerModal()">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2L7.5 3.5 9 5"/><path d="M7.5 3.5H12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h1"/><path d="M5 8h6M5 11h4"/></svg>
                             <div>
@@ -4204,6 +4211,7 @@
                 this.titleField = this.detectField(['title', 'Title']);
                 this.genreField = this.detectField(['genre', 'Genre', 'genres', 'Genres']);
                 this.tagsField = this.detectField(['tags', 'Tags', 'tag', 'Tag']);
+                this.filenameField = this.detectField(['filename', 'file name', 'file_name', 'Filename', 'File Name', 'FileName', 'File_Name']);
             },
 
             getSuggestion(composer, aliasMap = null) {
@@ -6589,6 +6597,89 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                 } else {
                     this.showNotification(`Tag "${fromTag}" not found in target rows.`);
                 }
+            },
+
+            _normalizeFilenameForDuplicateCheck(value) {
+                if (!value) return '';
+                const normalized = String(value)
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\\/g, '/')
+                    .split('/')
+                    .pop() || '';
+
+                return normalized.replace(/\.[a-z0-9]{1,5}$/i, '');
+            },
+
+            markDuplicateFilenames() {
+                this.closeGenreTagMenu();
+
+                if (!this.tagsField) {
+                    this.showNotification('Tags field is required to mark duplicates.');
+                    return;
+                }
+
+                if (!this.filenameField) {
+                    this.showNotification('No filename field found. Expected a header like “Filename” or “File Name”.');
+                    return;
+                }
+
+                const targetIndices = this.getTargetIds();
+                const groups = new Map();
+
+                targetIndices.forEach(idx => {
+                    const row = this.dataById.get(idx);
+                    const rawFilename = row[this.filenameField] || '';
+                    const key = this._normalizeFilenameForDuplicateCheck(rawFilename);
+                    if (!key) return;
+
+                    if (!groups.has(key)) {
+                        groups.set(key, []);
+                    }
+                    groups.get(key).push(idx);
+                });
+
+                const duplicateIds = [];
+                groups.forEach(ids => {
+                    if (ids.length > 1) {
+                        duplicateIds.push(...ids);
+                    }
+                });
+
+                if (duplicateIds.length === 0) {
+                    const scopeLabel = this.getScopeLabel();
+                    const scope = scopeLabel ? ` (${scopeLabel})` : '';
+                    this.showNotification(`No duplicate filenames found${scope}.`);
+                    return;
+                }
+
+                this.pushUndo('Tag Duplicate Filenames');
+                let updatedCount = 0;
+
+                duplicateIds.forEach(idx => {
+                    const row = this.dataById.get(idx);
+                    const existing = (row[this.tagsField] || '')
+                        .split(';')
+                        .map(tag => tag.trim())
+                        .filter(Boolean);
+
+                    const hasDuplicateTag = existing.some(tag => tag.toLowerCase() === 'duplicate');
+                    if (hasDuplicateTag) return;
+
+                    existing.push('duplicate');
+                    row[this.tagsField] = existing.join('; ');
+                    updatedCount++;
+                });
+
+                if (updatedCount === 0) {
+                    this.showNotification('Duplicate rows are already tagged.');
+                    return;
+                }
+
+                this.modifiedCount += updatedCount;
+                this.logChange('Tag duplicate filenames', updatedCount);
+                this.renderTable();
+                this.showNotification(`Added “duplicate” tag to ${updatedCount} row${updatedCount !== 1 ? 's' : ''}.`);
             },
 
             openManagerModal() {
