@@ -120,3 +120,27 @@ This verifies that canonical names display in first-last order when formatting m
 - `j.s. bach` row remains unchanged by extraction (blacklist suppression), and standardize only affects it if user manually changed it to a parseable canonical value.
 
 This scenario is the regression guard for the full user workflow.
+
+---
+
+## E) Duplicate detection + tagging flow
+
+**Functions under test:** `parseTitleForDedup`, `detectDuplicates`, `openDuplicateModal`, `renderDuplicateResults`, `toggleDupItem`, `toggleDupGroup`, `toggleDupSelectAll`, `applyDuplicateTags`, `closeDuplicateModal`.
+
+1. Load sample data.
+2. Add three rows:
+   - Title: `Moonlight Sonata.pdf`, Composer: `Beethoven`
+   - Title: `Moonlight Sonata (2).pdf`, Composer: `Beethoven`
+   - Title: `Moonlight Sonata Violin Part.pdf`, Composer: `Beethoven`
+3. Open the duplicate tool modal.
+4. Confirm one high-confidence group appears for the first two rows; the part-specific row is either excluded or low-confidence.
+5. Click the group checkbox and verify row-level checkboxes update.
+6. Click **Select all** and verify selected count changes.
+7. Apply duplicate tags.
+
+### Expected results
+
+- Duplicate modal opens and renders grouped results without console errors.
+- Group-level and select-all toggles update row selections and count text consistently.
+- Applying tags adds `_Duplicate_Delete_Me` to selected rows in the tags field.
+- Closing/reopening duplicate modal resets selection according to high-confidence preselect behavior.
