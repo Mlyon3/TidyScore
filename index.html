@@ -2341,20 +2341,40 @@
 
                 const allVisibleSelected = this.visibleIds.length > 0 && this.visibleIds.every(id => this.selectedIds.has(id));
 
-                thead.innerHTML = `
-                    <tr>
-                        <th class="checkbox-cell">
-                            <input type="checkbox" id="selectAll" onchange="app.toggleSelectAll()" ${allVisibleSelected ? 'checked' : ''}>
-                        </th>
-                        <th class="row-num-cell">#</th>
-                        <th class="${titleClass}" onclick="app.sortBy('${this.titleField}')">Title</th>
-                        <th class="${composerClass}" onclick="app.sortBy('${this.composerField}')">Composer</th>
-                        <th class="${genreClass}" onclick="app.sortBy('${this.genreField}')">Genre</th>
-                        <th class="${tagsClass}" onclick="app.sortBy('${this.tagsField}')">Tags</th>
-                    </tr>
-                `;
+                thead.textContent = '';
+                const headerRow = document.createElement('tr');
 
-                let html = '';
+                const checkboxTh = document.createElement('th');
+                checkboxTh.className = 'checkbox-cell';
+                const selectAll = document.createElement('input');
+                selectAll.type = 'checkbox';
+                selectAll.id = 'selectAll';
+                selectAll.checked = allVisibleSelected;
+                selectAll.addEventListener('change', () => this.toggleSelectAll());
+                checkboxTh.appendChild(selectAll);
+                headerRow.appendChild(checkboxTh);
+
+                const rowNumTh = document.createElement('th');
+                rowNumTh.className = 'row-num-cell';
+                rowNumTh.textContent = '#';
+                headerRow.appendChild(rowNumTh);
+
+                const makeSortableHeader = (label, field, className) => {
+                    const th = document.createElement('th');
+                    if (className) th.className = className;
+                    th.textContent = label;
+                    th.addEventListener('click', () => this.sortBy(field));
+                    return th;
+                };
+
+                headerRow.appendChild(makeSortableHeader('Title', this.titleField, titleClass));
+                headerRow.appendChild(makeSortableHeader('Composer', this.composerField, composerClass));
+                headerRow.appendChild(makeSortableHeader('Genre', this.genreField, genreClass));
+                headerRow.appendChild(makeSortableHeader('Tags', this.tagsField, tagsClass));
+                thead.appendChild(headerRow);
+
+                tbody.textContent = '';
+                const fragment = document.createDocumentFragment();
                 entries.forEach(({row, _id}) => {
                     const title = this.titleField ? row[this.titleField] : '';
                     const composer = this.composerField ? row[this.composerField] : '';
@@ -2368,21 +2388,46 @@
                     const genreMod = orig && genre !== (orig[this.genreField] || '') ? ' cell-modified' : '';
                     const tagsMod = orig && tags !== (orig[this.tagsField] || '') ? ' cell-modified' : '';
 
-                    html += `
-                        <tr class="${isSelected ? 'selected' : ''}">
-                            <td class="checkbox-cell">
-                                <input type="checkbox" onchange="app.toggleRow(${_id}, event)" ${isSelected ? 'checked' : ''}>
-                            </td>
-                            <td class="row-num-cell">${_id + 1}</td>
-                            <td data-label="Title" data-editable="true" class="${titleMod}" onclick="app.editCell(${_id}, '${this.titleField}', this)"><span class="editable">${title}</span></td>
-                            <td data-label="Composer" data-editable="true" class="${composerMod}" onclick="app.editCell(${_id}, '${this.composerField}', this)"><span class="editable">${composer}</span></td>
-                            <td data-label="Genre" data-editable="true" class="${genreMod}" onclick="app.editCell(${_id}, '${this.genreField}', this)"><span class="editable">${genre}</span></td>
-                            <td data-label="Tags" data-editable="true" class="${tagsMod}" onclick="app.editCell(${_id}, '${this.tagsField}', this)"><span class="editable">${tags}</span></td>
-                        </tr>
-                    `;
+                    const tr = document.createElement('tr');
+                    if (isSelected) tr.classList.add('selected');
+
+                    const rowCheckboxCell = document.createElement('td');
+                    rowCheckboxCell.className = 'checkbox-cell';
+                    const rowCheckbox = document.createElement('input');
+                    rowCheckbox.type = 'checkbox';
+                    rowCheckbox.checked = isSelected;
+                    rowCheckbox.addEventListener('change', (event) => this.toggleRow(_id, event));
+                    rowCheckboxCell.appendChild(rowCheckbox);
+                    tr.appendChild(rowCheckboxCell);
+
+                    const rowNumCell = document.createElement('td');
+                    rowNumCell.className = 'row-num-cell';
+                    rowNumCell.textContent = (_id + 1).toString();
+                    tr.appendChild(rowNumCell);
+
+                    const makeEditableCell = (label, field, value, modClass) => {
+                        const td = document.createElement('td');
+                        td.setAttribute('data-label', label);
+                        td.setAttribute('data-editable', 'true');
+                        if (modClass) td.className = modClass.trim();
+                        td.addEventListener('click', () => this.editCell(_id, field, td));
+
+                        const span = document.createElement('span');
+                        span.className = 'editable';
+                        span.textContent = value;
+                        td.appendChild(span);
+                        return td;
+                    };
+
+                    tr.appendChild(makeEditableCell('Title', this.titleField, title, titleMod));
+                    tr.appendChild(makeEditableCell('Composer', this.composerField, composer, composerMod));
+                    tr.appendChild(makeEditableCell('Genre', this.genreField, genre, genreMod));
+                    tr.appendChild(makeEditableCell('Tags', this.tagsField, tags, tagsMod));
+
+                    fragment.appendChild(tr);
                 });
 
-                tbody.innerHTML = html;
+                tbody.appendChild(fragment);
                 this.updateBulkControls();
                 this.updateScopeIndicator();
 
@@ -2905,7 +2950,7 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                 let html = `<div class="stat-dropdown-title">Top Composers</div><div class="stat-dropdown-list">`;
                 top.forEach(([name, count]) => {
                     html += `<div class="stat-dropdown-row">
-                        <span class="stat-dropdown-name">${name}</span>
+                        <span class="stat-dropdown-name">${this.escapeHtml(name)}</span>
                         <span class="stat-dropdown-count">${count}</span>
                     </div>`;
                 });
@@ -2966,7 +3011,7 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                     Object.entries(fieldCounts).forEach(([name, count]) => {
                         if (count > 0) {
                             html += `<div class="stat-dropdown-row">
-                                <span class="stat-dropdown-name">${name}</span>
+                                <span class="stat-dropdown-name">${this.escapeHtml(name)}</span>
                                 <span class="stat-dropdown-count">${count}</span>
                             </div>`;
                         }
@@ -3696,12 +3741,12 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                 const toShow = changes.slice(0, maxShow);
                 let html = '';
                 toShow.forEach((c, i) => {
-                    const oldEsc = (c.detail || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    const newEsc = (c.newDetail || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const oldEsc = this.escapeHtml(c.detail || '');
+                    const newEsc = this.escapeHtml(c.newDetail || '');
                     html += `<div class="preview-row">
                         <input type="checkbox" checked onchange="app.togglePreviewItem(${i})">
                         <div class="preview-row-content">
-                            <div class="preview-row-label">${c.label}</div>
+                            <div class="preview-row-label">${this.escapeHtml(c.label)}</div>
                             <div class="preview-row-detail">
                                 <span class="diff-old">${oldEsc || '(empty)'}</span>
                                 <span class="diff-arrow">&rarr;</span>
@@ -4163,15 +4208,30 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                     return;
                 }
 
-                let html = '';
+                container.textContent = '';
+                const fragment = document.createDocumentFragment();
                 sorted.forEach(([tag, count]) => {
-                    const escaped = tag.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    html += `<span class="tag-chip" onclick="app.batchRemoveTag('${escaped}')">
-                        ${tag} <span class="tag-chip-count">(${count})</span>
-                        <span class="tag-chip-remove">&times;</span>
-                    </span>`;
+                    const chip = document.createElement('span');
+                    chip.className = 'tag-chip';
+                    chip.addEventListener('click', () => this.batchRemoveTag(tag));
+
+                    chip.appendChild(document.createTextNode(`${tag} `));
+
+                    const countSpan = document.createElement('span');
+                    countSpan.className = 'tag-chip-count';
+                    countSpan.textContent = `(${count})`;
+                    chip.appendChild(countSpan);
+
+                    chip.appendChild(document.createTextNode(' '));
+
+                    const removeSpan = document.createElement('span');
+                    removeSpan.className = 'tag-chip-remove';
+                    removeSpan.textContent = '×';
+                    chip.appendChild(removeSpan);
+
+                    fragment.appendChild(chip);
                 });
-                container.innerHTML = html;
+                container.appendChild(fragment);
             },
 
             batchAddTag() {
@@ -4355,7 +4415,7 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                             <input type="checkbox" data-index="${index}"
                                    onchange="app.toggleManagerItem(${index})"
                                    ${isChecked ? 'checked' : ''}>
-                            <span class="${nameClass}">${displayName}</span>
+                            <span class="${nameClass}">${this.escapeHtml(displayName)}</span>
                             <span class="manager-item-count">${item.count}</span>
                         </div>
                     `;
@@ -4553,12 +4613,12 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
 
                     let html = '';
                     toShow.forEach(d => {
-                        const oldEsc = d.oldVal.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                        const newEsc = d.newVal.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        const oldEsc = this.escapeHtml(d.oldVal || '');
+                        const newEsc = this.escapeHtml(d.newVal || '');
                         html += `<div class="diff-row">
                             <div class="diff-row-header">
                                 <span class="diff-row-num">Row ${d.rowNum}</span>
-                                <span class="diff-field">${d.field}</span>
+                                <span class="diff-field">${this.escapeHtml(d.field)}</span>
                             </div>
                             <span class="diff-old">${oldEsc || '(empty)'}</span>
                             <span class="diff-arrow">&rarr;</span>
