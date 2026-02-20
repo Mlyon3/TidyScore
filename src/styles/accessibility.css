@@ -1,0 +1,15 @@
+/* ===== Accessibility ===== */
+[data-theme="dark"] input[type="checkbox"]:checked::after {
+    border-color: #0f1620;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+

@@ -1,0 +1,140 @@
+/* ===== Stats Grid ===== */
+[data-theme="dark"] .stat-icon--composers {
+    background: rgba(107, 90, 191, 0.15);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background: var(--color-surface);
+    padding: 22px 24px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-base), transform var(--transition-fast);
+}
+
+.stat-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.stat-icon--scores { background: var(--color-accent-light); color: var(--color-accent); }
+.stat-icon--composers { background: #f0edf8; color: #6b5abf; }
+.stat-icon--modified { background: var(--color-success-bg); color: var(--color-success); }
+
+.stat-card--clickable {
+    cursor: pointer;
+    position: relative;
+}
+
+.stat-card--clickable:hover {
+    border-color: var(--color-accent);
+}
+
+.stat-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 8px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+    min-width: 280px;
+    overflow: hidden;
+}
+
+.stat-dropdown-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    padding: 12px 16px 8px;
+}
+
+.stat-dropdown-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.stat-dropdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-top: 1px solid var(--color-border-light);
+}
+
+.stat-dropdown-row:hover {
+    background: var(--color-accent-subtle);
+}
+
+.stat-dropdown-name {
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 12px;
+}
+
+.stat-dropdown-count {
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: -0.5px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.scope-indicator {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-text-muted);
+}
+
+.scope-indicator .scope-highlight {
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
