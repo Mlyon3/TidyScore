@@ -6608,7 +6608,22 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
                     .split('/')
                     .pop() || '';
 
-                return normalized.replace(/\.[a-z0-9]{1,5}$/i, '');
+                const knownExtensions = new Set([
+                    'pdf', 'mscz', 'musicxml', 'mxl', 'xml', 'mid', 'midi',
+                    'sib', 'sibx', 'mus', 'musx', 'kar', 'abc', 'txt', 'csv'
+                ]);
+
+                const dotIndex = normalized.lastIndexOf('.');
+                if (dotIndex <= 0 || dotIndex === normalized.length - 1) {
+                    return normalized;
+                }
+
+                const extension = normalized.slice(dotIndex + 1);
+                if (!knownExtensions.has(extension)) {
+                    return normalized;
+                }
+
+                return normalized.slice(0, dotIndex);
             },
 
             markDuplicateFilenames() {
