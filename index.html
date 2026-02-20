@@ -694,11 +694,16 @@
         </div>
     </div>
 
-        <script type="module">
+                <script type="module">
         import app from './src/main.js';
-
         window.app = app;
-        document.addEventListener('DOMContentLoaded', () => app.init());
+        
+        // Prevent race conditions by checking if the DOM is already parsed
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => app.init());
+        } else {
+            app.init();
+        }
     </script>
 </body>
 </html>
