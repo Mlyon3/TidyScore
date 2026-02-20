@@ -1,0 +1,38 @@
+export const baseState = {
+    data: [],
+    originalData: [],
+    dataById: new Map(),
+    modifiedCount: 0,
+    sortColumn: null,
+    sortDirection: 'asc',
+    selectedIds: new Set(),
+    lastToggled: null,
+    editGeneration: 0,
+    currentFilter: '',
+    visibleIds: [],
+    undoStack: [],
+    changeLog: [],
+    settingsStorageKey: 'tidyscore-settings',
+    settings: null,
+    _notificationQueue: [],
+    _notificationActive: false,
+    scanResults: null,
+    counterConfig: {
+        apiBaseUrl: '',
+        totalEndpoint: '/counter/total',
+        incrementEndpoint: '/counter/increment',
+        storageKeys: {
+            clientId: 'tidyscore-counter-client-id',
+            pendingQueue: 'tidyscore-counter-pending-queue',
+            localTotal: 'tidyscore-counter-local-total'
+        },
+        maxPendingQueue: 50
+    },
+    anonymousClientId: null,
+    sessionId: null,
+    globalCleanedCount: null,
+    counterPendingQueue: [],
+    counterSyncOnline: true,
+    _counterFlushTimer: null,
+    _counterFlushInFlight: false,
+};
