@@ -20,11 +20,12 @@ and includes one end-to-end UI flow that saves settings then applies **Smart Ext
 
 ## Preconditions (deterministic setup)
 
-1. Open `index.html` in a browser.
-2. Click **Settings**.
-3. Click **Reset composer settings to defaults**.
-4. Save settings.
-5. Click **Load Sample Data** on the main screen.
+1. Run `npm install` (first time only).
+2. Run `npm run dev` and open the local dev URL shown in the terminal.
+3. Click **Settings**.
+4. Click **Reset composer settings to defaults**.
+5. Save settings.
+6. Click **Load Sample Data** on the main screen.
 
 > If re-running in the same browser profile, clear stale data by running `localStorage.removeItem('tidyscore-settings')` in devtools and refresh.
 
