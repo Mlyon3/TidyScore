@@ -1,3 +1,13 @@
+import { getRowId } from '../core/row-identity.js';
+
+const MULTI_COMPOSER_NON_NAME_WORDS = new Set([
+    'and', 'arrangement', 'book', 'collection', 'concerto', 'concertos', 'duet', 'duets',
+    'for', 'fugue', 'fugues', 'miniature', 'miniatures', 'music', 'nocturne', 'nocturnes',
+    'or', 'piano', 'plus', 'prelude', 'preludes', 'quartet', 'quartets', 'score', 'selections',
+    'sonata', 'sonatas', 'suite', 'suites', 'symphonies', 'symphony', 'the', 'trio', 'trios',
+    'two', 'variation', 'variations', 'volume', 'with', 'work', 'works', 'bachs'
+]);
+
 export const composerTools = {
     getSuggestion(composer, aliasMap = null) {
         if (!composer) return null;
@@ -5,16 +15,17 @@ export const composerTools = {
         aliasMap = aliasMap || this.getComposerAliasMap();
 
         // 1. Exact normalized match (current behavior)
-        if (aliasMap[normalized]) return aliasMap[normalized];
+        if (Object.hasOwn(aliasMap, normalized)) return aliasMap[normalized];
 
         // 2. Strip diacritics from input and try direct lookup
         const strippedInput = this._stripDiacritics(normalized);
-        if (strippedInput !== normalized && aliasMap[strippedInput]) {
+        if (strippedInput !== normalized && Object.hasOwn(aliasMap, strippedInput)) {
             return aliasMap[strippedInput];
         }
 
         // 3. Strip diacritics from map keys and compare
         for (const key in aliasMap) {
+            if (!Object.hasOwn(aliasMap, key)) continue;
             if (this._stripDiacritics(key) === strippedInput) {
                 return aliasMap[key];
             }
@@ -98,19 +109,16 @@ export const composerTools = {
         const matches = this._findComposerMentions(title, aliasMap);
         if (matches.length < 2) return null;
 
-        const first = matches[0];
-        const last = matches[matches.length - 1];
-        const masked = title.slice(first.start, last.end).split('');
+        const masked = title.split('');
         matches.forEach(match => {
-            for (let index = match.start - first.start; index < match.end - first.start; index++) {
+            for (let index = match.start; index < match.end; index++) {
                 masked[index] = ' ';
             }
         });
 
-        const connectors = new Set(['and', 'with', 'plus', 'by']);
         const unresolvedTokens = [...masked.join('').matchAll(/\p{Lu}[\p{L}\p{M}'’-]*/gu)]
             .map(match => match[0])
-            .filter(token => !connectors.has(token.toLowerCase()));
+            .filter(token => !MULTI_COMPOSER_NON_NAME_WORDS.has(token.toLowerCase()));
         const entries = matches.map(match => ({
             extracted: match.extracted,
             canonical: match.canonical,
@@ -339,7 +347,7 @@ export const composerTools = {
     computeScanResults(targetIds = null) {
         const ids = Array.isArray(targetIds)
             ? targetIds
-            : this.data.map(row => row.__id);
+            : this.data.map(row => getRowId(row));
 
         const candidates = {
             missingComposer: [],
@@ -491,17 +499,17 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
             return;
         }
 
-        const counts = {};
+        const counts = new Map();
         this.data.forEach(row => {
             const composer = this.composerField ? (row[this.composerField] || '').trim() : '';
             if (composer) {
                 this.normalizeComposerValue(composer).entries.forEach(entry => {
-                    counts[entry.formatted] = (counts[entry.formatted] || 0) + 1;
+                    counts.set(entry.formatted, (counts.get(entry.formatted) || 0) + 1);
                 });
             }
         });
 
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        const sorted = [...counts].sort((a, b) => b[1] - a[1]);
         const top = sorted.slice(0, 20);
 
         let html = `<div class="stat-dropdown-title">Top Composers</div><div class="stat-dropdown-list">`;
@@ -546,15 +554,14 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
             { name: 'Tags', field: this.tagsField }
         ];
 
-        const fieldCounts = {};
-        fields.forEach(f => { fieldCounts[f.name] = 0; });
+        const fieldCounts = new Map(fields.map(field => [field.name, 0]));
 
         this.data.forEach(row => {
-            const orig = this.originalData[row.__id];
+            const orig = this.originalDataById.get(getRowId(row));
             if (!orig) return;
             fields.forEach(f => {
                 if (f.field && (row[f.field] || '') !== (orig[f.field] || '')) {
-                    fieldCounts[f.name]++;
+                    fieldCounts.set(f.name, fieldCounts.get(f.name) + 1);
                 }
             });
         });
@@ -562,10 +569,10 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
         let html = '';
 
         // Field breakdown section
-        const hasFieldChanges = Object.values(fieldCounts).some(c => c > 0);
+        const hasFieldChanges = [...fieldCounts.values()].some(count => count > 0);
         if (hasFieldChanges) {
             html += `<div class="stat-dropdown-title">Changed Fields</div><div class="stat-dropdown-list">`;
-            Object.entries(fieldCounts).forEach(([name, count]) => {
+            fieldCounts.forEach((count, name) => {
                 if (count > 0) {
                     html += `<div class="stat-dropdown-row">
                         <span class="stat-dropdown-name">${this.escapeHtml(name)}</span>

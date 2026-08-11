@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     buildExportFilename,
     canShareFile,
@@ -8,8 +8,14 @@ import {
     SAMPLE_LIBRARY_CSV,
     serializeCsvDocument
 } from '../src/core/csv.js';
+import { getRowId } from '../src/core/row-identity.js';
 
 const fixtureUrl = new URL('./fixtures/forscore-roundtrip.csv', import.meta.url);
+const originalFileReader = globalThis.FileReader;
+
+afterEach(() => {
+    globalThis.FileReader = originalFileReader;
+});
 
 describe('CSV import and export', () => {
     it('round-trips quoted text, commas, Unicode, and multiline fields', () => {
@@ -98,6 +104,74 @@ describe('CSV import and export', () => {
 
         expect(context.data).toBe(existingData);
         expect(context.showNotification).toHaveBeenCalledWith(expect.stringMatching(/Title or Filename/));
+    });
+
+    it('keeps data and filename atomic when an import fails', () => {
+        const existingData = [{ Title: 'Keep me' }];
+        const context = {
+            data: existingData,
+            sourceFileName: 'current.csv',
+            showNotification: vi.fn()
+        };
+
+        const result = csvCore.parseCSV.call(context, 'Genre,Tags\nClassical,piano', { sourceFileName: 'bad.csv' });
+
+        expect(result).toMatchObject({ ok: false, code: 'MISSING_IDENTITY_FIELD' });
+        expect(context.data).toBe(existingData);
+        expect(context.sourceFileName).toBe('current.csv');
+    });
+
+    it('round-trips a genuine __id column without exposing internal identity', () => {
+        const context = {
+            data: [], originalData: [], dataById: new Map(), originalDataById: new Map(),
+            headers: [], selectedIds: new Set(), undoStack: [], exportReviewCandidates: new Map(),
+            sourceFileName: 'before.csv', showNotification: vi.fn(), analyzeData: vi.fn(), renderAll: vi.fn()
+        };
+
+        expect(csvCore.parseCSV.call(context, '__id,Title\nexternal-42,Prelude', { sourceFileName: 'ids.csv' }))
+            .toEqual({ ok: true });
+        expect(Object.keys(context.data[0])).toEqual(['__id', 'Title']);
+        expect(context.data[0].__id).toBe('external-42');
+        expect(getRowId(context.data[0])).toBe(0);
+        expect(JSON.stringify(context.data[0])).toBe('{"__id":"external-42","Title":"Prelude"}');
+        expect(serializeCsvDocument(context.headers, context.data)).toContain('external-42,Prelude');
+    });
+
+    it('discards stale file-reader completions', () => {
+        class FakeFileReader {
+            static LOADING = 1;
+            constructor() {
+                this.readyState = FakeFileReader.LOADING;
+                FakeFileReader.instances.push(this);
+            }
+            readAsText(file) { this.file = file; }
+            abort() { this.readyState = 2; this.onabort?.(); }
+        }
+        FakeFileReader.instances = [];
+        globalThis.FileReader = FakeFileReader;
+        const context = {
+            _fileReadGeneration: 0,
+            _activeFileReader: null,
+            showNotification: vi.fn(),
+            parseCSV: vi.fn()
+        };
+
+        csvCore.handleFile.call(context, { name: 'older.csv' });
+        const older = FakeFileReader.instances[0];
+        csvCore.handleFile.call(context, { name: 'newer.csv' });
+        const newer = FakeFileReader.instances[1];
+        older.onload({ target: { result: 'old' } });
+        newer.onload({ target: { result: 'new' } });
+
+        expect(context.parseCSV).toHaveBeenCalledTimes(1);
+        expect(context.parseCSV).toHaveBeenCalledWith('new', { sourceFileName: 'newer.csv', requestGeneration: 2 });
+
+        context.parseCSV.mockClear();
+        csvCore.handleFile.call(context, { name: 'third.csv' });
+        const third = FakeFileReader.instances[2];
+        csvCore.handleFile.call(context, { name: 'not-csv.txt' });
+        third.onload({ target: { result: 'third' } });
+        expect(context.parseCSV).not.toHaveBeenCalled();
     });
 });
 

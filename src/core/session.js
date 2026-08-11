@@ -1,3 +1,5 @@
+import { buildRowsById, rehydrateRowIds } from './row-identity.js';
+
 const DB_NAME = 'tidyscore-local';
 const STORE_NAME = 'sessions';
 const SESSION_KEY = 'current';
@@ -46,6 +48,78 @@ export function clearLocalSession() {
     return withStore('readwrite', store => store.delete(SESSION_KEY));
 }
 
+function isPlainRecord(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+}
+
+function copySessionRows(rows, headers, version) {
+    return rows.map(row => {
+        const copy = Object.create(null);
+        for (const header of headers) {
+            if (version === 1 && header === '__id') continue;
+            copy[header] = Object.hasOwn(row, header) ? row[header] : '';
+        }
+        return copy;
+    });
+}
+
+function hasValidFieldValues(row, headers, version) {
+    return headers.every(header =>
+        (version === 1 && header === '__id') ||
+        !Object.hasOwn(row, header) ||
+        typeof row[header] === 'string'
+    );
+}
+
+export function validateSessionPayload(session) {
+    if (!isPlainRecord(session) || ![1, 2].includes(session.version)) {
+        return { ok: false, code: 'INVALID_SESSION', message: 'The saved session has an unsupported format.' };
+    }
+    if (!Array.isArray(session.headers) || session.headers.length === 0 ||
+        session.headers.some(header => typeof header !== 'string' || !header.trim()) ||
+        new Set(session.headers).size !== session.headers.length) {
+        return { ok: false, code: 'INVALID_SESSION', message: 'The saved session has invalid column headers.' };
+    }
+    if (!Array.isArray(session.data) || session.data.length === 0 ||
+        session.data.some(row => !isPlainRecord(row) || !hasValidFieldValues(row, session.headers, session.version))) {
+        return { ok: false, code: 'INVALID_SESSION', message: 'The saved session has invalid row data.' };
+    }
+    const originalData = session.originalData == null ? session.data : session.originalData;
+    if (!Array.isArray(originalData) || originalData.length !== session.data.length ||
+        originalData.some(row => !isPlainRecord(row) || !hasValidFieldValues(row, session.headers, session.version))) {
+        return { ok: false, code: 'INVALID_SESSION', message: 'The saved session has invalid original row data.' };
+    }
+    if (session.changeLog != null && (!Array.isArray(session.changeLog) || session.changeLog.some(change =>
+        !isPlainRecord(change) || typeof change.category !== 'string' ||
+        typeof change.count !== 'number' || !Number.isFinite(change.count)
+    ))) {
+        return { ok: false, code: 'INVALID_SESSION', message: 'The saved session has an invalid change history.' };
+    }
+
+    const headers = session.version === 1
+        ? session.headers.filter(header => header !== '__id')
+        : [...session.headers];
+    if (headers.length === 0) {
+        return { ok: false, code: 'INVALID_SESSION', message: 'The saved session has no recoverable columns.' };
+    }
+    return {
+        ok: true,
+        value: {
+            version: 2,
+            sourceFileName: typeof session.sourceFileName === 'string' && session.sourceFileName
+                ? session.sourceFileName
+                : 'forscore-library.csv',
+            headers,
+            data: copySessionRows(session.data, headers, session.version),
+            originalData: copySessionRows(originalData, headers, session.version),
+            changeLog: JSON.parse(JSON.stringify(session.changeLog || [])),
+            savedAt: typeof session.savedAt === 'string' ? session.savedAt : null
+        }
+    };
+}
+
 export const sessionCore = {
     loadRecoveryPreference() {
         try {
@@ -59,8 +133,18 @@ export const sessionCore = {
     async checkSavedSession() {
         try {
             const session = await loadLocalSession();
-            if (!session?.data?.length || !session?.headers?.length) return;
+            if (!session) return;
+            const validation = validateSessionPayload(session);
+            if (!validation.ok) {
+                this.savedSession = session;
+                this.savedSessionInvalid = true;
+                const detail = document.getElementById('recoveryPromptDetail');
+                if (detail) detail.textContent = 'The saved data is corrupt or incompatible. Delete it to continue safely.';
+                document.getElementById('recoveryPrompt')?.classList.remove('hidden');
+                return;
+            }
             this.savedSession = session;
+            this.savedSessionInvalid = false;
             const detail = document.getElementById('recoveryPromptDetail');
             if (detail) {
                 const savedAt = session.savedAt ? new Date(session.savedAt).toLocaleString() : 'recently';
@@ -105,7 +189,7 @@ export const sessionCore = {
         if (!this.recoveryEnabled || !this.data?.length) return;
         try {
             const session = {
-                version: 1,
+                version: 2,
                 sourceFileName: this.sourceFileName || 'forscore-library.csv',
                 headers: [...this.headers],
                 data: JSON.parse(JSON.stringify(this.data)),
@@ -126,17 +210,31 @@ export const sessionCore = {
 
     async restoreSavedSession() {
         const session = this.savedSession || await loadLocalSession();
-        if (!session?.data?.length) {
+        if (!session) {
             this.showNotification('No saved local session was found.');
             return;
         }
 
-        this.sourceFileName = session.sourceFileName || 'forscore-library.csv';
-        this.headers = [...session.headers];
-        this.data = JSON.parse(JSON.stringify(session.data));
-        this.originalData = JSON.parse(JSON.stringify(session.originalData || session.data));
-        this.changeLog = JSON.parse(JSON.stringify(session.changeLog || []));
-        this.dataById = new Map(this.data.map(row => [row.__id, row]));
+        const validation = validateSessionPayload(session);
+        if (!validation.ok) {
+            this.savedSessionInvalid = true;
+            this.showNotification('The saved local session is corrupt. Delete it from the recovery prompt.');
+            return;
+        }
+        const restored = validation.value;
+
+        this.finishActiveCellEdit?.({ cancel: true, render: false });
+        this.editGeneration = (this.editGeneration || 0) + 1;
+        this._fileReadGeneration = (this._fileReadGeneration || 0) + 1;
+        this._activeFileReader?.abort?.();
+        this._activeFileReader = null;
+        this.sourceFileName = restored.sourceFileName;
+        this.headers = [...restored.headers];
+        this.data = rehydrateRowIds(restored.data);
+        this.originalData = rehydrateRowIds(restored.originalData);
+        this.changeLog = restored.changeLog;
+        this.dataById = buildRowsById(this.data);
+        this.originalDataById = buildRowsById(this.originalData);
         this.selectedIds.clear();
         this.undoStack = [];
         this.exportReviewCandidates = new Map();
@@ -151,6 +249,7 @@ export const sessionCore = {
     async deleteSavedSession(options = {}) {
         try { await clearLocalSession(); } catch (_) {}
         this.savedSession = null;
+        this.savedSessionInvalid = false;
         document.getElementById('recoveryPrompt')?.classList.add('hidden');
         if (!options.preservePreference) {
             this.recoveryEnabled = false;

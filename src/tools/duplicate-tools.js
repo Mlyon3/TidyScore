@@ -1,5 +1,9 @@
 // ===== Evidence-based Duplicate Detection =====
 
+import { getRowId } from '../core/row-identity.js';
+
+export const DUPLICATE_PAIR_BUDGET = 250000;
+
 const CATEGORY_ORDER = { likely: 0, possible: 1, related: 2 };
 
 const INSTRUMENT_ALIASES = {
@@ -98,6 +102,14 @@ function uniqueEvidence(entries) {
         seen.add(key);
         return true;
     });
+}
+
+function minimumItemId(items) {
+    let minimum = Infinity;
+    for (const item of items) {
+        if (item.id < minimum) minimum = item.id;
+    }
+    return minimum;
 }
 
 function evidence(label, points, values = []) {
@@ -291,7 +303,7 @@ export const duplicateTools = {
         const title = this.parseTitleForDedup(this.titleField ? row[this.titleField] : '');
         const filename = this.parseTitleForDedup(this.filenameField ? row[this.filenameField] : '');
         return {
-            id: row.__id,
+            id: getRowId(row),
             row,
             displayTitle: (this.titleField ? row[this.titleField] : '') ||
                 (this.filenameField ? row[this.filenameField] : '') || '',
@@ -401,10 +413,19 @@ export const duplicateTools = {
                 }
             }
         }
-        const matches = uniqueEvidence(relevantPairs.flatMap(pair => pair.matches));
-        const conflicts = uniqueEvidence(relevantPairs.flatMap(pair => pair.conflicts));
-        const missingEvidence = uniqueEvidence(relevantPairs.flatMap(pair => pair.missingEvidence));
-        const score = relevantPairs.length ? Math.min(...relevantPairs.map(pair => pair.score)) : 0;
+        const allMatches = [];
+        const allConflicts = [];
+        const allMissingEvidence = [];
+        let score = relevantPairs.length ? Infinity : 0;
+        for (const pair of relevantPairs) {
+            allMatches.push(...pair.matches);
+            allConflicts.push(...pair.conflicts);
+            allMissingEvidence.push(...pair.missingEvidence);
+            if (pair.score < score) score = pair.score;
+        }
+        const matches = uniqueEvidence(allMatches);
+        const conflicts = uniqueEvidence(allConflicts);
+        const missingEvidence = uniqueEvidence(allMissingEvidence);
         const items = ids.map(id => identitiesById.get(id)).filter(Boolean);
         return {
             key: `${category}:${ids.join('-')}`,
@@ -419,8 +440,17 @@ export const duplicateTools = {
         };
     },
 
-    detectDuplicates() {
-        const identities = this.data.map(row => duplicateTools._buildDuplicateIdentity.call(this, row));
+    detectDuplicates(targetIds = null, options = {}) {
+        const pairBudget = Number.isSafeInteger(options.pairBudget) && options.pairBudget >= 0
+            ? options.pairBudget
+            : DUPLICATE_PAIR_BUDGET;
+        const scopedIds = targetIds == null
+            ? (typeof this.getTargetIds === 'function' ? this.getTargetIds() : this.data.map(getRowId))
+            : targetIds;
+        const targetSet = new Set(scopedIds);
+        const identities = this.data
+            .filter(row => targetSet.has(getRowId(row)))
+            .map(row => duplicateTools._buildDuplicateIdentity.call(this, row));
         const identitiesById = new Map(identities.map(identity => [identity.id, identity]));
         const coreBuckets = new Map();
         identities.forEach(identity => {
@@ -432,13 +462,23 @@ export const duplicateTools = {
         });
 
         const candidatePairs = new Map();
-        coreBuckets.forEach(ids => {
+        for (const ids of coreBuckets.values()) {
             for (let i = 0; i < ids.length; i++) {
                 for (let j = i + 1; j < ids.length; j++) {
-                    candidatePairs.set(pairKey(ids[i], ids[j]), [ids[i], ids[j]]);
+                    const key = pairKey(ids[i], ids[j]);
+                    if (candidatePairs.has(key)) continue;
+                    if (candidatePairs.size >= pairBudget) {
+                        return {
+                            ok: false,
+                            code: 'DUPLICATE_SCOPE_TOO_BROAD',
+                            message: 'This scope has too many possible duplicate pairs. Filter the library or select fewer rows and try again.',
+                            details: { pairBudget, scopedRowCount: identities.length }
+                        };
+                    }
+                    candidatePairs.set(key, [ids[i], ids[j]]);
                 }
             }
-        });
+        }
 
         const pairs = [];
         const pairLookup = new Map();
@@ -460,13 +500,19 @@ export const duplicateTools = {
             ...related.map(ids => duplicateTools._buildDuplicateGroup.call(this, ids, 'related', identitiesById, pairLookup))
         ];
 
-        return groups.sort((a, b) => CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category] ||
-            b.score - a.score || Math.min(...a.items.map(item => item.id)) - Math.min(...b.items.map(item => item.id)));
+        groups.sort((a, b) => CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category] ||
+            b.score - a.score || minimumItemId(a.items) - minimumItemId(b.items));
+        return { ok: true, result: groups };
     },
 
     openDuplicateModal() {
         this.closeGenreTagMenu();
-        const groups = this.detectDuplicates();
+        const duplicateResult = this.detectDuplicates(this.getTargetIds());
+        if (!duplicateResult.ok) {
+            this.showNotification(duplicateResult.message);
+            return;
+        }
+        const groups = duplicateResult.result;
         if (groups.length === 0) {
             this.showNotification('No potential duplicates found.');
             return;

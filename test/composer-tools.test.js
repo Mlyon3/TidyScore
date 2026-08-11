@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/main.js';
+import { createApp } from '../src/main.js';
 import { DEFAULT_SETTINGS } from '../src/data/settings-defaults.js';
 
 describe('first-last and multi-composer behavior', () => {
     let app;
 
     beforeEach(() => {
-        app = buildApp();
+        app = createApp();
         app.settings = app._deepClone(DEFAULT_SETTINGS);
     });
 
@@ -37,6 +37,14 @@ describe('first-last and multi-composer behavior', () => {
         expect(result.formattedSuggestion).toBe('Johannes Brahms, Ludwig van Beethoven');
         expect(result.isPartial).toBe(true);
         expect(result.unresolvedTokens).toEqual(['Tchiak']);
+    });
+
+    it('marks unmatched title-cased text before and after composer mentions as partial', () => {
+        const result = app._extractComposerFromTitle('Tchiak Brahms and Beethoven Unknownname');
+
+        expect(result.formattedSuggestion).toBe('Johannes Brahms, Ludwig van Beethoven');
+        expect(result.isPartial).toBe(true);
+        expect(result.unresolvedTokens).toEqual(['Tchiak', 'Unknownname']);
     });
 
     it('uses longest aliases and keeps distinct Bach identities', () => {
@@ -76,5 +84,31 @@ describe('first-last and multi-composer behavior', () => {
         expect(migrated.composer).not.toHaveProperty('nameDisplayFormat');
         expect(migrated.composer.library.customAliases).toEqual({ test: 'Test Composer' });
         expect(migrated.composer.library.blacklistedAliases).toEqual(['glass']);
+    });
+
+    it('creates isolated mutable state for each app instance', () => {
+        const other = createApp();
+        app.data.push({ Title: 'Only here' });
+        app.selectedIds.add(12);
+        app._ambiguousAliases.add('only-here');
+
+        expect(other.data).toEqual([]);
+        expect(other.selectedIds.size).toBe(0);
+        expect(other._ambiguousAliases.has('only-here')).toBe(false);
+    });
+
+    it('keeps prototype-key composer text plain and rejects unsafe alias keys', () => {
+        for (const value of ['__proto__', 'prototype', 'constructor']) {
+            expect(app.normalizeComposerValue(value).formatted).toBe(value);
+        }
+
+        const hostile = JSON.parse('{"composer":{"library":{"customAliases":{"__proto__":"Bad","prototype":"Bad","constructor":"Bad","safe":"Bach, Johann Sebastian"}},"unknown":{"nested":{"__proto__":{"polluted":true}}}}}');
+        const sanitized = app._sanitizeSettings(hostile);
+        expect(Object.hasOwn(sanitized.composer.library.customAliases, '__proto__')).toBe(false);
+        expect(Object.hasOwn(sanitized.composer.library.customAliases, 'prototype')).toBe(false);
+        expect(Object.hasOwn(sanitized.composer.library.customAliases, 'constructor')).toBe(false);
+        expect(sanitized.composer.library.customAliases.safe).toBe('Johann Sebastian Bach');
+        expect(sanitized.composer.unknown.nested).not.toHaveProperty('__proto__');
+        expect({}.polluted).toBeUndefined();
     });
 });

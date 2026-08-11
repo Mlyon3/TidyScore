@@ -591,11 +591,17 @@ export const modalUi = {
         this.data = [];
         this.originalData = [];
         this.dataById = new Map();
+        this.originalDataById = new Map();
         this.modifiedCount = 0;
         this.undoStack = [];
         this.changeLog = [];
         this.exportReviewCandidates = new Map();
         this.selectedIds.clear();
+        this.finishActiveCellEdit?.({ cancel: true, render: false });
+        this.editGeneration = (this.editGeneration || 0) + 1;
+        this._fileReadGeneration = (this._fileReadGeneration || 0) + 1;
+        this._activeFileReader?.abort?.();
+        this._activeFileReader = null;
         this.resetClickTime = null;
         
         document.getElementById('uploadSection').classList.remove('hidden');

@@ -8,19 +8,30 @@ import { accessibilityUi } from './ui/accessibility.js';
 import { sessionCore } from './core/session.js';
 
 import { SETTINGS_VERSION, DEFAULT_SETTINGS } from './data/settings-defaults.js';
-import { baseState } from './core/state.js';
+import { createBaseState } from './core/state.js';
+import { buildRowsById, cloneRowsWithIds } from './core/row-identity.js';
 import { databaseState } from './data/databases.js';
 
-const app = {
-    ...baseState,
-    ...databaseState,
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+const appMethods = {
 
     _deepClone(obj) {
-        return JSON.parse(JSON.stringify(obj));
+        if (Array.isArray(obj)) return obj.map(value => this._deepClone(value));
+        if (this._isPlainObject(obj)) {
+            const clone = {};
+            Object.keys(obj).forEach(key => {
+                if (!UNSAFE_OBJECT_KEYS.has(key)) clone[key] = this._deepClone(obj[key]);
+            });
+            return clone;
+        }
+        return obj;
     },
 
     _isPlainObject(value) {
-        return value && typeof value === 'object' && !Array.isArray(value);
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+        const prototype = Object.getPrototypeOf(value);
+        return prototype === Object.prototype || prototype === null;
     },
 
     _deepMerge(base, override) {
@@ -29,11 +40,15 @@ const app = {
         if (!this._isPlainObject(override)) return merged;
 
         Object.keys(override).forEach(key => {
+            if (UNSAFE_OBJECT_KEYS.has(key)) return;
             const sourceVal = override[key];
             if (Array.isArray(sourceVal)) {
-                merged[key] = sourceVal.slice();
-            } else if (this._isPlainObject(sourceVal) && this._isPlainObject(merged[key])) {
-                merged[key] = this._deepMerge(merged[key], sourceVal);
+                merged[key] = this._deepClone(sourceVal);
+            } else if (this._isPlainObject(sourceVal)) {
+                merged[key] = this._deepMerge(
+                    this._isPlainObject(merged[key]) ? merged[key] : {},
+                    sourceVal
+                );
             } else {
                 merged[key] = sourceVal;
             }
@@ -76,6 +91,7 @@ const app = {
         if (rawAliases && typeof rawAliases === 'object' && !Array.isArray(rawAliases)) {
             Object.entries(rawAliases).forEach(([key, canonical]) => {
                 const normalizedKey = this._normalizeComposerAliasKey(key);
+                if (UNSAFE_OBJECT_KEYS.has(normalizedKey)) return;
                 let cleanedCanonical = (canonical || '').toString().trim();
                 const legacyParts = cleanedCanonical.split(',').map(part => part.trim()).filter(Boolean);
                 if (legacyParts.length === 2) {
@@ -312,6 +328,10 @@ const app = {
 
             if (!key) {
                 blockingErrors.push(`Alias row ${idx + 1}: alias key cannot be empty.`);
+                return;
+            }
+            if (UNSAFE_OBJECT_KEYS.has(key)) {
+                blockingErrors.push(`Alias row ${idx + 1}: “${key}” is reserved and cannot be used as an alias key.`);
                 return;
             }
             if (!canonical) {
@@ -574,14 +594,17 @@ const app = {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Cmd/Ctrl+Z for undo (but not when editing a cell)
-            if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.target.classList.contains('editing')) {
+            const isEditableTarget = e.target instanceof Element && Boolean(e.target.closest(
+                'input, textarea, select, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]'
+            ));
+            // Cmd/Ctrl+Z for application undo outside native editing controls.
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !isEditableTarget) {
                 e.preventDefault();
                 this.undo();
                 return;
             }
             // Cmd/Ctrl+F to focus the search input
-            if ((e.metaKey || e.ctrlKey) && e.key === 'f' && !e.target.classList.contains('editing')) {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f' && !isEditableTarget) {
                 const searchInput = document.getElementById('searchInput');
                 if (searchInput) {
                     e.preventDefault();
@@ -641,7 +664,7 @@ const app = {
 
     pushUndo(label, context = null) {
         this.undoStack.push({
-            data: JSON.parse(JSON.stringify(this.data)),
+            data: cloneRowsWithIds(this.data),
             modifiedCount: this.modifiedCount,
             changeLog: JSON.parse(JSON.stringify(this.changeLog)),
             label,
@@ -653,10 +676,12 @@ const app = {
 
     undo() {
         if (this.undoStack.length === 0) return;
+        this.finishActiveCellEdit?.({ cancel: true, render: false });
+        this.editGeneration = (this.editGeneration || 0) + 1;
         const exportModalOpen = document.getElementById('exportModal')?.classList.contains('active');
         const snapshot = this.undoStack.pop();
         this.data = snapshot.data;
-        this.dataById = new Map(this.data.map(row => [row.__id, row]));
+        this.dataById = buildRowsById(this.data);
         this.modifiedCount = snapshot.modifiedCount;
         this.changeLog = snapshot.changeLog;
         this.analyzeData();
@@ -714,27 +739,6 @@ const app = {
 
     // --- Genre/Tag Manager ---
 
-    managerTab: 'genres',
-    managerData: [],
-    managerSelectedValues: new Set(),
-    managerFilterText: '',
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     toggleTheme() {
         const html = document.documentElement;
         const isDark = html.getAttribute('data-theme') === 'dark';
@@ -750,10 +754,25 @@ const app = {
 
 
 
-export function buildApp() {
-    return Object.assign(app, csvCore, tableUi, modalUi, composerTools, tagTools, duplicateTools, accessibilityUi, sessionCore);
+export function createApp(options = {}) {
+    const instance = Object.assign(
+        createBaseState(),
+        databaseState,
+        appMethods,
+        csvCore,
+        tableUi,
+        modalUi,
+        composerTools,
+        tagTools,
+        duplicateTools,
+        accessibilityUi,
+        sessionCore,
+        options
+    );
+    instance._ambiguousAliases = new Set(appMethods._ambiguousAliases);
+    return instance;
 }
 
-const composedApp = buildApp();
+const composedApp = createApp();
 
 export default composedApp;

@@ -363,16 +363,16 @@ export const tagTools = {
 
     _renderBatchTagRemoveChips() {
         const targetIndices = this.getTargetIds();
-        const tagCounts = {};
+        const tagCounts = new Map();
         targetIndices.forEach(idx => {
             const row = this.dataById.get(idx);
             const tags = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
             tags.forEach(t => {
-                tagCounts[t] = (tagCounts[t] || 0) + 1;
+                tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
             });
         });
 
-        const sorted = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+        const sorted = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
         const container = document.getElementById('batchTagRemoveChips');
 
         if (sorted.length === 0) {
@@ -538,7 +538,7 @@ export const tagTools = {
     },
 
     computeManagerData() {
-        const counts = {};
+        const counts = new Map();
         let emptyCount = 0;
         const targetIndices = this.getTargetIds();
 
@@ -546,7 +546,7 @@ export const tagTools = {
             if (!this.genreField) { this.managerData = []; return; }
             targetIndices.forEach(idx => {
                 const val = (this.dataById.get(idx)[this.genreField] || '').trim();
-                if (!val) { emptyCount++; } else { counts[val] = (counts[val] || 0) + 1; }
+                if (!val) { emptyCount++; } else { counts.set(val, (counts.get(val) || 0) + 1); }
             });
         } else {
             if (!this.tagsField) { this.managerData = []; return; }
@@ -555,11 +555,11 @@ export const tagTools = {
                 if (!raw) { emptyCount++; return; }
                 const tags = raw.split(';').map(t => t.trim()).filter(Boolean);
                 if (tags.length === 0) { emptyCount++; return; }
-                tags.forEach(tag => { counts[tag] = (counts[tag] || 0) + 1; });
+                tags.forEach(tag => { counts.set(tag, (counts.get(tag) || 0) + 1); });
             });
         }
 
-        let sorted = Object.entries(counts)
+        let sorted = [...counts.entries()]
             .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
             .map(([value, count]) => ({ value, count }));
 
