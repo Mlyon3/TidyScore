@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Default Vite behavior is sufficient for this repo:
-  // - root entrypoint: index.html
-  // - module entry import: src/main.js (from index.html)
+  // GitHub Pages publishes this project at /TidyScore/, not at the domain root.
+  base: '/TidyScore/',
 });

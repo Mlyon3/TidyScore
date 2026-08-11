@@ -7,7 +7,7 @@ test('sample cleanup, undo, and duplicate detection work without console errors'
     });
     page.on('pageerror', error => errors.push(error.message));
 
-    await page.goto('/');
+    await page.goto('/TidyScore/');
     await page.getByRole('link', { name: /try with sample data/i }).click();
     await expect(page.locator('#totalScores')).toHaveText('40');
 
