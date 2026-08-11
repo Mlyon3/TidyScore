@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { buildExportFilename, canShareFile, csvCore, parseCsvDocument, serializeCsvDocument } from '../src/core/csv.js';
+import {
+    buildExportFilename,
+    canShareFile,
+    csvCore,
+    parseCsvDocument,
+    SAMPLE_LIBRARY_CSV,
+    serializeCsvDocument
+} from '../src/core/csv.js';
 
 const fixtureUrl = new URL('./fixtures/forscore-roundtrip.csv', import.meta.url);
 
@@ -22,6 +29,19 @@ describe('CSV import and export', () => {
         expect(exported).toContain('"Antonín Dvořák, Johannes Brahms"');
         expect(parseCsvDocument(exported).rows[0].Composers)
             .toBe('Antonín Dvořák, Johannes Brahms');
+    });
+
+    it('includes expanded composer and duplicate-review examples in the sample library', () => {
+        const sample = parseCsvDocument(SAMPLE_LIBRARY_CSV);
+
+        expect(sample.rows).toHaveLength(49);
+        expect(sample.rows).toEqual(expect.arrayContaining([
+            expect.objectContaining({ Title: 'Moonlight Sonata (2)', Composers: 'Beethoven, Ludwig van' }),
+            expect.objectContaining({ Title: 'Academic Festival Overture Violin Part' }),
+            expect.objectContaining({ Title: 'Brahms and Beethoven - Variations', Composers: '' }),
+            expect.objectContaining({ Title: 'C.P.E. Bach and J.S. Bach - Two Bachs', Composers: '' }),
+            expect.objectContaining({ Composers: 'Antonin Dvorak, Johannes Brahms' })
+        ]));
     });
 
     it('preserves unknown forScore columns through repeated round trips', () => {

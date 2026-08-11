@@ -17,11 +17,14 @@ test('sample cleanup, undo, and duplicate detection work without console errors'
     await page.locator('#settingsCancelBtn').click();
 
     await page.getByRole('link', { name: 'Try a sample library' }).click();
-    await expect(page.locator('#totalScores')).toHaveText('40');
+    await expect(page.locator('#totalScores')).toHaveText('49');
     await expect(page.getByRole('heading', { name: 'Recommended fixes' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Fix composers' }).click();
     await expect(page.locator('#extractionModal')).toHaveClass(/active/);
+    await expect(page.locator('#extractionResults')).toContainText('Johannes Brahms, Ludwig van Beethoven');
+    await expect(page.locator('#extractionResults')).toContainText('Carl Philipp Emanuel Bach, Johann Sebastian Bach');
+    await expect(page.locator('#extractionResults')).toContainText('Kapustin');
     await page.getByRole('button', { name: 'Apply Selected' }).click();
     await expect(page.locator('#undoBtn')).toBeEnabled();
     await page.locator('#undoBtn').click();
@@ -35,6 +38,9 @@ test('sample cleanup, undo, and duplicate detection work without console errors'
     await page.getByRole('button', { name: 'Find Duplicates' }).click();
     await expect(page.locator('#duplicateModal')).toHaveClass(/active/);
     await expect(page.locator('#duplicateResults .dup-group')).not.toHaveCount(0);
+    await expect(page.locator('#duplicateResults .dup-badge-likely')).not.toHaveCount(0);
+    await expect(page.locator('#duplicateResults .dup-badge-possible')).not.toHaveCount(0);
+    await expect(page.locator('#duplicateResults .dup-badge-related')).not.toHaveCount(0);
 
     expect(errors).toEqual([]);
 });
@@ -233,7 +239,7 @@ test('opt-in recovery restores the current library after reload', async ({ page 
     await page.reload();
     await expect(page.getByText('Continue your previous local session?')).toBeVisible();
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.locator('#totalScores')).toHaveText('40');
+    await expect(page.locator('#totalScores')).toHaveText('49');
 });
 
 test('guided workflow fits an iPad portrait viewport', async ({ page }) => {
