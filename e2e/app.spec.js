@@ -9,6 +9,13 @@ test('sample cleanup, undo, and duplicate detection work without console errors'
 
     await page.goto('/TidyScore/');
     await expect(page.getByRole('heading', { name: 'Get your library CSV from forScore' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'See step-by-step instructions' })).toBeVisible();
+    await expect(page.getByText('How does the forScore round trip work?')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Open settings' }).click();
+    await expect(page.locator('#settingsModal')).toHaveClass(/active/);
+    await page.locator('#settingsCancelBtn').click();
+
     await page.getByRole('link', { name: 'Try a sample library' }).click();
     await expect(page.locator('#totalScores')).toHaveText('40');
     await expect(page.getByRole('heading', { name: 'Recommended fixes' })).toBeVisible();
@@ -20,7 +27,11 @@ test('sample cleanup, undo, and duplicate detection work without console errors'
     await page.locator('#undoBtn').click();
 
     await page.locator('#advancedTools > summary').click();
-    await page.locator('#genreTagMenuTrigger').click();
+    await expect(page.locator('#advancedTools .btn-tool-label')).toHaveText([
+        'Find Duplicates',
+        'Find & Replace',
+        'More Tools'
+    ]);
     await page.getByRole('button', { name: 'Find Duplicates' }).click();
     await expect(page.locator('#duplicateModal')).toHaveClass(/active/);
     await expect(page.locator('#duplicateResults .dup-group')).not.toHaveCount(0);

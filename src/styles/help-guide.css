@@ -1,5 +1,6 @@
 /* ===== Help Guide ===== */
-.help-btn {
+.help-btn,
+.header-icon-btn {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: var(--radius-sm);
@@ -12,9 +13,15 @@
     color: rgba(255, 255, 255, 0.7);
 }
 
-.help-btn:hover {
+.help-btn:hover,
+.header-icon-btn:hover {
     background: rgba(255, 255, 255, 0.18);
     color: #ffffff;
+}
+
+.header-icon-btn:focus-visible {
+    outline-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(42, 125, 140, 0.45);
 }
 
 .settings-btn {
@@ -188,4 +195,3 @@ kbd {
     box-shadow: 0 1px 0 var(--color-border);
     color: var(--color-text);
 }
-

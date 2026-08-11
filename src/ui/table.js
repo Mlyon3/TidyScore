@@ -10,7 +10,6 @@ export const tableUi = {
         document.getElementById('importIntro')?.classList.add('hidden');
         document.getElementById('uploadSection').classList.add('hidden');
         document.getElementById('samplePrompt').classList.add('hidden');
-        document.getElementById('helpLink').classList.add('hidden');
         document.getElementById('privacyNote').classList.add('hidden');
         document.getElementById('statsSection').classList.remove('hidden');
         document.getElementById('tableSection').classList.remove('hidden');

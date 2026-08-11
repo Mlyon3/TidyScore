@@ -585,7 +585,6 @@ export const modalUi = {
         document.getElementById('uploadSection').classList.remove('hidden');
         document.getElementById('importIntro')?.classList.remove('hidden');
         document.getElementById('samplePrompt').classList.remove('hidden');
-        document.getElementById('helpLink').classList.remove('hidden');
         document.getElementById('privacyNote').classList.remove('hidden');
         document.getElementById('statsSection').classList.add('hidden');
         document.getElementById('tableSection').classList.add('hidden');

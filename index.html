@@ -37,6 +37,12 @@
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="header-icon-btn" onclick="app.openSettingsModal()" aria-label="Open settings" aria-haspopup="dialog" aria-controls="settingsModal">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="10" cy="10" r="3"/>
+                        <path d="M16.6 12a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V16a1.2 1.2 0 0 1-1.2 1.2h-.2A1.2 1.2 0 0 1 10.7 16v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H6a1.2 1.2 0 0 1-1.2-1.2v-.2A1.2 1.2 0 0 1 6 9.1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.2 1.2 0 0 1 1.2-1.2h.2A1.2 1.2 0 0 1 13.1 4v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 19 9.3v.2a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.6Z"/>
+                    </svg>
+                </button>
                 <button class="help-btn" onclick="app.showHelp()" aria-label="How it works">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="10" cy="10" r="8"/>
@@ -80,7 +86,7 @@
             <div class="eyebrow">Step 1 · Import</div>
             <h1>Get your library CSV from forScore</h1>
             <p>In forScore, open <strong>Tools → Backups</strong>, tap the <strong>scrolled-page icon</strong>, then choose <strong>Export</strong>. Save the CSV to Files and select it below.</p>
-            <button class="text-button" onclick="app.showHelp()">See illustrated step-by-step instructions</button>
+            <button class="text-button" onclick="app.showHelp()">See step-by-step instructions</button>
         </section>
         <div id="uploadSection" class="upload-section">
             <div class="upload-icon">
@@ -97,9 +103,6 @@
         </div>
         <div id="samplePrompt" class="sample-prompt">
             No CSV handy? <a href="#" class="sample-link" onclick="event.preventDefault(); app.loadSample();">Try a sample library</a>
-        </div>
-        <div id="helpLink" class="help-link">
-            <a href="#" onclick="event.preventDefault(); app.showHelp();">How does the forScore round trip work?</a>
         </div>
         <div id="privacyNote" class="privacy-note">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="8" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
@@ -206,6 +209,11 @@
             <details id="advancedTools" class="advanced-tools">
                 <summary>Advanced tools <span>Find, replace, tag, and inspect special cases</span></summary>
                 <div class="table-controls">
+                <button class="btn btn-secondary btn-tool" onclick="app.openDuplicateModal()">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="10" height="12" rx="1"/><path d="M5 3V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1"/></svg>
+                    <span class="btn-tool-label">Find Duplicates</span>
+                    <span class="btn-tool-desc">Detect and tag duplicate files</span>
+                </button>
                 <button class="btn btn-secondary btn-tool" onclick="app.findReplace()">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><path d="M9 9l4 4"/></svg>
                     <span class="btn-tool-label">Find & Replace</span>
@@ -245,13 +253,6 @@
                                 <div class="tool-dropdown-item-desc">Add, remove, or replace tags in bulk</div>
                             </div>
                         </button>
-                        <button class="tool-dropdown-item" onclick="app.openDuplicateModal()">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="10" height="12" rx="1"/><path d="M5 3V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1"/></svg>
-                            <div>
-                                <div>Find Duplicates</div>
-                                <div class="tool-dropdown-item-desc">Detect and tag duplicate files</div>
-                            </div>
-                        </button>
                         <button class="tool-dropdown-item" onclick="app.openManagerModal()">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2L7.5 3.5 9 5"/><path d="M7.5 3.5H12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h1"/><path d="M5 8h6M5 11h4"/></svg>
                             <div>
@@ -261,11 +262,6 @@
                         </button>
                     </div>
                 </div>
-                <button class="btn btn-secondary btn-tool" onclick="app.openSettingsModal()">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v3M10 15v3M2 10h3M15 10h3"/></svg>
-                    <span class="btn-tool-label">Settings</span>
-                    <span class="btn-tool-desc">Composer formats and aliases</span>
-                </button>
             </div>
             </details>
 
