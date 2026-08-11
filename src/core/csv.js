@@ -1,3 +1,61 @@
+import Papa from 'papaparse';
+import { countModifiedFields, resolveLibraryFields } from './data-model.js';
+
+export function parseCsvDocument(text) {
+    if (typeof text !== 'string' || !text.trim()) {
+        throw new Error('No data found in CSV. Please check the file format.');
+    }
+
+    const parsed = Papa.parse(text, {
+        delimiter: ',',
+        skipEmptyLines: 'greedy'
+    });
+
+    if (parsed.errors.length > 0) {
+        const firstError = parsed.errors[0];
+        const rowLabel = Number.isInteger(firstError.row) ? ` on row ${firstError.row + 1}` : '';
+        throw new Error(`Invalid CSV${rowLabel}: ${firstError.message}`);
+    }
+
+    if (parsed.data.length < 2) {
+        throw new Error('No data found in CSV. Please check the file format.');
+    }
+
+    const headers = parsed.data[0].map((value, index) => {
+        const header = String(value ?? '').replace(/^\uFEFF/, '').trim();
+        if (!header) throw new Error(`Invalid CSV: column ${index + 1} has no header.`);
+        return header;
+    });
+
+    if (new Set(headers).size !== headers.length) {
+        throw new Error('Invalid CSV: duplicate column headers are not supported.');
+    }
+
+    const rows = parsed.data.slice(1).map((values, index) => {
+        if (values.length !== headers.length) {
+            throw new Error(
+                `Invalid CSV on row ${index + 2}: expected ${headers.length} columns but found ${values.length}.`
+            );
+        }
+
+        return Object.fromEntries(headers.map((header, columnIndex) => [
+            header,
+            String(values[columnIndex] ?? '')
+        ]));
+    });
+
+    return { headers, rows };
+}
+
+export function serializeCsvDocument(headers, rows) {
+    return Papa.unparse({
+        fields: headers,
+        data: rows.map(row => headers.map(header => String(row[header] ?? '')))
+    }, {
+        newline: '\r\n'
+    });
+}
+
 export const csvCore = {
     handleFile(file) {
         if (!file || !file.name.endsWith('.csv')) {
@@ -8,6 +66,9 @@ export const csvCore = {
         const reader = new FileReader();
         reader.onload = (e) => {
             this.parseCSV(e.target.result);
+        };
+        reader.onerror = () => {
+            this.showNotification('The CSV file could not be read. Please try again.');
         };
         reader.readAsText(file);
     },
@@ -60,72 +121,38 @@ export const csvCore = {
     },
 
     parseCSV(text) {
-        const lines = text.split('\n').filter(line => line.trim());
-        
-        // Parse header line more carefully
-        const headerValues = this.parseCSVLine(lines[0]);
-        const headers = headerValues.map(h => h.trim().replace(/^"|"$/g, ''));
-        
-        console.log('Detected headers:', headers);
-        
-        this.data = [];
-        for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            
-            const values = this.parseCSVLine(lines[i]);
-            const row = {};
-            headers.forEach((header, index) => {
-                row[header] = values[index] || '';
-            });
-            this.data.push(row);
-        }
-
-        console.log('Parsed data:', this.data.slice(0, 3));
-        console.log('Total rows:', this.data.length);
-
-        if (this.data.length === 0) {
-            this.showNotification('No data found in CSV. Please check the file format.');
+        let document;
+        try {
+            document = parseCsvDocument(text);
+        } catch (error) {
+            this.showNotification(error.message || 'Invalid CSV. Please check the file format.');
             return;
         }
 
+        const fields = resolveLibraryFields(document.headers);
+        if (!fields.title && !fields.filename) {
+            this.showNotification('This CSV needs a Title or Filename column. No data was imported.');
+            return;
+        }
+
+        this.data = document.rows;
         this.data.forEach((row, i) => { row.__id = i; });
         this.dataById = new Map(this.data.map(row => [row.__id, row]));
         this.originalData = JSON.parse(JSON.stringify(this.data));
-        this.headers = headers;
+        this.headers = document.headers;
         this.selectedIds.clear();
         this.undoStack = [];
         this.analyzeData();
         this.renderAll();
     },
 
-    parseCSVLine(line) {
-        const values = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                values.push(current.trim());
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        values.push(current.trim());
-        
-        return values.map(v => v.replace(/^"|"$/g, ''));
-    },
-
     analyzeData() {
-        this.composerField = this.detectField(['composers', 'composer', 'Composers', 'Composer']);
-        this.titleField = this.detectField(['title', 'Title']);
-        this.genreField = this.detectField(['genre', 'Genre', 'genres', 'Genres']);
-        this.tagsField = this.detectField(['tags', 'Tags', 'tag', 'Tag']);
-        this.filenameField = this.detectField(['filename', 'Filename', 'file', 'File']);
+        const fields = resolveLibraryFields(this.headers);
+        this.composerField = fields.composer;
+        this.titleField = fields.title;
+        this.genreField = fields.genre;
+        this.tagsField = fields.tags;
+        this.filenameField = fields.filename;
     },
 
     detectField(possibleNames) {
@@ -138,6 +165,7 @@ export const csvCore = {
     },
 
     exportCSV() {
+        this.modifiedCount = countModifiedFields(this.data, this.originalData, this.headers);
         if (this.modifiedCount === 0) {
             this.doExport();
             return;
@@ -192,25 +220,14 @@ export const csvCore = {
             diffContainer.style.display = 'none';
         }
 
-        modal.classList.add('active');
+        this.activateModal(modal);
     },
 
     doExport() {
         this.closeExportModal();
         const headers = this.headers.filter(h => h !== '__id');
 
-        let csv = headers.join(',') + '\n';
-
-        this.data.forEach(row => {
-            const values = headers.map(header => {
-                const value = row[header] || '';
-                if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-                    return '"' + value.replace(/"/g, '""') + '"';
-                }
-                return value;
-            });
-            csv += values.join(',') + '\n';
-        });
+        const csv = serializeCsvDocument(headers, this.data);
 
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);

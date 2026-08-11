@@ -44,27 +44,39 @@ export const duplicateTools = {
         const groups = new Map();
 
         this.data.forEach(row => {
-            const title = (this.titleField ? row[this.titleField] : '') ||
-                (this.filenameField ? row[this.filenameField] : '') || '';
-            if (!title) return;
+            const candidates = [
+                { source: 'title', value: this.titleField ? row[this.titleField] : '' },
+                { source: 'filename', value: this.filenameField ? row[this.filenameField] : '' }
+            ];
 
-            const parsed = this.parseTitleForDedup(title);
-            if (parsed.groupKey.length < 5) return;
+            candidates.forEach(({ source, value }) => {
+                if (!value) return;
+                const parsed = this.parseTitleForDedup(value);
+                if (parsed.groupKey.length < 5) return;
 
-            if (!groups.has(parsed.groupKey)) {
-                groups.set(parsed.groupKey, []);
-            }
-            groups.get(parsed.groupKey).push({
-                id: row.__id,
-                title,
-                composer: this.composerField ? (row[this.composerField] || '') : '',
-                modifiers: parsed.modifiers
+                if (!groups.has(parsed.groupKey)) groups.set(parsed.groupKey, new Map());
+                const group = groups.get(parsed.groupKey);
+                const existing = group.get(row.__id);
+                if (existing) {
+                    existing.sources.add(source);
+                    return;
+                }
+
+                group.set(row.__id, {
+                    id: row.__id,
+                    title: (this.titleField ? row[this.titleField] : '') ||
+                        (this.filenameField ? row[this.filenameField] : '') || '',
+                    composer: this.composerField ? (row[this.composerField] || '') : '',
+                    modifiers: parsed.modifiers,
+                    sources: new Set([source])
+                });
             });
         });
 
         const result = [];
 
-        groups.forEach((items, key) => {
+        groups.forEach((itemsById, key) => {
+            const items = [...itemsById.values()];
             if (items.length < 2) return;
 
             let hasClash = false;
@@ -121,7 +133,7 @@ export const duplicateTools = {
         });
 
         this.renderDuplicateResults();
-        document.getElementById('duplicateModal').classList.add('active');
+        this.activateModal(document.getElementById('duplicateModal'));
     },
 
     renderDuplicateResults() {

@@ -1,4 +1,11 @@
+import { countModifiedFields } from '../core/data-model.js';
+
 export const tableUi = {
+    refreshModificationState() {
+        this.modifiedCount = countModifiedFields(this.data, this.originalData, this.headers || []);
+        return this.modifiedCount;
+    },
+
     renderAll() {
         document.getElementById('uploadSection').classList.add('hidden');
         document.getElementById('samplePrompt').classList.add('hidden');
@@ -12,6 +19,7 @@ export const tableUi = {
     },
 
     updateStats() {
+        this.refreshModificationState();
         const composers = new Set(
             this.data
                 .map(r => this.composerField ? r[this.composerField] : '')
@@ -26,6 +34,10 @@ export const tableUi = {
     },
 
     renderTable() {
+        this.refreshModificationState();
+        const modifiedCountEl = document.getElementById('modifiedCount');
+        if (modifiedCountEl) modifiedCountEl.textContent = this.modifiedCount;
+
         const tbody = document.getElementById('tableBody');
         const thead = document.querySelector('thead');
 
@@ -86,6 +98,7 @@ export const tableUi = {
         const selectAll = document.createElement('input');
         selectAll.type = 'checkbox';
         selectAll.id = 'selectAll';
+        selectAll.setAttribute('aria-label', 'Select all visible scores');
         selectAll.checked = allVisibleSelected;
         selectAll.addEventListener('change', () => this.toggleSelectAll());
         checkboxTh.appendChild(selectAll);
@@ -100,7 +113,22 @@ export const tableUi = {
             const th = document.createElement('th');
             if (className) th.className = className;
             th.textContent = label;
-            th.addEventListener('click', () => this.sortBy(field));
+            if (field) {
+                th.tabIndex = 0;
+                th.setAttribute('role', 'button');
+                th.setAttribute('aria-label', `Sort by ${label}`);
+                th.addEventListener('click', () => this.sortBy(field));
+                th.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        this.sortBy(field);
+                    }
+                });
+            } else {
+                th.classList.add('column-unavailable');
+                th.setAttribute('aria-disabled', 'true');
+                th.title = `${label} is not present in this CSV`;
+            }
             return th;
         };
 
@@ -132,6 +160,7 @@ export const tableUi = {
             rowCheckboxCell.className = 'checkbox-cell';
             const rowCheckbox = document.createElement('input');
             rowCheckbox.type = 'checkbox';
+            rowCheckbox.setAttribute('aria-label', `Select score ${_id + 1}`);
             rowCheckbox.checked = isSelected;
             rowCheckbox.addEventListener('change', (event) => this.toggleRow(_id, event));
             rowCheckboxCell.appendChild(rowCheckbox);
@@ -145,9 +174,22 @@ export const tableUi = {
             const makeEditableCell = (label, field, value, modClass) => {
                 const td = document.createElement('td');
                 td.setAttribute('data-label', label);
+                if (!field) {
+                    td.className = 'column-unavailable';
+                    td.textContent = '—';
+                    td.title = `${label} is not present in this CSV`;
+                    return td;
+                }
                 td.setAttribute('data-editable', 'true');
+                td.tabIndex = 0;
                 if (modClass) td.className = modClass.trim();
                 td.addEventListener('click', () => this.editCell(_id, field, td));
+                td.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        this.editCell(_id, field, td);
+                    }
+                });
 
                 const span = document.createElement('span');
                 span.className = 'editable';
@@ -303,7 +345,7 @@ export const tableUi = {
             if (e.key === 'Tab') {
                 e.preventDefault();
                 input.blur();
-                const fields = [this.titleField, this.composerField, this.genreField, this.tagsField];
+                const fields = [this.titleField, this.composerField, this.genreField, this.tagsField].filter(Boolean);
                 const curIdx = fields.indexOf(field);
                 const nextFieldIdx = e.shiftKey
                     ? (curIdx > 0 ? curIdx - 1 : fields.length - 1)

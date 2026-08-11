@@ -4,6 +4,7 @@ import { modalUi } from './ui/modals.js';
 import { composerTools } from './tools/composer-tools.js';
 import { tagTools } from './tools/tag-tools.js';
 import { duplicateTools } from './tools/duplicate-tools.js';
+import { accessibilityUi } from './ui/accessibility.js';
 
 import { SETTINGS_VERSION, DEFAULT_SETTINGS } from './data/settings-defaults.js';
 import { baseState } from './core/state.js';
@@ -167,7 +168,7 @@ const app = {
         this._setSettingsComposerWarnings([]);
         const cancelBtn = document.getElementById('settingsCancelBtn');
         if (cancelBtn) cancelBtn.textContent = 'Cancel';
-        document.getElementById('settingsModal').classList.add('active');
+        this.activateModal(document.getElementById('settingsModal'));
     },
 
     closeSettingsModal() {
@@ -494,10 +495,7 @@ const app = {
     init() {
         this.loadSettings();
         this.updateComposerToolDescriptions();
-        this.initializeCounterSync();
-        this.renderGlobalCleanedCount();
-        this.fetchGlobalCleanedCount();
-        this.flushCounterQueue();
+        this.initializeAccessibility();
 
         // Restore saved theme
         try {
@@ -542,7 +540,7 @@ const app = {
 
         // Warn before closing with unsaved changes
         window.addEventListener('beforeunload', (e) => {
-            if (this.modifiedCount > 0) { e.preventDefault(); }
+            if (this.refreshModificationState() > 0) { e.preventDefault(); }
         });
 
         // Keyboard shortcuts
@@ -603,206 +601,6 @@ const app = {
             existing.count += count;
         } else {
             this.changeLog.push({ category, count });
-        }
-
-        if (Number.isFinite(count) && count > 0) {
-            this.enqueueCounterIncrement(count);
-        }
-    },
-
-    initializeCounterSync() {
-        const runtimeConfig = (typeof window !== 'undefined' && window.TIDYSCORE_CONFIG) ? window.TIDYSCORE_CONFIG : {};
-        if (runtimeConfig.counterApiBaseUrl) {
-            this.counterConfig.apiBaseUrl = String(runtimeConfig.counterApiBaseUrl).trim();
-        }
-
-        this.sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-
-        const configuredClientId = runtimeConfig.anonymousClientId ? String(runtimeConfig.anonymousClientId).trim() : '';
-        if (configuredClientId) {
-            this.anonymousClientId = configuredClientId;
-        } else {
-            const clientStorageKey = this.counterConfig.storageKeys.clientId;
-            let storedClientId = '';
-            try {
-                storedClientId = localStorage.getItem(clientStorageKey) || '';
-            } catch (error) {
-                storedClientId = '';
-            }
-
-            if (!storedClientId) {
-                storedClientId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
-                try {
-                    localStorage.setItem(clientStorageKey, storedClientId);
-                } catch (error) {}
-            }
-            this.anonymousClientId = storedClientId;
-        }
-
-        this.loadCounterQueueFromStorage();
-
-        if (!this.isCounterApiConfigured()) {
-            try {
-                const stored = localStorage.getItem(this.counterConfig.storageKeys.localTotal);
-                const parsed = Number(stored);
-                this.globalCleanedCount = (Number.isFinite(parsed) && parsed >= 0) ? parsed : 0;
-            } catch (e) {
-                this.globalCleanedCount = 0;
-            }
-        }
-    },
-
-    buildCounterUrl(path) {
-        const base = (this.counterConfig.apiBaseUrl || '').trim().replace(/\/$/, '');
-        const endpoint = path.startsWith('/') ? path : `/${path}`;
-        return `${base}${endpoint}`;
-    },
-
-    isCounterApiConfigured() {
-        return !!this.counterConfig.apiBaseUrl;
-    },
-
-    renderGlobalCleanedCount() {
-        const valueEl = document.getElementById('globalCleanedCountValue');
-        if (!valueEl) return;
-
-        if (!Number.isFinite(this.globalCleanedCount)) {
-            valueEl.textContent = '—';
-            return;
-        }
-
-        valueEl.textContent = this.globalCleanedCount.toLocaleString();
-    },
-
-    setCounterSyncStatus(isOnline) {
-        this.counterSyncOnline = !!isOnline;
-        const statusEl = document.getElementById('counterSyncStatus');
-        if (!statusEl) return;
-        if (!this.isCounterApiConfigured()) {
-            statusEl.hidden = true;
-            return;
-        }
-        statusEl.hidden = this.counterSyncOnline;
-    },
-
-    async fetchGlobalCleanedCount() {
-        if (!this.isCounterApiConfigured()) return;
-        try {
-            const response = await fetch(this.buildCounterUrl(this.counterConfig.totalEndpoint), {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const data = await response.json();
-            const total = Number(data?.total ?? data?.count ?? data?.value);
-            if (Number.isFinite(total) && total >= 0) {
-                this.globalCleanedCount = total;
-                this.renderGlobalCleanedCount();
-            }
-            this.setCounterSyncStatus(true);
-        } catch (error) {
-            this.setCounterSyncStatus(false);
-        }
-    },
-
-    loadCounterQueueFromStorage() {
-        const queueStorageKey = this.counterConfig.storageKeys.pendingQueue;
-        try {
-            const raw = localStorage.getItem(queueStorageKey);
-            const parsed = raw ? JSON.parse(raw) : [];
-            if (Array.isArray(parsed)) {
-                this.counterPendingQueue = parsed
-                    .filter(item => item && Number.isFinite(Number(item.delta)) && Number(item.delta) > 0)
-                    .slice(-this.counterConfig.maxPendingQueue)
-                    .map(item => ({
-                        delta: Number(item.delta),
-                        clientId: item.clientId || this.anonymousClientId,
-                        sessionId: item.sessionId || this.sessionId,
-                        ts: item.ts || Date.now()
-                    }));
-            }
-        } catch (error) {
-            this.counterPendingQueue = [];
-        }
-    },
-
-    persistCounterQueue() {
-        const queueStorageKey = this.counterConfig.storageKeys.pendingQueue;
-        const trimmed = this.counterPendingQueue.slice(-this.counterConfig.maxPendingQueue);
-        this.counterPendingQueue = trimmed;
-        try {
-            localStorage.setItem(queueStorageKey, JSON.stringify(trimmed));
-        } catch (error) {}
-    },
-
-    enqueueCounterIncrement(delta) {
-        if (!this.isCounterApiConfigured()) {
-            if (!Number.isFinite(this.globalCleanedCount)) this.globalCleanedCount = 0;
-            this.globalCleanedCount += delta;
-            try {
-                localStorage.setItem(
-                    this.counterConfig.storageKeys.localTotal,
-                    String(this.globalCleanedCount)
-                );
-            } catch (e) {}
-            this.renderGlobalCleanedCount();
-            return;
-        }
-        this.counterPendingQueue.push({
-            delta,
-            clientId: this.anonymousClientId,
-            sessionId: this.sessionId,
-            ts: Date.now()
-        });
-        this.persistCounterQueue();
-        this.scheduleCounterFlush();
-    },
-
-    scheduleCounterFlush() {
-        if (this._counterFlushTimer) clearTimeout(this._counterFlushTimer);
-        this._counterFlushTimer = setTimeout(() => {
-            this._counterFlushTimer = null;
-            this.flushCounterQueue();
-        }, 700);
-    },
-
-    async flushCounterQueue() {
-        if (!this.isCounterApiConfigured()) return;
-        if (this._counterFlushInFlight || this.counterPendingQueue.length === 0) return;
-        this._counterFlushInFlight = true;
-
-        try {
-            while (this.counterPendingQueue.length > 0) {
-                const payload = this.counterPendingQueue[0];
-                const response = await fetch(this.buildCounterUrl(this.counterConfig.incrementEndpoint), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                this.counterPendingQueue.shift();
-                this.persistCounterQueue();
-                this.setCounterSyncStatus(true);
-
-                const newTotal = this.globalCleanedCount;
-                if (Number.isFinite(newTotal)) {
-                    this.globalCleanedCount = newTotal + Number(payload.delta || 0);
-                    this.renderGlobalCleanedCount();
-                }
-            }
-        } catch (error) {
-            this.setCounterSyncStatus(false);
-            this.persistCounterQueue();
-        } finally {
-            this._counterFlushInFlight = false;
         }
     },
 
@@ -954,7 +752,7 @@ const app = {
 
 
 export function buildApp() {
-    return Object.assign(app, csvCore, tableUi, modalUi, composerTools, tagTools, duplicateTools);
+    return Object.assign(app, csvCore, tableUi, modalUi, composerTools, tagTools, duplicateTools, accessibilityUi);
 }
 
 const composedApp = buildApp();

@@ -94,7 +94,7 @@
                     <div class="stat-label">Total Scores</div>
                     <div class="stat-value" id="totalScores">0</div>
                 </div>
-                <div class="stat-card stat-card--clickable" onclick="app.toggleComposerStats(event)" id="composerStatCard">
+                <div class="stat-card stat-card--clickable" onclick="app.toggleComposerStats(event)" id="composerStatCard" aria-label="Show composer statistics">
                     <div class="stat-icon stat-icon--composers">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                             <circle cx="10" cy="6" r="3"/>
@@ -105,7 +105,7 @@
                     <div class="stat-value" id="uniqueComposers">0</div>
                     <div id="composerStatsDropdown" class="stat-dropdown hidden"></div>
                 </div>
-                <div class="stat-card stat-card--clickable" onclick="app.toggleModifiedStats(event)" id="modifiedStatCard">
+                <div class="stat-card stat-card--clickable" onclick="app.toggleModifiedStats(event)" id="modifiedStatCard" aria-label="Show modified field statistics">
                     <div class="stat-icon stat-icon--modified">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12.5 2.5l5 5L7 18H2v-5L12.5 2.5z"/>
@@ -327,8 +327,6 @@
             <span class="footer-sep">&middot;</span>
             <span class="footer-version">v0.1.0-beta.1</span>
             <span class="footer-sep">&middot;</span>
-            <span class="footer-global-count" hidden>Global cleaned count: <strong id="globalCleanedCountValue">—</strong></span>
-            <span class="footer-sync-status" id="counterSyncStatus" hidden>Sync offline</span>
             <span>by <a href="https://mitchlyoncello.com" target="_blank" rel="noopener noreferrer" class="footer-link">Mitch Lyon</a></span>
         </div>
     </footer>

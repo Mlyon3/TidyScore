@@ -53,7 +53,7 @@ export const modalUi = {
         });
 
         resultsDiv.innerHTML = html;
-        modal.classList.add('active');
+        this.activateModal(modal);
     },
 
     toggleExtraction(index) {
@@ -228,7 +228,7 @@ export const modalUi = {
         });
 
         resultsDiv.innerHTML = html;
-        modal.classList.add('active');
+        this.activateModal(modal);
 
         // Restore label checkbox state after rendering
         document.getElementById('imslpAddLabel').checked = addLabel;
@@ -330,7 +330,7 @@ export const modalUi = {
     },
 
     findReplace() {
-        document.getElementById('findReplaceModal').classList.add('active');
+        this.activateModal(document.getElementById('findReplaceModal'));
     },
 
     closeModal() {
@@ -488,7 +488,7 @@ export const modalUi = {
         document.getElementById('previewList').innerHTML = html;
         document.getElementById('previewSelectAll').checked = true;
         document.getElementById('previewApplyBtn').textContent = `Apply ${changes.length} Change${changes.length !== 1 ? 's' : ''}`;
-        document.getElementById('previewModal').classList.add('active');
+        this.activateModal(document.getElementById('previewModal'));
     },
 
     togglePreviewItem(i) {
@@ -548,7 +548,7 @@ export const modalUi = {
     },
 
     showHelp() {
-        document.getElementById('helpModal').classList.add('active');
+        this.activateModal(document.getElementById('helpModal'));
     },
 
     closeHelp() {

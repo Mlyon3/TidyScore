@@ -102,7 +102,7 @@ export const tagTools = {
 
         resultsDiv.innerHTML = html;
         this.updateGenreSuggestSelectedCount();
-        modal.classList.add('active');
+        this.activateModal(modal);
     },
 
     toggleGenreSuggestion(index) {
@@ -253,7 +253,7 @@ export const tagTools = {
 
         resultsDiv.innerHTML = html;
         this.updateTagSuggestSelectedCount();
-        modal.classList.add('active');
+        this.activateModal(modal);
     },
 
     toggleTagSuggestion(index) {
@@ -333,7 +333,7 @@ export const tagTools = {
         document.getElementById('batchTagScope').innerHTML = `Editing tags for <strong>${targetIndices.length}</strong> rows (${scope}).`;
 
         this.switchBatchTagMode('add');
-        document.getElementById('batchTagModal').classList.add('active');
+        this.activateModal(document.getElementById('batchTagModal'));
         document.getElementById('batchTagAddInput').value = '';
         setTimeout(() => document.getElementById('batchTagAddInput').focus(), 100);
     },
@@ -515,7 +515,7 @@ export const tagTools = {
         document.getElementById('managerTabTags').classList.remove('active');
         this.computeManagerData();
         this.renderManagerList();
-        document.getElementById('managerModal').classList.add('active');
+        this.activateModal(document.getElementById('managerModal'));
     },
 
     switchManagerTab(tab) {

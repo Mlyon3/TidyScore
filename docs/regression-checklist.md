@@ -20,8 +20,8 @@ and includes one end-to-end UI flow that saves settings then applies **Smart Ext
 
 ## Preconditions (deterministic setup)
 
-1. Run `npm install` (first time only).
-2. Run `npm run dev` and open the local dev URL shown in the terminal.
+1. Run `pnpm install` (first time only).
+2. Run `pnpm dev` and open the local dev URL shown in the terminal.
 3. Click **Settings**.
 4. Click **Reset composer settings to defaults**.
 5. Save settings.

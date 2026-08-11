@@ -12,4 +12,15 @@ button:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
+.column-unavailable {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    opacity: 0.65;
+}
 
+[role="button"]:focus-visible,
+td[data-editable="true"]:focus-visible,
+.modal:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}

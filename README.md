@@ -7,30 +7,30 @@ A browser-based tool for cleaning up your [forScore](https://forscore.co) music 
 Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 Start the development server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Create a production build:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 Preview the production build locally:
 
 ```bash
-npm run preview
+pnpm preview
 ```
 
 ## How to Use
 
-1. Start the app with `npm run dev`.
+1. Start the app with `pnpm dev`.
 2. Export your metadata from forScore: **Menu → Share → CSV**.
 3. Upload your CSV (or drag and drop it).
 4. Clean up your data using the tools below.
@@ -48,7 +48,7 @@ Application code now lives under `src/` in modular JavaScript and CSS files:
 - `src/tools` — feature-specific cleanup tools (for example duplicate detection)
 - `src/styles` — modular stylesheet files imported in order
 
-> Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow uses Vite via the npm scripts above.
+> Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow uses Vite via the pnpm scripts above.
 
 ---
 
@@ -128,10 +128,13 @@ TidyScore recognizes 170+ composer name variations and maps them to their canoni
 
 ## Regression Coverage
 
-- Lightweight deterministic QA checklist for composer-settings regressions: `docs/regression-checklist.md`.
+- Run unit and regression tests with `pnpm test`.
+- Run the Chromium smoke suite with `pnpm test:e2e` after installing its browser once with `pnpm exec playwright install chromium`.
+- GitHub Actions runs tests, the production build, and the browser smoke suite for pushes and pull requests.
+- A manual composer-settings checklist remains in `docs/regression-checklist.md`.
 
 ---
 
 ## Privacy
 
-All processing happens in your browser. Your CSV data is never uploaded, transmitted, or stored anywhere. The only thing saved is your light/dark mode preference (in localStorage).
+All CSV processing happens in your browser. CSV contents stay in memory for the current tab and are never uploaded or transmitted by TidyScore. The app stores your theme and composer-cleanup settings in your browser's local storage so they persist between visits. TidyScore has no usage counter or telemetry endpoint.
