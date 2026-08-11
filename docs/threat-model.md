@@ -17,6 +17,8 @@ Spreadsheet programs may interpret cells beginning with optional whitespace foll
 
 The HTML meta Content Security Policy restricts scripts, module workers, images, manifests, and connections to the same origin; disables objects; and restricts base and form actions. `style-src 'unsafe-inline'` remains temporarily necessary for presentation-only inline styles. CSP reduces the impact of accidental injection but does not validate a CSV or protect data after it is opened in another application.
 
+The generated Workbox service worker caches only the versioned application shell and same-origin runtime assets. Imported CSV contents are not network requests and are not added to service-worker caches. Navigation uses the network first when available and falls back to the precached application offline. A waiting update is user-visible and cannot reload while an active library is open.
+
 ## Local persistence and recovery
 
 Theme and cleanup settings use local storage. Library recovery is opt-in and uses IndexedDB in the current browser profile. Session schema validation runs before restoration, internal row identities are reconstructed, and corrupt sessions can be deleted from the recovery prompt. Anyone with access to the browser profile may be able to inspect locally stored recovery data; disable recovery and delete the local copy on shared devices.

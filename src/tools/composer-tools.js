@@ -161,7 +161,7 @@ export const composerTools = {
 
         // Strategy 1: Separator-based segment scanning
         // Split on spaced dashes (preserving hyphenated names), underscore, colon, pipe, slash
-        const separatorPattern = /\s+[-\u2013\u2014]\s+|[_:|\/]/;
+        const separatorPattern = /\s+[-\u2013\u2014]\s+|[_:|/]/;
         if (separatorPattern.test(title)) {
             const segments = title.split(separatorPattern).map(s => s.trim()).filter(Boolean);
 
