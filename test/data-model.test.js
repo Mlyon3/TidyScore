@@ -3,9 +3,11 @@ import {
     buildExportDiffSummary,
     buildExportReviewSummary,
     countModifiedFields,
+    detectFormulaRisks,
     resolveLibraryFields
 } from '../src/core/data-model.js';
 import { assignRowIds, cloneRowsWithIds } from '../src/core/row-identity.js';
+import { parseCsvDocument, serializeCsvDocument } from '../src/core/csv.js';
 
 function identified(rows) {
     const ids = rows.map((row, index) => Number.isInteger(row.__id) ? row.__id : index);
@@ -22,6 +24,21 @@ describe('library field mapping', () => {
             tags: 'Tag',
             filename: 'File'
         });
+    });
+});
+
+describe('formula-risk reporting', () => {
+    it('counts affected cells and rows without changing values', () => {
+        const rows = [
+            { Title: '=SUM(A1:A2)', Tags: ' safe' },
+            { Title: 'Prelude', Tags: '  @external' },
+            { Title: '-1', Tags: '+cmd' }
+        ];
+        const before = JSON.stringify(rows);
+
+        expect(detectFormulaRisks(['Title', 'Tags'], rows)).toEqual({ cellCount: 4, rowCount: 3 });
+        expect(JSON.stringify(rows)).toBe(before);
+        expect(parseCsvDocument(serializeCsvDocument(['Title', 'Tags'], rows)).rows).toEqual(rows);
     });
 });
 

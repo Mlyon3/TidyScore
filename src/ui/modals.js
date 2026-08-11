@@ -48,7 +48,7 @@ export const modalUi = {
                 <div class="${itemClass}">
                     <input type="checkbox" class="extraction-checkbox"
                            id="extract_${index}"
-                           onchange="app.toggleExtraction(${index})"
+                           data-index="${index}"
                            ${e.isPartial ? '' : 'checked'}>
                     <div class="extraction-content">
                         <div class="extraction-title">${titleDisplay}</div>
@@ -62,6 +62,9 @@ export const modalUi = {
         });
 
         resultsDiv.innerHTML = html;
+        resultsDiv.querySelectorAll('.extraction-checkbox').forEach(input => {
+            input.addEventListener('change', () => this.toggleExtraction(Number(input.dataset.index)));
+        });
         this.updateSelectAllCheckbox();
         this.activateModal(modal);
     },
@@ -169,6 +172,8 @@ export const modalUi = {
 
         const notification = document.createElement('div');
         notification.className = 'toast-notification';
+        notification.setAttribute('role', 'status');
+        notification.setAttribute('aria-live', 'polite');
 
         const msgSpan = document.createElement('span');
         msgSpan.className = 'toast-message';
@@ -225,7 +230,7 @@ export const modalUi = {
                 <div class="extraction-item">
                     <input type="checkbox" class="extraction-checkbox"
                            id="imslp_${index}"
-                           onchange="app.toggleImslpCleanup(${index})"
+                           data-index="${index}"
                            ${isChecked}>
                     <div class="extraction-content">
                         <div class="extraction-title">Original: ${this.escapeHtml(item.original.substring(0, 60))}${item.original.length > 60 ? '...' : ''}</div>
@@ -238,6 +243,9 @@ export const modalUi = {
         });
 
         resultsDiv.innerHTML = html;
+        resultsDiv.querySelectorAll('.extraction-checkbox').forEach(input => {
+            input.addEventListener('change', () => this.toggleImslpCleanup(Number(input.dataset.index)));
+        });
         this.activateModal(modal);
 
         // Restore label checkbox state after rendering
@@ -490,7 +498,7 @@ export const modalUi = {
             const oldEsc = this.escapeHtml(c.detail || '');
             const newEsc = this.escapeHtml(c.newDetail || '');
             html += `<div class="preview-row">
-                <input type="checkbox" checked onchange="app.togglePreviewItem(${i})">
+                <input type="checkbox" checked data-preview-index="${i}">
                 <div class="preview-row-content">
                     <div class="preview-row-label">${this.escapeHtml(c.label)}</div>
                     <div class="preview-row-detail">
@@ -506,6 +514,9 @@ export const modalUi = {
         }
 
         document.getElementById('previewList').innerHTML = html;
+        document.querySelectorAll('#previewList [data-preview-index]').forEach(input => {
+            input.addEventListener('change', () => this.togglePreviewItem(Number(input.dataset.previewIndex)));
+        });
         document.getElementById('previewSelectAll').checked = true;
         document.getElementById('previewApplyBtn').textContent = `Apply ${changes.length} Change${changes.length !== 1 ? 's' : ''}`;
         this.activateModal(document.getElementById('previewModal'));
@@ -597,6 +608,11 @@ export const modalUi = {
         this.changeLog = [];
         this.exportReviewCandidates = new Map();
         this.selectedIds.clear();
+        this.filteredIds = [];
+        this.visibleIds = [];
+        this.currentPage = 0;
+        this.scaleWarning = null;
+        this.invalidateAnalysis?.({ clearCache: true });
         this.finishActiveCellEdit?.({ cancel: true, render: false });
         this.editGeneration = (this.editGeneration || 0) + 1;
         this._fileReadGeneration = (this._fileReadGeneration || 0) + 1;

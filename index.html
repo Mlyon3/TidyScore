@@ -13,6 +13,7 @@
     <meta name="theme-color" content="#121a24">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/tidyscore-icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/tidyscore-192.png">
@@ -37,20 +38,20 @@
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <button class="header-icon-btn" onclick="app.openSettingsModal()" aria-label="Open settings" aria-haspopup="dialog" aria-controls="settingsModal">
+                <button class="header-icon-btn" data-action="openSettingsModal" aria-label="Open settings" aria-haspopup="dialog" aria-controls="settingsModal">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="10" cy="10" r="3"/>
                         <path d="M16.6 12a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V16a1.2 1.2 0 0 1-1.2 1.2h-.2A1.2 1.2 0 0 1 10.7 16v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H6a1.2 1.2 0 0 1-1.2-1.2v-.2A1.2 1.2 0 0 1 6 9.1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.2 1.2 0 0 1 1.2-1.2h.2A1.2 1.2 0 0 1 13.1 4v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 19 9.3v.2a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.6Z"/>
                     </svg>
                 </button>
-                <button class="help-btn" onclick="app.showHelp()" aria-label="How it works">
+                <button class="help-btn" data-action="showHelp" aria-label="How it works">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="10" cy="10" r="8"/>
                         <path d="M7.5 7.5a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3.5"/>
                         <circle cx="10" cy="15" r="0.5" fill="currentColor" stroke="none"/>
                     </svg>
                 </button>
-                <button class="theme-toggle" onclick="app.toggleTheme()" aria-label="Toggle dark mode">
+                <button class="theme-toggle" data-action="toggleTheme" aria-label="Toggle dark mode">
                     <svg class="theme-icon theme-icon--light" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                         <circle cx="10" cy="10" r="4"/>
                         <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/>
@@ -77,8 +78,8 @@
                 <span id="recoveryPromptDetail">A library saved on this iPad is available.</span>
             </div>
             <div class="recovery-actions">
-                <button class="btn btn-secondary btn-sm" onclick="app.deleteSavedSession()">Delete</button>
-                <button class="btn btn-primary btn-sm" onclick="app.restoreSavedSession()">Continue</button>
+                <button class="btn btn-secondary btn-sm" data-action="deleteSavedSession">Delete</button>
+                <button class="btn btn-primary btn-sm" data-action="restoreSavedSession">Continue</button>
             </div>
         </div>
 
@@ -86,7 +87,7 @@
             <div class="eyebrow">Step 1 · Import</div>
             <h1>Get your library CSV from forScore</h1>
             <p>In forScore, open <strong>Tools → Backups</strong>, tap the <strong>scrolled-page icon</strong>, then choose <strong>Export</strong>. Save the CSV to Files and select it below.</p>
-            <button class="text-button" onclick="app.showHelp()">See step-by-step instructions</button>
+            <button class="text-button" data-action="showHelp">See step-by-step instructions</button>
         </section>
         <div id="uploadSection" class="upload-section">
             <div class="upload-icon">
@@ -102,7 +103,7 @@
             <input type="file" id="fileInput" accept=".csv">
         </div>
         <div id="samplePrompt" class="sample-prompt">
-            No CSV handy? <a href="#" class="sample-link" onclick="event.preventDefault(); app.loadSample();">Try a sample library</a>
+            No CSV handy? <a href="#" class="sample-link" data-action="loadSample">Try a sample library</a>
         </div>
         <div id="privacyNote" class="privacy-note">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="8" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
@@ -120,7 +121,7 @@
                     <div class="stat-label">Total Scores</div>
                     <div class="stat-value" id="totalScores">0</div>
                 </div>
-                <div class="stat-card stat-card--clickable" onclick="app.toggleComposerStats(event)" id="composerStatCard" aria-label="Show composer statistics">
+                <div class="stat-card stat-card--clickable" data-action="toggleComposerStats" id="composerStatCard" aria-label="Show composer statistics">
                     <div class="stat-icon stat-icon--composers">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                             <circle cx="10" cy="6" r="3"/>
@@ -131,7 +132,7 @@
                     <div class="stat-value" id="uniqueComposers">0</div>
                     <div id="composerStatsDropdown" class="stat-dropdown hidden"></div>
                 </div>
-                <div class="stat-card stat-card--clickable" onclick="app.toggleModifiedStats(event)" id="modifiedStatCard" aria-label="Show modified field statistics">
+                <div class="stat-card stat-card--clickable" data-action="toggleModifiedStats" id="modifiedStatCard" aria-label="Show modified field statistics">
                     <div class="stat-icon stat-icon--modified">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12.5 2.5l5 5L7 18H2v-5L12.5 2.5z"/>
@@ -145,6 +146,7 @@
         </div>
 
         <main id="tableSection" class="table-section hidden">
+            <div id="scaleWarning" class="persistent-warning hidden" role="status"></div>
             <section class="review-section" aria-labelledby="reviewHeading">
                 <div class="section-header">
                     <div>
@@ -170,7 +172,7 @@
                                 <div class="scan-result-desc">Fills blank composer fields by inferring from the title, and completes partial names.</div>
                             </div>
                         </div>
-                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('missingComposer')">Fix composers</button>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" data-action="runScanFix" data-value="missingComposer">Fix composers</button>
                     </div>
                     <div class="scan-result-row">
                         <div class="scan-result-meta">
@@ -180,7 +182,7 @@
                                 <div id="standardizeToolDesc" class="scan-result-desc">Applies First Last format to comma-separated composers.</div>
                             </div>
                         </div>
-                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('composerFormatting')">Standardize composer names</button>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" data-action="runScanFix" data-value="composerFormatting">Standardize composer names</button>
                     </div>
                     <div class="scan-result-row">
                         <div class="scan-result-meta">
@@ -190,7 +192,7 @@
                                 <div class="scan-result-desc">Spots IMSLP IDs, underscores, and imported filename artifacts in titles.</div>
                             </div>
                         </div>
-                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('imslpTitles')">Fix titles</button>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" data-action="runScanFix" data-value="imslpTitles">Fix titles</button>
                     </div>
                     <div class="scan-result-row">
                         <div class="scan-result-meta">
@@ -200,8 +202,12 @@
                                 <div class="scan-result-desc">Trims whitespace and tidies commas and tags.</div>
                             </div>
                         </div>
-                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('quickClean')">Review cleanup</button>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" data-action="runScanFix" data-value="quickClean">Review cleanup</button>
                     </div>
+                </div>
+                <div class="analysis-status-row" aria-live="polite">
+                    <span id="analysisStatus" class="hidden"></span>
+                    <button id="analysisRetry" class="text-button hidden" data-action="retryAnalysis">Retry analysis</button>
                 </div>
             </div>
             </section>
@@ -209,18 +215,18 @@
             <details id="advancedTools" class="advanced-tools">
                 <summary>Advanced tools <span>Find, replace, tag, and inspect special cases</span></summary>
                 <div class="table-controls">
-                <button class="btn btn-secondary btn-tool" onclick="app.openDuplicateModal()">
+                <button class="btn btn-secondary btn-tool" data-action="openDuplicateModal">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="10" height="12" rx="1"/><path d="M5 3V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1"/></svg>
                     <span class="btn-tool-label">Find Duplicates</span>
                     <span class="btn-tool-desc">Detect and tag duplicate files</span>
                 </button>
-                <button class="btn btn-secondary btn-tool" onclick="app.findReplace()">
+                <button class="btn btn-secondary btn-tool" data-action="findReplace">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><path d="M9 9l4 4"/></svg>
                     <span class="btn-tool-label">Find & Replace</span>
                     <span class="btn-tool-desc">Search and edit in bulk</span>
                 </button>
                 <div class="btn-tool-wrapper">
-                    <button id="genreTagMenuTrigger" class="btn btn-secondary btn-tool" onclick="app.toggleGenreTagMenu(event)" aria-expanded="false" aria-controls="genreTagDropdown">
+                    <button id="genreTagMenuTrigger" class="btn btn-secondary btn-tool" data-action="toggleGenreTagMenu" aria-expanded="false" aria-controls="genreTagDropdown">
                         <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 2h6l2 2h5a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2z"/>
                             <path d="M5 9h6M5 12h3"/>
@@ -232,28 +238,28 @@
                         </svg>
                     </button>
                     <div id="genreTagDropdown" class="tool-dropdown">
-                        <button class="tool-dropdown-item" onclick="app.suggestGenres()">
+                        <button class="tool-dropdown-item" data-action="suggestGenres">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M2 7h8M2 11h5"/><circle cx="12" cy="10" r="3"/><path d="M12 9v2M11 10h2"/></svg>
                             <div>
                                 <div>Suggest Genre</div>
                                 <div class="tool-dropdown-item-desc">Fill genre from composer era</div>
                             </div>
                         </button>
-                        <button class="tool-dropdown-item" onclick="app.suggestTags()">
+                        <button class="tool-dropdown-item" data-action="suggestTags">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3l4-1v12l-4 1V3z"/><path d="M5 2l5-1v12l-5 1V2z"/><path d="M13 8l2 2-2 2"/></svg>
                             <div>
                                 <div>Suggest Tags</div>
                                 <div class="tool-dropdown-item-desc">Detect tags from title keywords</div>
                             </div>
                         </button>
-                        <button class="tool-dropdown-item" onclick="app.openBatchTagEditor()">
+                        <button class="tool-dropdown-item" data-action="openBatchTagEditor">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M2 8h12M2 12h12"/><circle cx="5" cy="4" r="1.5" fill="currentColor"/><circle cx="11" cy="8" r="1.5" fill="currentColor"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/></svg>
                             <div>
                                 <div>Batch Tag Editor</div>
                                 <div class="tool-dropdown-item-desc">Add, remove, or replace tags in bulk</div>
                             </div>
                         </button>
-                        <button class="tool-dropdown-item" onclick="app.openManagerModal()">
+                        <button class="tool-dropdown-item" data-action="openManagerModal">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2L7.5 3.5 9 5"/><path d="M7.5 3.5H12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h1"/><path d="M5 8h6M5 11h4"/></svg>
                             <div>
                                 <div>Manage Genres & Tags</div>
@@ -269,16 +275,16 @@
                 <summary><span><span class="eyebrow">Step 3 · Edit</span><strong>Inspect and edit your library</strong></span><span id="rowCountIndicator" class="row-count-indicator" aria-live="polite"></span></summary>
                 <div id="bulkControls" class="bulk-controls">
                     <span class="bulk-label"><span id="selectedCount">0</span> selected</span>
-                    <button class="btn btn-secondary btn-sm" onclick="app.clearSelection()">Clear</button>
+                    <button class="btn btn-secondary btn-sm" data-action="clearSelection">Clear</button>
                 </div>
                 <div class="search-wrapper">
                     <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg>
                     <input type="text" id="searchInput" class="search-input" placeholder="Search titles, composers, genres, or tags">
-                    <button id="searchClear" class="search-clear hidden" onclick="app.clearSearch()" aria-label="Clear search">&times;</button>
+                    <button id="searchClear" class="search-clear hidden" data-action="clearSearch" aria-label="Clear search">&times;</button>
                 </div>
                 <div class="mobile-sort">
                     <label for="mobileSortSelect">Sort by:</label>
-                    <select id="mobileSortSelect" onchange="app.mobileSortChanged(this.value)">
+                    <select id="mobileSortSelect" data-action="mobileSortChanged" data-event="change">
                         <option value="">Default order</option><option value="title-asc">Title A-Z</option><option value="title-desc">Title Z-A</option><option value="composer-asc">Composer A-Z</option><option value="composer-desc">Composer Z-A</option><option value="genre-asc">Genre A-Z</option><option value="genre-desc">Genre Z-A</option><option value="tags-asc">Tags A-Z</option><option value="tags-desc">Tags Z-A</option>
                     </select>
                 </div>
@@ -295,14 +301,19 @@
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
+            <nav id="paginationControls" class="pagination-controls hidden" aria-label="Library pages">
+                <button id="paginationPrevious" class="btn btn-secondary btn-sm" data-action="previousPage">Previous</button>
+                <span id="paginationStatus" aria-live="polite"></span>
+                <button id="paginationNext" class="btn btn-secondary btn-sm" data-action="nextPage">Next</button>
+            </nav>
             </details>
 
             <div class="export-section" aria-label="Session actions">
                 <div class="session-recovery-control">
-                    <label><input type="checkbox" id="sessionRecoveryToggle" onchange="app.setSessionRecovery(this.checked)"> Recover this session on this device</label>
-                    <button id="deleteSessionBtn" class="text-button hidden" onclick="app.deleteSavedSession()">Delete local copy</button>
+                    <label><input type="checkbox" id="sessionRecoveryToggle" data-action="setSessionRecovery" data-event="change"> Recover this session on this device</label>
+                    <button id="deleteSessionBtn" class="text-button hidden" data-action="deleteSavedSession">Delete local copy</button>
                 </div>
-                <button class="btn btn-primary btn-action" onclick="app.exportCSV()">
+                <button class="btn btn-primary btn-action" data-action="exportCSV">
                     <span class="btn-action-content">
                         <svg class="btn-action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
                         <span class="btn-action-text">
@@ -311,7 +322,7 @@
                         </span>
                     </span>
                 </button>
-                <button id="undoBtn" class="btn btn-secondary btn-action" onclick="app.undo()" disabled>
+                <button id="undoBtn" class="btn btn-secondary btn-action" data-action="undo" disabled>
                     <span class="btn-action-content">
                         <svg class="btn-action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7a4 4 0 0 1 0 8H7"/><path d="M6 4L3 7l3 3"/></svg>
                         <span class="btn-action-text">
@@ -320,7 +331,7 @@
                         </span>
                     </span>
                 </button>
-                <button class="btn btn-secondary btn-action" onclick="app.reset()">
+                <button class="btn btn-secondary btn-action" data-action="reset">
                     <span class="btn-action-content">
                         <svg class="btn-action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8a7 7 0 0 1 13.3-3M15 8a7 7 0 0 1-13.3 3"/><path d="M14.3 1v4h-4M1.7 15v-4h4"/></svg>
                         <span class="btn-action-text">
@@ -365,8 +376,8 @@
                 </select>
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="app.executeReplace()">Replace All</button>
+                <button class="btn btn-secondary" data-action="closeModal">Cancel</button>
+                <button class="btn btn-primary" data-action="executeReplace">Replace All</button>
             </div>
         </div>
     </div>
@@ -382,13 +393,13 @@
                 <span id="extractionSelectedCount" class="modal-desc-accent"></span>
             </p>
             <div class="extraction-header">
-                <input type="checkbox" id="selectAllExtractions" onchange="app.toggleSelectAllExtractions()" checked>
+                <input type="checkbox" id="selectAllExtractions" data-action="toggleSelectAllExtractions" data-event="change" checked>
                 <label for="selectAllExtractions" style="cursor: pointer; user-select: none;">Select All</label>
             </div>
             <div id="extractionResults" class="extraction-results"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeExtractionModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="app.applyExtraction()">Apply Selected</button>
+                <button class="btn btn-secondary" data-action="closeExtractionModal">Cancel</button>
+                <button class="btn btn-primary" data-action="applyExtraction">Apply Selected</button>
             </div>
         </div>
     </div>
@@ -402,17 +413,17 @@
                 <span id="imslpSelectedCount" class="modal-desc-accent"></span>
             </p>
             <div class="extraction-header" style="margin-bottom: 4px;">
-                <input type="checkbox" id="imslpAddLabel" onchange="app.toggleImslpLabel()" checked>
+                <input type="checkbox" id="imslpAddLabel" data-action="toggleImslpLabel" data-event="change" checked>
                 <label for="imslpAddLabel" style="cursor: pointer; user-select: none;">Add (IMSLP) label to cleaned titles</label>
             </div>
             <div class="extraction-header">
-                <input type="checkbox" id="selectAllImslp" onchange="app.toggleSelectAllImslp()" checked>
+                <input type="checkbox" id="selectAllImslp" data-action="toggleSelectAllImslp" data-event="change" checked>
                 <label for="selectAllImslp" style="cursor: pointer; user-select: none;">Select All</label>
             </div>
             <div id="imslpResults" class="extraction-results"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeImslpModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="app.applyImslpCleanup()">Apply Selected</button>
+                <button class="btn btn-secondary" data-action="closeImslpModal">Cancel</button>
+                <button class="btn btn-primary" data-action="applyImslpCleanup">Apply Selected</button>
             </div>
         </div>
     </div>
@@ -422,22 +433,23 @@
         <div class="modal-content export-modal-content">
             <h3 class="modal-title">Export Summary</h3>
             <p class="modal-desc" id="exportSummaryDesc"></p>
+            <div id="exportFormulaWarning" class="persistent-warning hidden" role="status"></div>
             <div id="exportFieldBreakdown" class="export-field-breakdown" aria-label="Changes by field"></div>
             <p id="exportRevertInstruction" class="export-revert-instruction">Tap a change to switch which value will export.</p>
             <div id="exportSearchWrapper" class="search-wrapper export-search-wrapper hidden">
                 <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg>
-                <input type="search" id="exportSearchInput" class="search-input" placeholder="Search changed scores" aria-label="Search Export Summary" oninput="app.filterExportSummary(this.value)">
-                <button id="exportSearchClear" class="search-clear hidden" onclick="app.clearExportSearch()" aria-label="Clear Export Summary search">&times;</button>
+                <input type="search" id="exportSearchInput" class="search-input" placeholder="Search changed scores" aria-label="Search Export Summary" data-action="filterExportSummary" data-event="input">
+                <button id="exportSearchClear" class="search-clear hidden" data-action="clearExportSearch" aria-label="Clear Export Summary search">&times;</button>
             </div>
             <div id="exportSearchResults" class="export-search-results hidden" aria-live="polite"></div>
             <div id="exportSummaryList" class="export-change-list"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeExportModal()">Cancel</button>
-                <button class="btn btn-secondary btn-icon" onclick="app.downloadExport()">
+                <button class="btn btn-secondary" data-action="closeExportModal">Cancel</button>
+                <button class="btn btn-secondary btn-icon" data-action="downloadExport">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
                     Save to Files
                 </button>
-                <button id="shareExportBtn" class="btn btn-primary btn-icon" onclick="app.shareExport()">
+                <button id="shareExportBtn" class="btn btn-primary btn-icon" data-action="shareExport">
                     Share CSV
                 </button>
             </div>
@@ -457,8 +469,8 @@
             </ol>
             <p class="help-step-note">Importing the file into forScore may not visibly change anything until you complete the Backups import.</p>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.downloadExport()">Save another copy</button>
-                <button class="btn btn-primary" onclick="app.closeExportCompleteModal()">Done</button>
+                <button class="btn btn-secondary" data-action="downloadExport">Save another copy</button>
+                <button class="btn btn-primary" data-action="closeExportCompleteModal">Done</button>
             </div>
         </div>
     </div>
@@ -469,13 +481,13 @@
             <h3 class="modal-title" id="previewModalTitle">Preview Changes</h3>
             <p class="modal-desc" id="previewModalDesc"></p>
             <div class="extraction-header">
-                <input type="checkbox" id="previewSelectAll" onchange="app.toggleAllPreviewItems()" checked>
+                <input type="checkbox" id="previewSelectAll" data-action="toggleAllPreviewItems" data-event="change" checked>
                 <label for="previewSelectAll" style="cursor: pointer; user-select: none;">Select All</label>
             </div>
             <div class="preview-list" id="previewList"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closePreviewModal()">Cancel</button>
-                <button class="btn btn-primary" id="previewApplyBtn" onclick="app.applyPreviewChanges()">Apply Selected</button>
+                <button class="btn btn-secondary" data-action="closePreviewModal">Cancel</button>
+                <button class="btn btn-primary" id="previewApplyBtn" data-action="applyPreviewChanges">Apply Selected</button>
             </div>
         </div>
     </div>
@@ -486,15 +498,15 @@
             <h3 class="modal-title">Batch Tag Editor</h3>
             <p class="modal-desc" id="batchTagScope"></p>
             <div class="batch-tag-tabs">
-                <button class="batch-tag-tab active" onclick="app.switchBatchTagMode('add')">Add</button>
-                <button class="batch-tag-tab" onclick="app.switchBatchTagMode('remove')">Remove</button>
-                <button class="batch-tag-tab" onclick="app.switchBatchTagMode('replace')">Replace</button>
+                <button class="batch-tag-tab active" data-action="switchBatchTagMode" data-value="add">Add</button>
+                <button class="batch-tag-tab" data-action="switchBatchTagMode" data-value="remove">Remove</button>
+                <button class="batch-tag-tab" data-action="switchBatchTagMode" data-value="replace">Replace</button>
             </div>
 
             <div id="batchTagAdd" class="batch-tag-pane active">
                 <div class="batch-tag-input-row">
-                    <input type="text" id="batchTagAddInput" placeholder="Enter tag to add..." onkeydown="if(event.key==='Enter')app.batchAddTag()">
-                    <button class="btn btn-primary" onclick="app.batchAddTag()">Add Tag</button>
+                    <input type="text" id="batchTagAddInput" placeholder="Enter tag to add..." data-action="batchAddTag" data-event="keydown">
+                    <button class="btn btn-primary" data-action="batchAddTag">Add Tag</button>
                 </div>
             </div>
 
@@ -509,11 +521,11 @@
                     <span style="display:flex;align-items:center;color:var(--color-text-muted);">&rarr;</span>
                     <input type="text" id="batchTagReplaceTo" placeholder="Replace with...">
                 </div>
-                <button class="btn btn-primary" onclick="app.batchReplaceTag()" style="width:100%;">Replace Tag</button>
+                <button class="btn btn-primary" data-action="batchReplaceTag" style="width:100%;">Replace Tag</button>
             </div>
 
             <div class="modal-buttons" style="margin-top:16px;">
-                <button class="btn btn-secondary" onclick="app.closeBatchTagEditor()">Close</button>
+                <button class="btn btn-secondary" data-action="closeBatchTagEditor">Close</button>
             </div>
         </div>
     </div>
@@ -527,13 +539,13 @@
                 <span id="genreSuggestSelectedCount" class="modal-desc-accent"></span>
             </p>
             <div class="extraction-header">
-                <input type="checkbox" id="selectAllGenreSuggestions" onchange="app.toggleAllGenreSuggestions()" checked>
+                <input type="checkbox" id="selectAllGenreSuggestions" data-action="toggleAllGenreSuggestions" data-event="change" checked>
                 <label for="selectAllGenreSuggestions" style="cursor: pointer; user-select: none;">Select All</label>
             </div>
             <div id="genreSuggestResults" class="extraction-results"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeGenreSuggestModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="app.applyGenreSuggestions()">Apply Selected</button>
+                <button class="btn btn-secondary" data-action="closeGenreSuggestModal">Cancel</button>
+                <button class="btn btn-primary" data-action="applyGenreSuggestions">Apply Selected</button>
             </div>
         </div>
     </div>
@@ -547,13 +559,13 @@
                 <span id="tagSuggestSelectedCount" class="modal-desc-accent"></span>
             </p>
             <div class="extraction-header">
-                <input type="checkbox" id="selectAllTagSuggestions" onchange="app.toggleAllTagSuggestions()" checked>
+                <input type="checkbox" id="selectAllTagSuggestions" data-action="toggleAllTagSuggestions" data-event="change" checked>
                 <label for="selectAllTagSuggestions" style="cursor: pointer; user-select: none;">Select All</label>
             </div>
             <div id="tagSuggestResults" class="extraction-results"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeTagSuggestModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="app.applyTagSuggestions()">Apply Selected</button>
+                <button class="btn btn-secondary" data-action="closeTagSuggestModal">Cancel</button>
+                <button class="btn btn-primary" data-action="applyTagSuggestions">Apply Selected</button>
             </div>
         </div>
     </div>
@@ -563,11 +575,11 @@
         <div class="modal-content manager-modal-content">
             <h3 class="modal-title">Genre & Tag Manager</h3>
             <div class="manager-tabs">
-                <button class="manager-tab active" id="managerTabGenres" onclick="app.switchManagerTab('genres')">Genres</button>
-                <button class="manager-tab" id="managerTabTags" onclick="app.switchManagerTab('tags')">Tags</button>
+                <button class="manager-tab active" id="managerTabGenres" data-action="switchManagerTab" data-value="genres">Genres</button>
+                <button class="manager-tab" id="managerTabTags" data-action="switchManagerTab" data-value="tags">Tags</button>
             </div>
             <div class="manager-search-row">
-                <input type="text" id="managerSearchInput" class="form-input" placeholder="Filter values..." oninput="app.filterManagerList()">
+                <input type="text" id="managerSearchInput" class="form-input" placeholder="Filter values..." data-action="filterManagerList" data-event="input">
             </div>
             <div id="managerList" class="extraction-results manager-list"></div>
             <div class="manager-rename-row">
@@ -575,15 +587,15 @@
                     <span id="managerSelectedCount">0</span> selected
                 </div>
                 <input type="text" id="managerRenameInput" class="form-input manager-rename-input" placeholder="Rename selected to...">
-                <button class="btn btn-primary" onclick="app.applyManagerRename()">Rename</button>
+                <button class="btn btn-primary" data-action="applyManagerRename">Rename</button>
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeManagerModal()">Close</button>
+                <button class="btn btn-secondary" data-action="closeManagerModal">Close</button>
             </div>
         </div>
     </div>
 
-    <div id="helpModal" class="modal" onclick="if(event.target===this)app.closeHelp()">
+    <div id="helpModal" class="modal" data-action="closeHelp" data-backdrop="true">
         <div class="modal-content help-modal-content">
             <h3 class="modal-title">How to Use TidyScore</h3>
             <div class="help-steps">
@@ -651,12 +663,12 @@
                 </table>
             </div>
             <div class="modal-buttons" style="margin-top: 16px;">
-                <button class="btn btn-secondary" onclick="app.closeHelp()">Close</button>
+                <button class="btn btn-secondary" data-action="closeHelp">Close</button>
             </div>
         </div>
     </div>
 
-    <div id="settingsModal" class="modal" onclick="if(event.target===this)app.closeSettingsModal()">
+    <div id="settingsModal" class="modal" data-action="closeSettingsModal" data-backdrop="true">
         <div class="modal-content" style="max-width: 760px;">
             <h3 class="modal-title">Settings</h3>
             <p class="modal-desc">Adjust composer alias-library behavior. Composer names use First Last format; commas separate multiple composers.</p>
@@ -675,7 +687,7 @@
                     <label class="form-label">Editable alias table (alias key → canonical composer)</label>
                     <div id="settingsAliasTable" class="settings-kv-table"></div>
                     <div class="settings-helper-row">
-                        <button class="btn btn-secondary" type="button" onclick="app.addComposerAliasRow()">+ Add alias mapping</button>
+                        <button class="btn btn-secondary" type="button" data-action="addComposerAliasRow">+ Add alias mapping</button>
                     </div>
                 </div>
 
@@ -683,7 +695,7 @@
                     <label class="form-label">Editable blacklist list (alias values to suppress)</label>
                     <div id="settingsBlacklistTable" class="settings-kv-table"></div>
                     <div class="settings-helper-row">
-                        <button class="btn btn-secondary" type="button" onclick="app.addComposerBlacklistRow()">+ Add blacklist entry</button>
+                        <button class="btn btn-secondary" type="button" data-action="addComposerBlacklistRow">+ Add blacklist entry</button>
                     </div>
                 </div>
 
@@ -691,16 +703,16 @@
             </div>
 
             <div class="settings-danger-zone">
-                <button class="btn btn-secondary" type="button" onclick="app.resetComposerSettingsToDefaults()">Reset composer settings to defaults</button>
+                <button class="btn btn-secondary" type="button" data-action="resetComposerSettingsToDefaults">Reset composer settings to defaults</button>
             </div>
             <div class="modal-buttons">
-                <button id="settingsCancelBtn" class="btn btn-secondary" onclick="app.closeSettingsModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="app.saveSettingsFromModal()">Save settings</button>
+                <button id="settingsCancelBtn" class="btn btn-secondary" data-action="closeSettingsModal">Cancel</button>
+                <button class="btn btn-primary" data-action="saveSettingsFromModal">Save settings</button>
             </div>
         </div>
     </div>
 
-    <div id="duplicateModal" class="modal" onclick="if(event.target===this)app.closeDuplicateModal()">
+    <div id="duplicateModal" class="modal" data-action="closeDuplicateModal" data-backdrop="true">
         <div class="modal-content" style="max-width: 700px;">
             <h3 class="modal-title">Find Duplicates</h3>
             <p class="modal-desc">
@@ -709,28 +721,18 @@
                 tagged file side by side in forScore before deciding which, if any, to delete.
             </p>
             <div class="extraction-header">
-                <input type="checkbox" id="dupSelectAll" onchange="app.toggleDupSelectAll()">
+                <input type="checkbox" id="dupSelectAll" data-action="toggleDupSelectAll" data-event="change">
                 <label for="dupSelectAll">Select All</label>
                 <span id="dupSelectedCount" style="margin-left:auto; font-size:12px; color:var(--color-text-muted);"></span>
             </div>
             <div id="duplicateResults" class="extraction-results" style="max-height: 500px;"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="app.closeDuplicateModal()">Cancel</button>
-                <button id="dupApplyBtn" class="btn btn-primary" onclick="app.applyDuplicateTags()">Tag Selected as '_Duplicate_Delete_Me'</button>
+                <button class="btn btn-secondary" data-action="closeDuplicateModal">Cancel</button>
+                <button id="dupApplyBtn" class="btn btn-primary" data-action="applyDuplicateTags">Tag Selected as '_Duplicate_Delete_Me'</button>
             </div>
         </div>
     </div>
 
-                <script type="module">
-        import app from './src/main.js';
-        window.app = app;
-        
-        // Prevent race conditions by checking if the DOM is already parsed
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => app.init());
-        } else {
-            app.init();
-        }
-    </script>
+    <script type="module" src="src/bootstrap.js"></script>
 </body>
 </html>

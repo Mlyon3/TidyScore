@@ -324,6 +324,7 @@ export const composerTools = {
         }
 
         const candidates = [];
+        const aliasMap = this.getComposerAliasMap();
 
         targetIds.forEach(id => {
             const row = this.dataById.get(id);
@@ -335,7 +336,7 @@ export const composerTools = {
             const normalized = composer.trim();
             if (!normalized) return;
 
-            const newVal = this.normalizeComposerValue(normalized).formatted;
+            const newVal = this.normalizeComposerValue(normalized, aliasMap).formatted;
             if (!newVal || newVal === normalized) return;
 
             candidates.push(id);
@@ -445,7 +446,7 @@ export const composerTools = {
         }
     },
 
-    smartExtract() {
+    async smartExtract() {
         console.log('Smart Extract started');
 
         if (!this.composerField || !this.titleField) {
@@ -456,7 +457,14 @@ export const composerTools = {
         const targetIndices = this.getTargetIds();
         console.log('Processing', targetIndices.length, 'entries');
 
-        const signals = this.getComposerExtractionSignals(targetIndices);
+        const extractionResponse = this.requestComposerExtraction
+            ? await this.requestComposerExtraction(targetIndices)
+            : { ok: true, result: this.getComposerExtractionSignals(targetIndices) };
+        if (!extractionResponse.ok) {
+            if (extractionResponse.code !== 'STALE_ANALYSIS') this.showNotification(extractionResponse.message);
+            return;
+        }
+        const signals = extractionResponse.result;
         const titleExtractions = signals.titleExtractions;
         const nameCompletions = signals.nameCompletions;
         const checked = signals.checked;
@@ -500,10 +508,11 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
         }
 
         const counts = new Map();
+        const aliasMap = this.getComposerAliasMap();
         this.data.forEach(row => {
             const composer = this.composerField ? (row[this.composerField] || '').trim() : '';
             if (composer) {
-                this.normalizeComposerValue(composer).entries.forEach(entry => {
+                this.normalizeComposerValue(composer, aliasMap).entries.forEach(entry => {
                     counts.set(entry.formatted, (counts.get(entry.formatted) || 0) + 1);
                 });
             }
@@ -699,6 +708,7 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
 
         const targetIndices = this.getTargetIds();
         const changes = [];
+        const aliasMap = this.getComposerAliasMap();
         targetIndices.forEach(idx => {
             const row = this.dataById.get(idx);
             const composer = row[this.composerField];
@@ -707,7 +717,7 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
             const normalized = composer.trim();
             if (!normalized) return;
 
-            const newVal = this.normalizeComposerValue(normalized).formatted;
+            const newVal = this.normalizeComposerValue(normalized, aliasMap).formatted;
             if (!newVal || newVal === normalized) return;
 
             changes.push({

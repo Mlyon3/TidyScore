@@ -6,6 +6,7 @@ import { tagTools } from './tools/tag-tools.js';
 import { duplicateTools } from './tools/duplicate-tools.js';
 import { accessibilityUi } from './ui/accessibility.js';
 import { sessionCore } from './core/session.js';
+import { analysisClient } from './core/analysis-client.js';
 
 import { SETTINGS_VERSION, DEFAULT_SETTINGS } from './data/settings-defaults.js';
 import { createBaseState } from './core/state.js';
@@ -169,9 +170,12 @@ const appMethods = {
         const current = this.settings || this._deepClone(DEFAULT_SETTINGS);
         const next = this._sanitizeSettings(this._deepMerge(current, patch));
         this.settings = next;
+        this._settingsRevision++;
+        this.invalidateAnalysis?.({ clearCache: true });
         try {
             localStorage.setItem(this.settingsStorageKey, JSON.stringify(next));
         } catch (e) {}
+        if (this.data.length) this.scheduleScanAnalysis?.();
         return this.settings;
     },
 
@@ -576,13 +580,6 @@ const appMethods = {
             }
         });
 
-        // Search
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            this.filterTable(e.target.value);
-            const clearBtn = document.getElementById('searchClear');
-            clearBtn.classList.toggle('hidden', !e.target.value);
-        });
-
         document.getElementById('libraryEditor')?.addEventListener('toggle', event => {
             if (this.data.length > 0) this.updateWorkflowSteps(event.currentTarget.open ? 'edit' : 'review');
         });
@@ -767,6 +764,7 @@ export function createApp(options = {}) {
         duplicateTools,
         accessibilityUi,
         sessionCore,
+        analysisClient,
         options
     );
     instance._ambiguousAliases = new Set(appMethods._ambiguousAliases);

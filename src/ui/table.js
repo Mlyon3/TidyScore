@@ -16,10 +16,20 @@ export const tableUi = {
         document.getElementById('tableSection').classList.remove('hidden');
         this.updateWorkflowSteps('review');
         this.updateRecoveryUi?.();
+        this.updateScaleWarning();
 
         this.updateStats();
         this.renderTable();
         this.scheduleSessionSave?.();
+    },
+
+    updateScaleWarning() {
+        const warning = document.getElementById('scaleWarning');
+        if (!warning) return;
+        warning.classList.toggle('hidden', !this.scaleWarning);
+        warning.textContent = this.scaleWarning
+            ? `This library has ${this.scaleWarning.rowCount.toLocaleString()} rows, above TidyScore's validated ${this.scaleWarning.validatedTarget.toLocaleString()}-row target. Editing is allowed, but performance may vary.`
+            : '';
     },
 
     updateWorkflowSteps(activeStep = 'review') {
@@ -36,9 +46,10 @@ export const tableUi = {
     updateStats() {
         this.refreshModificationState();
         const composers = new Set();
+        const aliasMap = this.getComposerAliasMap();
         this.data.forEach(row => {
             const value = this.composerField ? row[this.composerField] : '';
-            this.normalizeComposerValue(value).entries.forEach(entry => composers.add(entry.formatted));
+            this.normalizeComposerValue(value, aliasMap).entries.forEach(entry => composers.add(entry.formatted));
         });
         
         document.getElementById('totalScores').textContent = this.data.length;
@@ -46,8 +57,7 @@ export const tableUi = {
         document.getElementById('modifiedCount').textContent = this.modifiedCount;
         const exportModifiedCount = document.getElementById('exportModifiedCount');
         if (exportModifiedCount) exportModifiedCount.textContent = this.modifiedCount;
-        this.scanResults = this.computeScanResults();
-        this.updateScanResults();
+        this.scheduleScanAnalysis?.();
         this.scheduleSessionSave?.();
     },
 
@@ -89,12 +99,22 @@ export const tableUi = {
             });
         }
 
-        this.visibleIds = entries.map(e => e._id);
+        this.filteredIds = entries.map(entry => entry._id);
+        const pageCount = Math.max(1, Math.ceil(entries.length / this.pageSize));
+        this.currentPage = Math.min(Math.max(0, this.currentPage), pageCount - 1);
+        const pageStart = entries.length > this.pageSize ? this.currentPage * this.pageSize : 0;
+        const pageEntries = entries.slice(pageStart, pageStart + this.pageSize);
+        this.visibleIds = pageEntries.map(entry => entry._id);
 
         // Update row count indicator
         const countEl = document.getElementById('rowCountIndicator');
         if (countEl) {
-            if (query) {
+            if (entries.length > this.pageSize) {
+                const first = pageStart + 1;
+                const last = pageStart + pageEntries.length;
+                const filteredSuffix = query ? ` (${entries.length} filtered from ${this.data.length})` : '';
+                countEl.textContent = `Showing ${first}–${last} of ${entries.length}${filteredSuffix}`;
+            } else if (query) {
                 countEl.textContent = `Showing ${entries.length} of ${this.data.length}`;
             } else {
                 countEl.textContent = this.data.length === 1 ? '1 row' : `${this.data.length} rows`;
@@ -107,7 +127,7 @@ export const tableUi = {
         const genreClass = this.sortColumn === this.genreField ? `sorted-${this.sortDirection}` : '';
         const tagsClass = this.sortColumn === this.tagsField ? `sorted-${this.sortDirection}` : '';
 
-        const allVisibleSelected = this.visibleIds.length > 0 && this.visibleIds.every(id => this.selectedIds.has(id));
+        const allFilteredSelected = this.filteredIds.length > 0 && this.filteredIds.every(id => this.selectedIds.has(id));
 
         thead.textContent = '';
         const headerRow = document.createElement('tr');
@@ -117,8 +137,9 @@ export const tableUi = {
         const selectAll = document.createElement('input');
         selectAll.type = 'checkbox';
         selectAll.id = 'selectAll';
-        selectAll.setAttribute('aria-label', 'Select all visible scores');
-        selectAll.checked = allVisibleSelected;
+        selectAll.setAttribute('aria-label', 'Select all filtered scores');
+        selectAll.checked = allFilteredSelected;
+        selectAll.indeterminate = !allFilteredSelected && this.filteredIds.some(id => this.selectedIds.has(id));
         selectAll.addEventListener('change', () => this.toggleSelectAll());
         checkboxTh.appendChild(selectAll);
         headerRow.appendChild(checkboxTh);
@@ -159,7 +180,7 @@ export const tableUi = {
 
         tbody.textContent = '';
         const fragment = document.createDocumentFragment();
-        entries.forEach(({row, _id}) => {
+        pageEntries.forEach(({row, _id}) => {
             const title = this.titleField ? row[this.titleField] : '';
             const composer = this.composerField ? row[this.composerField] : '';
             const genre = this.genreField ? row[this.genreField] : '';
@@ -230,6 +251,7 @@ export const tableUi = {
         });
 
         tbody.appendChild(fragment);
+        this.renderPagination(pageCount);
         this.updateBulkControls();
         this.updateScopeIndicator();
 
@@ -248,6 +270,37 @@ export const tableUi = {
                 mobileSort.value = key ? `${key}-${this.sortDirection}` : '';
             }
         }
+    },
+
+    renderPagination(pageCount) {
+        const controls = document.getElementById('paginationControls');
+        if (!controls) return;
+        const enabled = this.filteredIds.length > this.pageSize;
+        controls.classList.toggle('hidden', !enabled);
+        if (!enabled) return;
+        const status = document.getElementById('paginationStatus');
+        if (status) status.textContent = `Page ${this.currentPage + 1} of ${pageCount}`;
+        const previous = document.getElementById('paginationPrevious');
+        const next = document.getElementById('paginationNext');
+        if (previous) previous.disabled = this.currentPage === 0;
+        if (next) next.disabled = this.currentPage >= pageCount - 1;
+    },
+
+    changePage(delta, focusFieldIndex = null) {
+        const pageCount = Math.max(1, Math.ceil(this.filteredIds.length / this.pageSize));
+        const nextPage = Math.min(Math.max(0, this.currentPage + delta), pageCount - 1);
+        if (nextPage === this.currentPage) return false;
+        const navigationGeneration = this.editGeneration;
+        this.currentPage = nextPage;
+        this.renderTable();
+        if (focusFieldIndex != null) {
+            setTimeout(() => {
+                if (this.editGeneration !== navigationGeneration) return;
+                document.getElementById('tableBody')?.children[0]
+                    ?.querySelectorAll('td[data-editable="true"]')[focusFieldIndex]?.click();
+            }, 0);
+        }
+        return true;
     },
 
     finishActiveCellEdit({ cancel = false, render = true } = {}) {
@@ -381,6 +434,8 @@ export const tableUi = {
                         const nextRow = document.getElementById('tableBody')?.children[rowIndex + 1];
                         nextRow?.querySelectorAll('td[data-editable="true"]')[fieldIndex]?.click();
                     }, 0);
+                } else if (rowIndex === this.visibleIds.length - 1 && this.currentPage + 1 < Math.ceil(this.filteredIds.length / this.pageSize)) {
+                    this.changePage(1, fieldIndex);
                 }
                 return;
             }
@@ -396,6 +451,11 @@ export const tableUi = {
                 const rowIndex = this.visibleIds.indexOf(id);
                 const navigationGeneration = this.editGeneration;
                 this.finishActiveCellEdit();
+                if (!event.shiftKey && nextFieldIndex === 0 && rowIndex === this.visibleIds.length - 1 &&
+                    this.currentPage + 1 < Math.ceil(this.filteredIds.length / this.pageSize)) {
+                    this.changePage(1, 0);
+                    return;
+                }
                 setTimeout(() => {
                     if (this.editGeneration !== navigationGeneration) return;
                     const visibleRow = document.getElementById('tableBody')?.children[rowIndex];
@@ -413,11 +473,13 @@ export const tableUi = {
 
     filterTable(query) {
         this.currentFilter = query || '';
+        this.currentPage = 0;
         this.renderTable();
     },
 
     clearSearch() {
         const input = document.getElementById('searchInput');
+        clearTimeout(input._tidyScoreSearchTimer);
         input.value = '';
         this.filterTable('');
         document.getElementById('searchClear').classList.add('hidden');
@@ -433,6 +495,8 @@ export const tableUi = {
             this.sortColumn = field;
             this.sortDirection = 'asc';
         }
+
+        this.currentPage = 0;
 
         this.renderTable();
     },
@@ -452,6 +516,7 @@ export const tableUi = {
             this.sortColumn = fieldMap[key];
             this.sortDirection = dir;
         }
+        this.currentPage = 0;
         this.renderTable();
     },
 
@@ -462,13 +527,13 @@ export const tableUi = {
 
     toggleRow(id, event) {
         if (event && event.shiftKey && this.lastToggled !== null && this.lastToggled !== id) {
-            const start = this.visibleIds.indexOf(this.lastToggled);
-            const end = this.visibleIds.indexOf(id);
+            const start = this.filteredIds.indexOf(this.lastToggled);
+            const end = this.filteredIds.indexOf(id);
             if (start !== -1 && end !== -1) {
                 const lo = Math.min(start, end);
                 const hi = Math.max(start, end);
                 for (let i = lo; i <= hi; i++) {
-                    this.selectedIds.add(this.visibleIds[i]);
+                    this.selectedIds.add(this.filteredIds[i]);
                 }
             }
         } else {
@@ -486,10 +551,9 @@ export const tableUi = {
     toggleSelectAll() {
         const selectAllCheckbox = document.getElementById('selectAll');
         if (selectAllCheckbox.checked) {
-            // Select only visible rows
-            this.visibleIds.forEach(id => this.selectedIds.add(id));
+            this.filteredIds.forEach(id => this.selectedIds.add(id));
         } else {
-            this.visibleIds.forEach(id => this.selectedIds.delete(id));
+            this.filteredIds.forEach(id => this.selectedIds.delete(id));
         }
         this.updateBulkControls();
         this.renderTable();
@@ -512,15 +576,15 @@ export const tableUi = {
         if (this.selectedIds.size > 0) {
             return [...this.selectedIds];
         }
-        return [...this.visibleIds];
+        return [...this.filteredIds];
     },
 
     getScopeLabel() {
         if (this.selectedIds.size > 0) {
             return `${this.selectedIds.size} selected`;
         }
-        if (this.currentFilter && this.visibleIds.length < this.data.length) {
-            return `${this.visibleIds.length} filtered`;
+        if (this.currentFilter && this.filteredIds.length < this.data.length) {
+            return `${this.filteredIds.length} filtered`;
         }
         return `all ${this.data.length}`;
     },
@@ -530,7 +594,7 @@ export const tableUi = {
         if (!el) return;
 
         const total = this.data.length;
-        const visible = this.visibleIds.length;
+        const visible = this.filteredIds.length;
         const selected = this.selectedIds.size;
 
         if (selected > 0) {

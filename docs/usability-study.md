@@ -17,6 +17,9 @@ Use this lightweight protocol before promoting, removing, or adding cleanup feat
 4. Inspect or manually edit one score.
 5. Locate any advanced tool they would expect to use.
 6. Export the cleaned CSV and apply it back in forScore.
+7. With a large fixture, find a score on another page, select all filtered results, and explain the scale warning.
+8. Review a formula-risk warning and explain whether TidyScore changes the affected metadata.
+9. If the facilitator enables the simulated analysis failure, retry it and continue to edit/export.
 
 Do not explain button names or navigation while the task is underway. Record the point and wording of every question or hesitation.
 
@@ -28,6 +31,9 @@ Do not explain button names or navigation while the task is underway. Record the
 | Understood preview before apply | Yes / No |
 | Export and forScore return completed without help | Yes / No |
 | Understood local-only privacy | Yes / No |
+| Understood pagination/filter scope | Yes / No |
+| Understood scale and formula warnings | Yes / No |
+| Recovered from analysis unavailable state | Yes / No |
 | Time to completed round trip |  |
 | Wrong turns or unclear labels |  |
 | Core fixes used or valued |  |
