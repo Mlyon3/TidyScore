@@ -30,11 +30,18 @@ export const tagTools = {
 
     getComposerEra(composerValue) {
         if (!composerValue) return null;
-        const trimmed = composerValue.trim();
-        if (this.composerEraDatabase[trimmed]) return this.composerEraDatabase[trimmed];
-        const canonical = this.getSuggestion(trimmed);
-        if (canonical && this.composerEraDatabase[canonical]) return this.composerEraDatabase[canonical];
-        return null;
+        const entries = this.normalizeComposerValue(composerValue).entries;
+        if (!entries.length) return null;
+
+        const eras = entries.map(entry => {
+            if (this.composerEraDatabase[entry.canonical]) return this.composerEraDatabase[entry.canonical];
+            const canonical = this.getSuggestion(entry.extracted);
+            return canonical ? this.composerEraDatabase[canonical] || null : null;
+        });
+        if (eras.some(era => !era)) return null;
+
+        const uniqueEras = new Set(eras);
+        return uniqueEras.size === 1 ? eras[0] : null;
     },
 
     suggestGenres() {

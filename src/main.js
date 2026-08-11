@@ -64,10 +64,7 @@ const app = {
         const merged = this._deepMerge(DEFAULT_SETTINGS, input || {});
         merged.version = SETTINGS_VERSION;
 
-        const format = merged.composer?.nameDisplayFormat;
-        if (!['last_first', 'first_last', 'preserve'].includes(format)) {
-            merged.composer.nameDisplayFormat = DEFAULT_SETTINGS.composer.nameDisplayFormat;
-        }
+        delete merged.composer.nameDisplayFormat;
 
         const mode = merged.composer?.library?.mode;
         if (!['builtin', 'builtin_plus_custom'].includes(mode)) {
@@ -79,7 +76,11 @@ const app = {
         if (rawAliases && typeof rawAliases === 'object' && !Array.isArray(rawAliases)) {
             Object.entries(rawAliases).forEach(([key, canonical]) => {
                 const normalizedKey = this._normalizeComposerAliasKey(key);
-                const cleanedCanonical = (canonical || '').toString().trim();
+                let cleanedCanonical = (canonical || '').toString().trim();
+                const legacyParts = cleanedCanonical.split(',').map(part => part.trim()).filter(Boolean);
+                if (legacyParts.length === 2) {
+                    cleanedCanonical = `${legacyParts[1]} ${legacyParts[0]}`.trim();
+                }
                 if (normalizedKey && cleanedCanonical) {
                     customAliases[normalizedKey] = cleanedCanonical;
                 }
@@ -105,12 +106,10 @@ const app = {
         const source = rawSettings && typeof rawSettings === 'object' ? rawSettings : {};
         const version = Number.isInteger(source.version) ? source.version : 0;
 
-        // v0 -> v1: establish first formal schema
-        if (version < 1) {
+        if (version < 2) {
             return {
-                version: 1,
+                version: 2,
                 composer: {
-                    nameDisplayFormat: source.composer?.nameDisplayFormat || DEFAULT_SETTINGS.composer.nameDisplayFormat,
                     library: {
                         mode: source.composer?.library?.mode || DEFAULT_SETTINGS.composer.library.mode,
                         customAliases: source.composer?.library?.customAliases || {},
@@ -162,7 +161,6 @@ const app = {
 
     openSettingsModal() {
         const settings = this.settings || this.loadSettings();
-        document.getElementById('settingsComposerNameDisplayFormat').value = settings.composer?.nameDisplayFormat || 'last_first';
         document.getElementById('settingsComposerLibraryMode').value = settings.composer?.library?.mode || 'builtin_plus_custom';
         this.renderComposerAliasRows(settings.composer?.library?.customAliases || {});
         this.renderComposerBlacklistRows(settings.composer?.library?.blacklistedAliases || []);
@@ -204,7 +202,7 @@ const app = {
         const canonicalInput = document.createElement('input');
         canonicalInput.type = 'text';
         canonicalInput.className = 'form-input settings-alias-canonical';
-        canonicalInput.placeholder = 'Canonical composer (e.g. Beethoven, Ludwig van)';
+        canonicalInput.placeholder = 'Canonical composer (e.g. Ludwig van Beethoven)';
         canonicalInput.value = (canonical || '').toString().trim();
 
         const removeBtn = document.createElement('button');
@@ -320,6 +318,10 @@ const app = {
                 blockingErrors.push(`Alias row ${idx + 1}: canonical composer cannot be empty.`);
                 return;
             }
+            if (canonical.includes(',')) {
+                blockingErrors.push(`Alias row ${idx + 1}: use First Last for one composer; commas separate multiple composers.`);
+                return;
+            }
 
             customAliases[key] = canonical;
         });
@@ -359,7 +361,6 @@ const app = {
 
         const patch = {
             composer: {
-                nameDisplayFormat: document.getElementById('settingsComposerNameDisplayFormat').value,
                 library: {
                     mode: document.getElementById('settingsComposerLibraryMode').value,
                     customAliases: composerLibraryDraft.customAliases,
@@ -387,7 +388,6 @@ const app = {
 
         const patch = {
             composer: {
-                nameDisplayFormat: DEFAULT_SETTINGS.composer.nameDisplayFormat,
                 library: {
                     mode: DEFAULT_SETTINGS.composer.library.mode,
                     customAliases: this._deepClone(DEFAULT_SETTINGS.composer.library.customAliases),
@@ -398,7 +398,6 @@ const app = {
 
         const next = this.saveSettings(patch);
         this.updateComposerToolDescriptions();
-        document.getElementById('settingsComposerNameDisplayFormat').value = next.composer?.nameDisplayFormat || DEFAULT_SETTINGS.composer.nameDisplayFormat;
         document.getElementById('settingsComposerLibraryMode').value = next.composer?.library?.mode || DEFAULT_SETTINGS.composer.library.mode;
         this.renderComposerAliasRows(next.composer?.library?.customAliases || {});
         this.renderComposerBlacklistRows(next.composer?.library?.blacklistedAliases || []);
@@ -454,43 +453,66 @@ const app = {
         };
     },
 
-    formatComposerName(value, mode = null) {
+    formatComposerName(value) {
         const composer = this.parseComposerName(value);
         if (!composer.raw) return '';
 
-        const selectedMode = mode || this.settings?.composer?.nameDisplayFormat || 'last_first';
-        const formatters = {
-            last_first: (c) => c.first ? `${c.last}, ${c.first}` : c.last,
-            first_last: (c) => c.first ? `${c.first} ${c.last}` : c.last,
-            preserve: (c) => c.raw
-        };
-
-        const formatter = formatters[selectedMode] || formatters.last_first;
-        return formatter(composer).trim();
+        return (composer.first ? `${composer.first} ${composer.last}` : composer.last).trim();
     },
 
-    getComposerFormatLabel(mode = null) {
-        const selectedMode = mode || this.settings?.composer?.nameDisplayFormat || 'last_first';
-        const labels = {
-            last_first: 'Last, First',
-            first_last: 'First Last',
-            preserve: 'preserve existing'
+    normalizeComposerValue(value, aliasMap = null) {
+        const raw = (value || '').toString().trim();
+        if (!raw) return { entries: [], formatted: '' };
+
+        aliasMap = aliasMap || this.getComposerAliasMap();
+        const resolveSingle = (input) => {
+            const source = input.trim();
+            const canonical = this.getSuggestion(source, aliasMap) || source;
+            return {
+                extracted: source,
+                canonical,
+                formatted: this.formatComposerName(canonical) || source
+            };
         };
-        return labels[selectedMode] || labels.last_first;
+
+        const direct = this.getSuggestion(raw, aliasMap);
+        if (direct) {
+            const entry = resolveSingle(raw);
+            return { entries: [entry], formatted: entry.formatted };
+        }
+
+        const commaParts = raw.split(',').map(part => part.trim()).filter(Boolean);
+        if (commaParts.length === 2) {
+            const legacyCandidate = `${commaParts[1]} ${commaParts[0]}`.trim();
+            const legacyCanonical = this.getSuggestion(legacyCandidate, aliasMap);
+            if (legacyCanonical) {
+                const entry = {
+                    extracted: raw,
+                    canonical: legacyCanonical,
+                    formatted: this.formatComposerName(legacyCanonical)
+                };
+                return { entries: [entry], formatted: entry.formatted };
+            }
+        }
+
+        const seen = new Set();
+        const entries = commaParts.map(resolveSingle).filter(entry => {
+            const key = this._stripDiacritics(entry.formatted.toLowerCase());
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        return {
+            entries,
+            formatted: entries.map(entry => entry.formatted).join(', ')
+        };
     },
 
     updateComposerToolDescriptions() {
         const standardizeDesc = document.getElementById('standardizeToolDesc');
         if (!standardizeDesc) return;
-
-        const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
-        if (mode === 'preserve') {
-            standardizeDesc.textContent = 'Normalize spacing and punctuation while preserving current name order';
-            return;
-        }
-
-        const label = this.getComposerFormatLabel(mode);
-        standardizeDesc.textContent = `Apply ${label} name format to composers`;
+        standardizeDesc.textContent = 'Apply First Last format to comma-separated composers';
     },
 
     init() {

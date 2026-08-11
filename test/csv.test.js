@@ -15,6 +15,15 @@ describe('CSV import and export', () => {
         expect(parseCsvDocument(exported)).toEqual(imported);
     });
 
+    it('round-trips a comma-separated forScore composer list', () => {
+        const rows = [{ Title: 'Sonatas', Composers: 'Antonín Dvořák, Johannes Brahms' }];
+        const exported = serializeCsvDocument(['Title', 'Composers'], rows);
+
+        expect(exported).toContain('"Antonín Dvořák, Johannes Brahms"');
+        expect(parseCsvDocument(exported).rows[0].Composers)
+            .toBe('Antonín Dvořák, Johannes Brahms');
+    });
+
     it('preserves unknown forScore columns through repeated round trips', () => {
         const imported = parseCsvDocument(readFileSync(fixtureUrl, 'utf8'));
         const once = parseCsvDocument(serializeCsvDocument(imported.headers, imported.rows));

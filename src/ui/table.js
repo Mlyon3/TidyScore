@@ -34,11 +34,11 @@ export const tableUi = {
 
     updateStats() {
         this.refreshModificationState();
-        const composers = new Set(
-            this.data
-                .map(r => this.composerField ? r[this.composerField] : '')
-                .filter(Boolean)
-        );
+        const composers = new Set();
+        this.data.forEach(row => {
+            const value = this.composerField ? row[this.composerField] : '';
+            this.normalizeComposerValue(value).entries.forEach(entry => composers.add(entry.formatted));
+        });
         
         document.getElementById('totalScores').textContent = this.data.length;
         document.getElementById('uniqueComposers').textContent = composers.size;
@@ -274,8 +274,10 @@ export const tableUi = {
             // Only show suggestions for composer field
             if (field !== this.composerField) return;
             
-            const suggestion = this.getSuggestion(input.value);
-            const formattedSuggestion = suggestion ? this.formatComposerName(suggestion) || suggestion : null;
+            const normalized = this.normalizeComposerValue(input.value);
+            const formattedSuggestion = normalized.entries.some(entry => entry.canonical !== entry.extracted)
+                ? normalized.formatted
+                : null;
             if (!formattedSuggestion || formattedSuggestion === input.value) {
                 if (suggestionsDropdown) {
                     suggestionsDropdown.remove();
@@ -324,7 +326,7 @@ export const tableUi = {
                 
                 const newValue = input.value;
                 const valueToSave = field === this.composerField
-                    ? this.formatComposerName(newValue)
+                    ? this.normalizeComposerValue(newValue).formatted
                     : newValue;
                 if (valueToSave !== currentValue) {
                     this.pushUndo('Edit');

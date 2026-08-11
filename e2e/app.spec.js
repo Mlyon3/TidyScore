@@ -39,6 +39,34 @@ test('sample cleanup, undo, and duplicate detection work without console errors'
     expect(errors).toEqual([]);
 });
 
+test('multi-composer extraction flags incomplete title lists and uses first-last output', async ({ page }) => {
+    await page.goto('/TidyScore/');
+
+    await page.getByRole('button', { name: 'Open settings' }).click();
+    await expect(page.locator('#settingsComposerNameDisplayFormat')).toHaveCount(0);
+    await expect(page.locator('#settingsModal')).toContainText('Composer names use First Last format');
+    await page.locator('#settingsCancelBtn').click();
+
+    await page.evaluate(() => {
+        window.app.parseCSV([
+            'Title,Composers,Genre,Tags,Filename',
+            'Sonatas Brahms Tchiak Beethoven,,,,partial.pdf'
+        ].join('\n'));
+    });
+
+    await page.getByRole('button', { name: 'Fix composers' }).click();
+    const result = page.locator('#extractionResults .extraction-item').first();
+    await expect(result).toContainText('Johannes Brahms, Ludwig van Beethoven');
+    await expect(result).toContainText('May be incomplete');
+    await expect(result).toContainText('Tchiak');
+    await expect(result.locator('.extraction-checkbox')).not.toBeChecked();
+
+    await result.locator('.extraction-checkbox').check();
+    await page.getByRole('button', { name: 'Apply Selected' }).click();
+    expect(await page.evaluate(() => window.app.data[0].Composers))
+        .toBe('Johannes Brahms, Ludwig van Beethoven');
+});
+
 test('duplicate review explains evidence and tags a unique review queue', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/TidyScore/');

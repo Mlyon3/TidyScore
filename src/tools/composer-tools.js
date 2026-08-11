@@ -48,15 +48,106 @@ export const composerTools = {
         return suggestion;
     },
 
+    _escapeComposerRegex(value = '') {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+    },
+
+    _findComposerMentions(title, aliasMap) {
+        const searchableTitle = this._stripDiacritics(title.toLowerCase());
+        const candidates = [];
+
+        Object.entries(aliasMap).forEach(([alias, canonical]) => {
+            const trimmedAlias = alias.trim();
+            if (!trimmedAlias || this._isAmbiguousSingleWord(trimmedAlias)) return;
+
+            const normalizedAlias = this._stripDiacritics(trimmedAlias.toLowerCase());
+            const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])(${this._escapeComposerRegex(normalizedAlias)})(?=$|[^\\p{L}\\p{N}])`, 'gu');
+            let match;
+            while ((match = pattern.exec(searchableTitle)) !== null) {
+                const start = match.index + match[1].length;
+                const end = start + match[2].length;
+                candidates.push({
+                    start,
+                    end,
+                    extracted: title.slice(start, end),
+                    canonical
+                });
+                if (match[0].length === 0) pattern.lastIndex++;
+            }
+        });
+
+        const nonOverlapping = [];
+        candidates
+            .sort((a, b) => (b.end - b.start) - (a.end - a.start) || a.start - b.start)
+            .forEach(candidate => {
+                if (nonOverlapping.some(existing => candidate.start < existing.end && candidate.end > existing.start)) return;
+                nonOverlapping.push(candidate);
+            });
+
+        nonOverlapping.sort((a, b) => a.start - b.start);
+        const seen = new Set();
+        return nonOverlapping.filter(match => {
+            const key = this._stripDiacritics(match.canonical.toLowerCase());
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    },
+
+    _extractMultipleComposersFromTitle(title, aliasMap) {
+        const matches = this._findComposerMentions(title, aliasMap);
+        if (matches.length < 2) return null;
+
+        const first = matches[0];
+        const last = matches[matches.length - 1];
+        const masked = title.slice(first.start, last.end).split('');
+        matches.forEach(match => {
+            for (let index = match.start - first.start; index < match.end - first.start; index++) {
+                masked[index] = ' ';
+            }
+        });
+
+        const connectors = new Set(['and', 'with', 'plus', 'by']);
+        const unresolvedTokens = [...masked.join('').matchAll(/\p{Lu}[\p{L}\p{M}'’-]*/gu)]
+            .map(match => match[0])
+            .filter(token => !connectors.has(token.toLowerCase()));
+        const entries = matches.map(match => ({
+            extracted: match.extracted,
+            canonical: match.canonical,
+            formatted: this.formatComposerName(match.canonical)
+        }));
+
+        return {
+            extracted: entries.map(entry => entry.extracted).join(', '),
+            suggestion: entries[0].canonical,
+            matches: entries,
+            formattedSuggestion: entries.map(entry => entry.formatted).join(', '),
+            isPartial: unresolvedTokens.length > 0,
+            unresolvedTokens: [...new Set(unresolvedTokens)]
+        };
+    },
+
     _extractComposerFromTitle(title, aliasMap = null) {
         if (!title || !title.trim()) return null;
         title = title.trim();
         aliasMap = aliasMap || this.getComposerAliasMap();
+        const multipleResult = this._extractMultipleComposersFromTitle(title, aliasMap);
+        if (multipleResult) return multipleResult;
+
         const applyOverride = (result) => {
             if (!result) return null;
+            const suggestion = this._applyBachContextOverride(result.suggestion, title);
             return {
                 ...result,
-                suggestion: this._applyBachContextOverride(result.suggestion, title)
+                suggestion,
+                matches: [{
+                    extracted: result.extracted,
+                    canonical: suggestion,
+                    formatted: this.formatComposerName(suggestion)
+                }],
+                formattedSuggestion: this.formatComposerName(suggestion),
+                isPartial: false,
+                unresolvedTokens: []
             };
         };
 
@@ -192,27 +283,24 @@ export const composerTools = {
                     signals.titleExtractions.push({
                         id,
                         title,
-                        extracted: result.extracted,
-                        suggestion: result.suggestion,
+                        ...result,
                         type: 'title'
                     });
                 }
             }
 
             if (currentComposer) {
-                const contextText = `${title} ${currentComposer}`.trim();
-                const suggestion = this._applyBachContextOverride(
-                    this.getSuggestion(currentComposer, aliasMap),
-                    contextText
-                );
-                const formattedSuggestion = suggestion ? this.formatComposerName(suggestion) || suggestion : null;
-                const currentFormatted = this.formatComposerName(currentComposer.trim()) || currentComposer.trim();
-                if (formattedSuggestion && formattedSuggestion !== currentFormatted) {
+                const normalized = this.normalizeComposerValue(currentComposer, aliasMap);
+                if (normalized.formatted && normalized.formatted !== currentComposer.trim()) {
                     signals.nameCompletions.push({
                         id,
                         title,
                         extracted: currentComposer.trim(),
-                        suggestion,
+                        suggestion: normalized.entries[0]?.canonical || currentComposer.trim(),
+                        matches: normalized.entries,
+                        formattedSuggestion: normalized.formatted,
+                        isPartial: false,
+                        unresolvedTokens: [],
                         type: 'completion'
                     });
                 }
@@ -227,7 +315,6 @@ export const composerTools = {
             return [];
         }
 
-        const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
         const candidates = [];
 
         targetIds.forEach(id => {
@@ -240,7 +327,7 @@ export const composerTools = {
             const normalized = composer.trim();
             if (!normalized) return;
 
-            const newVal = this.formatComposerName(normalized, mode);
+            const newVal = this.normalizeComposerValue(normalized).formatted;
             if (!newVal || newVal === normalized) return;
 
             candidates.push(id);
@@ -309,15 +396,7 @@ export const composerTools = {
         const normalized = composer.trim();
         if (!normalized) return false;
 
-        const suggestion = this.getSuggestion(normalized);
-        const formattedSuggestion = suggestion ? (this.formatComposerName(suggestion) || suggestion) : null;
-        const currentFormatted = this.formatComposerName(normalized) || normalized;
-        if (formattedSuggestion && formattedSuggestion !== currentFormatted) {
-            return true;
-        }
-
-        const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
-        const standardized = this.formatComposerName(normalized, mode);
+        const standardized = this.normalizeComposerValue(normalized).formatted;
         return Boolean(standardized && standardized !== normalized);
     },
 
@@ -416,7 +495,9 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
         this.data.forEach(row => {
             const composer = this.composerField ? (row[this.composerField] || '').trim() : '';
             if (composer) {
-                counts[composer] = (counts[composer] || 0) + 1;
+                this.normalizeComposerValue(composer).entries.forEach(entry => {
+                    counts[entry.formatted] = (counts[entry.formatted] || 0) + 1;
+                });
             }
         });
 
@@ -611,8 +692,6 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
 
         const targetIndices = this.getTargetIds();
         const changes = [];
-        const mode = this.settings?.composer?.nameDisplayFormat || 'last_first';
-
         targetIndices.forEach(idx => {
             const row = this.dataById.get(idx);
             const composer = row[this.composerField];
@@ -621,7 +700,7 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
             const normalized = composer.trim();
             if (!normalized) return;
 
-            const newVal = this.formatComposerName(normalized, mode);
+            const newVal = this.normalizeComposerValue(normalized).formatted;
             if (!newVal || newVal === normalized) return;
 
             changes.push({
@@ -641,7 +720,6 @@ It also detects incomplete names like "bach" or "beethoven" in the composer fiel
             return;
         }
 
-        const modeLabel = mode === 'first_last' ? '"First Last"' : mode === 'preserve' ? 'the current formatting policy' : '"Last, First"';
-        this._showPreview('Standardize Composers Preview', `Found <strong>${changes.length}</strong> composer${changes.length !== 1 ? 's' : ''} to reformat using ${modeLabel}.`, changes, 'Composers standardized', 'Standardize');
+        this._showPreview('Standardize Composers Preview', `Found <strong>${changes.length}</strong> composer value${changes.length !== 1 ? 's' : ''} to reformat using "First Last".`, changes, 'Composers standardized', 'Standardize');
     },
 };

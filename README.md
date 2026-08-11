@@ -69,20 +69,20 @@ This section should be updated as remaining inline structure is moved into fully
 ### Quick Clean
 Fixes the small stuff across your entire library (or selected rows) in one click:
 - Trims whitespace from titles and composers
-- Fixes trailing commas in composer names
+- Normalizes spacing around composer-list separators
 - Cleans up tags: trims, deduplicates, removes empties, sorts alphabetically
 
 ### Clean IMSLP Titles
 If you've imported scores from IMSLP, your titles probably look like `IMSLP00001-Bach_Cello_Suite_No1.pdf`. This strips the IMSLP/PMLP prefixes, converts underscores to spaces, removes `.pdf` extensions, and adds an `(IMSLP)` marker. Preview every change before applying.
 
 ### Smart Extract
-Detects composer names hiding in your titles. If a score is called "Bach - Cello Suite No. 1" but the composer field is empty, Smart Extract finds it, recognizes "Bach", and suggests "Bach, Johann Sebastian". Also catches informal names in the composer field — "beethoven" becomes "Beethoven, Ludwig van".
+Detects composer names hiding in your titles. If a score is called "Bach - Cello Suite No. 1" but the composer field is empty, Smart Extract finds it, recognizes "Bach", and suggests "Johann Sebastian Bach". Compilation titles can produce multiple composers in forScore's comma-separated format. Potentially incomplete lists are clearly marked and left unchecked. Smart Extract also catches informal names in the composer field — "beethoven" becomes "Ludwig van Beethoven".
 
 ### Find & Replace
 Search and replace across any field (title, composer, genre, or tags). Works on selected rows or the entire library.
 
 ### Standardize Composers
-Converts composer names from "First Last" to "Last, First" format. Handles complex names like "Ludwig van Beethoven" → "Beethoven, Ludwig van".
+Applies unambiguous `First Last` formatting to each composer. It converts recognized legacy values such as `Beethoven, Ludwig van` to `Ludwig van Beethoven` and preserves lists such as `Antonín Dvořák, Johannes Brahms`.
 
 ### Find Duplicates
 Compares structured evidence from titles, filenames, composers, catalogue numbers, keys, work numbers, and instrument or document roles. Results are separated into likely duplicates, possible duplicates, and related material, with an expandable explanation of every match or conflict. Likely duplicates are preselected for bulk review tagging; compare the tagged files in forScore before deleting anything because CSV metadata does not include annotations.
@@ -128,6 +128,8 @@ All tools are scope-aware:
 ## Composer Database
 
 TidyScore recognizes 170+ composer name variations and maps them to their canonical forms. Coverage spans Baroque through Contemporary classical, Jazz, Film/Game scores, Musical Theatre, and crossover artists. Common abbreviations ("J.S. Bach"), informal names ("beethoven"), and misspellings are handled automatically.
+
+Composer names are always written as `First Last`. forScore supports multiple composers in one field separated by commas, for example `Antonín Dvořák, Johannes Brahms`.
 
 ## Regression Coverage
 

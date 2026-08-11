@@ -1,6 +1,6 @@
-# Regression Checklist: Composer Settings + Extraction/Standardize
+# Regression Checklist: Composer Aliases + Multi-Composer Extraction
 
-This checklist is the lightweight regression suite for composer settings behavior.
+This checklist is the lightweight regression suite for composer alias and formatting behavior.
 
 It is intentionally anchored to these internal functions:
 
@@ -13,10 +13,11 @@ and includes one end-to-end UI flow that saves settings then applies **Smart Ext
 
 ## Scope covered
 
-1. `first_last` mode saves/displays canonical names in first-last order.
+1. Canonical names always display in first-last order.
 2. Custom alias precedence over built-in aliases.
 3. Blacklist suppression (blacklisted alias does not resolve).
 4. Sanitization: whitespace/case normalization + dedupe for aliases/blacklist.
+5. Multi-composer extraction, partial-warning defaults, and comma-separated output.
 
 ## Preconditions (deterministic setup)
 
@@ -36,15 +37,14 @@ and includes one end-to-end UI flow that saves settings then applies **Smart Ext
 **Functions under test:** `_sanitizeSettings`, `getComposerAliasMap`, `getSuggestion`.
 
 1. Open **Settings**.
-2. Set **Composer display format** = `First Last`.
-3. In **Editable alias table**, add these rows exactly:
+2. In **Editable alias table**, add these rows exactly:
    - Alias key: `  beethoven  ` → Canonical: `  Bee Thoven Custom  `
    - Alias key: `J.S. BACH` → Canonical: ` Johann Sebastian Bach `
-4. In **Editable blacklist list**, add these rows exactly:
+3. In **Editable blacklist list**, add these rows exactly:
    - `  j.s. bach  `
    - `J.S. BACH`
-5. Save settings.
-6. Re-open **Settings**.
+4. Save settings.
+5. Re-open **Settings**.
 
 ### Expected results
 
@@ -73,7 +73,7 @@ These outcomes validate `_sanitizeSettings` normalization and dedupe logic and c
 
 ### Expected results
 
-- `beethoven` resolves to **`Bee Thoven Custom`** (custom alias overrides built-in canonical value).
+- `beethoven` resolves to **`Bee Thoven Custom`** (custom alias overrides the built-in canonical value).
 - `j.s. bach` has **no suggestion** (blacklisted alias suppressed even though alias exists in maps).
 
 This verifies custom precedence in `getComposerAliasMap` + lookup in `getSuggestion` + suppression through blacklist removal.
@@ -84,18 +84,17 @@ This verifies custom precedence in `getComposerAliasMap` + lookup in `getSuggest
 
 **Functions under test:** `formatComposerName` (with saved settings from `_sanitizeSettings`).
 
-1. Keep **Composer display format** set to `First Last`.
-2. Ensure there is a row with composer exactly `Beethoven, Ludwig van`.
-3. Click **Standardize**.
-4. In preview, inspect the transformed composer value for that row.
-5. Apply changes.
+1. Ensure there is a row with composer exactly `Beethoven, Ludwig van`.
+2. Click **Standardize**.
+3. In preview, inspect the transformed composer value for that row.
+4. Apply changes.
 
 ### Expected results
 
 - Preview and applied value are `Ludwig van Beethoven` (first-last).
 - Re-running **Standardize** immediately shows no additional change for that row (idempotent for already formatted value).
 
-This verifies that canonical names display in first-last order when formatting mode is `first_last`.
+This verifies that recognized legacy names are converted to the fixed first-last format.
 
 ---
 
@@ -104,7 +103,6 @@ This verifies that canonical names display in first-last order when formatting m
 **Functions under test:** all four (`_sanitizeSettings`, `getComposerAliasMap`, `getSuggestion`, `formatComposerName`).
 
 1. Open **Settings** and save the following:
-   - Display format: `First Last`
    - Custom alias: `beethoven` → `Ludwig van Beethoven`
    - Blacklist entry: `j.s. bach`
 2. Ensure dataset includes these rows:
@@ -117,14 +115,31 @@ This verifies that canonical names display in first-last order when formatting m
 ### Expected final state
 
 - `beethoven` row becomes `Ludwig van Beethoven` (custom alias + first-last output).
-- `Beethoven, Ludwig van` row becomes `Ludwig van Beethoven` (formatting mode applied).
+- `Beethoven, Ludwig van` row becomes `Ludwig van Beethoven` (legacy formatting converted).
 - `j.s. bach` row remains unchanged by extraction (blacklist suppression), and standardize only affects it if user manually changed it to a parseable canonical value.
 
 This scenario is the regression guard for the full user workflow.
 
 ---
 
-## E) Duplicate detection + tagging flow
+## E) Multi-composer title extraction
+
+1. Import rows with blank composer fields and these titles:
+   - `Sonatas Brahms Beethoven`
+   - `Sonatas Brahms Tchiak Beethoven`
+   - `C.P.E. Bach and J.S. Bach`
+2. Click **Fix composers**.
+
+### Expected results
+
+- The first suggestion is `Johannes Brahms, Ludwig van Beethoven` and is selected.
+- The second suggests the same recognized names, shows `May be incomplete` with `Tchiak`, and is unchecked.
+- The third suggestion is `Carl Philipp Emanuel Bach, Johann Sebastian Bach` with no duplicate Bach matches.
+- Selecting and applying a result writes one comma-separated composer value to the row.
+
+---
+
+## F) Duplicate detection + tagging flow
 
 **Functions under test:** `parseTitleForDedup`, `detectDuplicates`, `openDuplicateModal`, `renderDuplicateResults`, `toggleDupItem`, `toggleDupGroup`, `toggleDupSelectAll`, `applyDuplicateTags`, `closeDuplicateModal`.
 

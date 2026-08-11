@@ -108,6 +108,13 @@ function normalizeComposer(value, context) {
     const raw = (value || '').toString().trim();
     if (!raw) return '';
 
+    if (typeof context.normalizeComposerValue === 'function') {
+        return context.normalizeComposerValue(raw).entries
+            .map(entry => wordsOnly(entry.canonical).split(' ').filter(Boolean).sort().join(' '))
+            .sort()
+            .join('|');
+    }
+
     let canonical = raw;
     if (typeof context.getSuggestion === 'function') {
         canonical = context.getSuggestion(raw) || raw;

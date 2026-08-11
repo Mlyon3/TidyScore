@@ -177,7 +177,7 @@
                             <span id="scanCountVariantComposer" class="scan-count-badge">0</span>
                             <div class="scan-result-copy">
                                 <div class="scan-result-label">Inconsistent composer formatting</div>
-                                <div id="standardizeToolDesc" class="scan-result-desc">Applies Last, First name format consistently.</div>
+                                <div id="standardizeToolDesc" class="scan-result-desc">Applies First Last format to comma-separated composers.</div>
                             </div>
                         </div>
                         <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('composerFormatting')">Standardize composer names</button>
@@ -659,15 +659,7 @@
     <div id="settingsModal" class="modal" onclick="if(event.target===this)app.closeSettingsModal()">
         <div class="modal-content" style="max-width: 760px;">
             <h3 class="modal-title">Settings</h3>
-            <p class="modal-desc">Adjust composer formatting and alias-library behavior for cleanup tools.</p>
-            <div class="form-group">
-                <label class="form-label" for="settingsComposerNameDisplayFormat">Composer display format</label>
-                <select id="settingsComposerNameDisplayFormat" class="form-input">
-                    <option value="last_first">Last, First</option>
-                    <option value="first_last">First Last</option>
-                    <option value="preserve">Preserve input</option>
-                </select>
-            </div>
+            <p class="modal-desc">Adjust composer alias-library behavior. Composer names use First Last format; commas separate multiple composers.</p>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="settingsComposerLibraryMode">Composer alias library</label>
                 <select id="settingsComposerLibraryMode" class="form-input">

@@ -83,3 +83,14 @@
     padding-left: 9px;
 }
 
+.extraction-item--partial {
+    border-left: 3px solid var(--color-warning);
+    background: var(--color-warning-bg);
+    padding-left: 9px;
+}
+
+.extraction-partial-notice {
+    color: var(--color-warning);
+    font-size: 12px;
+    margin-top: 5px;
+}

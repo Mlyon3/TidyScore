@@ -4,8 +4,10 @@ export const modalUi = {
         const resultsDiv = document.getElementById('extractionResults');
         const descEl = document.getElementById('extractionDesc');
 
-        // Initialize all as selected
-        this.selectedExtractions = new Set(this.pendingExtraction.map((_, i) => i));
+        // Potentially incomplete composer lists require an explicit opt-in.
+        this.selectedExtractions = new Set(
+            this.pendingExtraction.map((item, index) => item.isPartial ? null : index).filter(index => index !== null)
+        );
 
         // Update description based on result types
         const tc = this.extractionCounts.titleCount;
@@ -34,25 +36,33 @@ export const modalUi = {
             }
 
             const titleDisplay = this.escapeHtml(e.title.substring(0, 60)) + (e.title.length > 60 ? '...' : '');
-            const itemClass = e.type === 'completion' ? 'extraction-item extraction-item--completion' : 'extraction-item';
+            const itemClass = e.isPartial
+                ? 'extraction-item extraction-item--partial'
+                : e.type === 'completion' ? 'extraction-item extraction-item--completion' : 'extraction-item';
+            const formattedSuggestion = e.formattedSuggestion || this.normalizeComposerValue(e.suggestion).formatted || e.suggestion;
+            const partialNotice = e.isPartial
+                ? `<div class="extraction-partial-notice"><strong>May be incomplete</strong> — unrecognized text: ${this.escapeHtml(e.unresolvedTokens.join(', '))}</div>`
+                : '';
 
             html += `
                 <div class="${itemClass}">
                     <input type="checkbox" class="extraction-checkbox"
                            id="extract_${index}"
                            onchange="app.toggleExtraction(${index})"
-                           checked>
+                           ${e.isPartial ? '' : 'checked'}>
                     <div class="extraction-content">
                         <div class="extraction-title">${titleDisplay}</div>
                         <div class="extraction-mapping">
-                            "${this.escapeHtml(e.extracted)}"<span class="extraction-arrow">\u2192</span><strong>${this.escapeHtml(this.formatComposerName(e.suggestion) || e.suggestion)}</strong>
+                            "${this.escapeHtml(e.extracted)}"<span class="extraction-arrow">\u2192</span><strong>${this.escapeHtml(formattedSuggestion)}</strong>
                         </div>
+                        ${partialNotice}
                     </div>
                 </div>
             `;
         });
 
         resultsDiv.innerHTML = html;
+        this.updateSelectAllCheckbox();
         this.activateModal(modal);
     },
 
@@ -130,7 +140,7 @@ export const modalUi = {
         let count = 0;
         this.selectedExtractions.forEach(index => {
             const extraction = this.pendingExtraction[index];
-            const formatted = this.formatComposerName(extraction.suggestion);
+            const formatted = extraction.formattedSuggestion || this.normalizeComposerValue(extraction.suggestion).formatted;
             this.dataById.get(extraction.id)[this.composerField] = formatted || extraction.suggestion;
             this.modifiedCount++;
             count++;
@@ -460,6 +470,11 @@ export const modalUi = {
     },
 
     _showPreview(title, desc, changes, logCategory, undoLabel) {
+        changes = changes.map(change => {
+            if (change.field !== this.composerField) return change;
+            const normalized = this.normalizeComposerValue(change.newVal).formatted;
+            return { ...change, newVal: normalized, newDetail: normalized };
+        });
         this._previewChanges = changes;
         this._previewSelected = new Set(changes.map((_, i) => i));
         this._previewLogCategory = logCategory;
@@ -537,7 +552,7 @@ export const modalUi = {
             const c = this._previewChanges[i];
             if (c) {
                 const newValue = c.field === this.composerField
-                    ? this.formatComposerName(c.newVal)
+                    ? this.normalizeComposerValue(c.newVal).formatted
                     : c.newVal;
                 this.dataById.get(c.id)[c.field] = newValue;
                 count++;
