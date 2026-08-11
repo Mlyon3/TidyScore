@@ -20,6 +20,16 @@
     font-weight: 600;
 }
 
+.dup-summary {
+    margin: 0;
+    padding: 9px 12px;
+    color: var(--color-text);
+    font-size: 12px;
+    line-height: 1.45;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
 .dup-group-header label {
     display: flex;
     align-items: center;
@@ -35,14 +45,46 @@
     white-space: nowrap;
 }
 
-.dup-badge-high {
+.dup-badge-likely {
     color: var(--color-danger);
     background: var(--color-danger-bg);
 }
 
-.dup-badge-low {
+.dup-badge-possible {
     color: var(--color-warning);
     background: var(--color-warning-bg);
+}
+
+.dup-badge-related {
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+}
+
+.dup-evidence {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border-light);
+    font-size: 12px;
+}
+
+.dup-evidence summary {
+    color: var(--color-accent);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.dup-evidence-section {
+    margin-top: 8px;
+}
+
+.dup-evidence-section ul {
+    margin: 4px 0 0;
+    padding-left: 20px;
+}
+
+.dup-evidence-values {
+    display: block;
+    color: var(--color-text-muted);
 }
 
 .dup-item {
@@ -75,11 +117,31 @@
     white-space: nowrap;
 }
 
-.dup-item-composer {
+.dup-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
     font-size: 12px;
     color: var(--color-text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
+@media (max-width: 600px) {
+    .dup-group-header {
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .dup-badge {
+        white-space: normal;
+        text-align: right;
+    }
+
+    .dup-item-title {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .dup-item-meta {
+        display: grid;
+    }
+}

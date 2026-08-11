@@ -39,6 +39,55 @@ test('sample cleanup, undo, and duplicate detection work without console errors'
     expect(errors).toEqual([]);
 });
 
+test('duplicate review explains evidence and tags a unique review queue', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto('/TidyScore/');
+    await page.evaluate(() => {
+        window.app.parseCSV([
+            'Title,Composers,Genre,Tags,Filename',
+            'Concerto Full Score,Example,,,concerto-score.pdf',
+            'Concerto Full Score (2),Example,,,concerto-score-copy.pdf',
+            'Concerto Violin Part,Example,,,concerto-violin-part.pdf',
+            'Etude Violin,Example,,,etude-vln.pdf',
+            'Etude,Example,,,etude-scan.pdf'
+        ].join('\n'));
+    });
+
+    await page.locator('#advancedTools > summary').click();
+    await page.getByRole('button', { name: 'Find Duplicates' }).click();
+    const modal = page.locator('#duplicateModal');
+    await expect(modal).toHaveClass(/active/);
+    await expect(modal).toContainText('annotations');
+    await expect(modal).toContainText('compare every');
+    await expect(modal.locator('.dup-badge-likely')).toHaveText('Likely duplicate');
+    await expect(modal.locator('.dup-badge-possible')).toHaveText('Possible duplicate');
+    await expect(modal.locator('.dup-badge-related')).toHaveText('Related / likely separate');
+    await expect(modal.locator('.dup-summary')).toHaveCount(3);
+    await expect(modal.locator('#dupSelectedCount')).toHaveText('2 of 5 unique files selected');
+
+    await modal.locator('.dup-evidence summary').first().click();
+    await expect(modal.locator('.dup-evidence').first()).toContainText('Matches');
+    await modal.locator('.dup-evidence summary').last().click();
+    await expect(modal.locator('.dup-evidence').last()).toContainText('Differences');
+
+    await modal.locator('.dup-group').filter({ hasText: 'Possible duplicate' }).locator('.dup-group-checkbox').click();
+    await expect(modal.locator('#dupSelectedCount')).toHaveText('4 of 5 unique files selected');
+    await page.getByRole('button', { name: "Tag Selected as '_Duplicate_Delete_Me'" }).click();
+
+    const tags = await page.evaluate(() => window.app.data.map(row => row.Tags));
+    expect(tags).toEqual([
+        '_Duplicate_Delete_Me',
+        '_Duplicate_Delete_Me',
+        '',
+        '_Duplicate_Delete_Me',
+        '_Duplicate_Delete_Me'
+    ]);
+
+    await page.getByRole('button', { name: 'Find Duplicates' }).click();
+    await expect(modal.locator('#dupSelectedCount')).toHaveText('2 of 5 unique files selected');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test('export falls back to a download and shows the forScore return steps', async ({ page }) => {
     await page.goto('/TidyScore/');
     await page.getByRole('link', { name: 'Try a sample library' }).click();

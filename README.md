@@ -85,7 +85,7 @@ Search and replace across any field (title, composer, genre, or tags). Works on 
 Converts composer names from "First Last" to "Last, First" format. Handles complex names like "Ludwig van Beethoven" → "Beethoven, Ludwig van".
 
 ### Find Duplicates
-Scans titles/composers for likely duplicate scores and groups them by confidence so you can review matches quickly. Select matches in the duplicate modal and apply duplicate tags in bulk.
+Compares structured evidence from titles, filenames, composers, catalogue numbers, keys, work numbers, and instrument or document roles. Results are separated into likely duplicates, possible duplicates, and related material, with an expandable explanation of every match or conflict. Likely duplicates are preselected for bulk review tagging; compare the tagged files in forScore before deleting anything because CSV metadata does not include annotations.
 
 ---
 

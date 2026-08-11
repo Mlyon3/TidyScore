@@ -135,13 +135,17 @@ This scenario is the regression guard for the full user workflow.
    - Title: `Moonlight Sonata Violin Part.pdf`, Composer: `Beethoven`
 3. Open the duplicate tool modal.
 4. Confirm one high-confidence group appears for the first two rows; the part-specific row is either excluded or low-confidence.
-5. Click the group checkbox and verify row-level checkboxes update.
-6. Click **Select all** and verify selected count changes.
-7. Apply duplicate tags.
+5. Expand **Why these files were grouped** and confirm matching evidence and missing information or conflicts are explained.
+6. Confirm likely duplicates are preselected, while possible duplicates and related material are not.
+7. Click the group checkbox and verify every appearance of the same row updates without inflating the unique-file count.
+8. Click **Select all** and verify selected count changes.
+9. Apply duplicate tags.
 
 ### Expected results
 
 - Duplicate modal opens and renders grouped results without console errors.
+- Likely, possible, and related badges accurately reflect the displayed evidence.
 - Group-level and select-all toggles update row selections and count text consistently.
 - Applying tags adds `_Duplicate_Delete_Me` to selected rows in the tags field.
 - Closing/reopening duplicate modal resets selection according to high-confidence preselect behavior.
+- The modal warns that annotations are unavailable in CSV metadata and files must be compared in forScore before deletion.
