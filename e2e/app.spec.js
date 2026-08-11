@@ -54,7 +54,7 @@ test('export falls back to a download and shows the forScore return steps', asyn
     await expect(page.locator('#exportCompleteModal')).toContainText('scrolled-page icon');
 });
 
-test('export summary identifies scores and can revert Genre and Tags independently', async ({ page }) => {
+test('export summary identifies scores and toggles Genre and Tags independently', async ({ page }) => {
     await page.setViewportSize({ width: 540, height: 720 });
     await page.goto('/TidyScore/');
     await page.getByRole('link', { name: 'Try a sample library' }).click();
@@ -73,30 +73,38 @@ test('export summary identifies scores and can revert Genre and Tags independent
     await expect(page.locator('#modifiedCount')).toHaveText('2');
 
     await page.getByRole('button', { name: /Review & Export/ }).click();
-    await expect(page.locator('#exportSummaryDesc')).toContainText('2 fields changed across 1 score');
+    await expect(page.locator('#exportSummaryDesc')).toContainText('2 changes selected across 1 score');
     await expect(page.locator('#exportFieldBreakdown')).toContainText('Genre 1');
     await expect(page.locator('#exportFieldBreakdown')).toContainText('Tags 1');
     await expect(page.locator('.export-score-title')).not.toBeEmpty();
     await expect(page.locator('.export-score-meta')).toContainText('Row 1');
-    await expect(page.locator('#exportUndoBanner')).toBeHidden();
+    const genreToggle = page.getByRole('button', { name: /Use original Genre value for/ });
+    const tagsToggle = page.getByRole('button', { name: /Use original Tags value for/ });
+    await expect(genreToggle).toHaveAttribute('aria-pressed', 'true');
+    await genreToggle.click();
+    await expect(page.locator('#exportSummaryDesc')).toContainText('1 change selected across 1 score. 1 using original');
+    await expect(page.getByRole('button', { name: /Use changed Genre value for/ })).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByRole('button', { name: /Use changed Genre value for/ })).toContainText('Using original');
+    await expect(tagsToggle).toHaveCount(1);
 
-    const genreRevert = page.getByRole('button', { name: /Revert Genre change for/ });
-    const tagsRevert = page.getByRole('button', { name: /Revert Tags change for/ });
-    await genreRevert.click();
-    await expect(page.locator('#exportSummaryDesc')).toContainText('1 field changed across 1 score');
-    await expect(genreRevert).toHaveCount(0);
-    await expect(tagsRevert).toHaveCount(1);
-    await expect(page.locator('#exportUndoBanner')).toContainText('Genre change');
+    await page.keyboard.press('Control+z');
+    await expect(page.locator('#exportSummaryDesc')).toContainText('2 changes selected across 1 score');
+    await expect(page.getByRole('button', { name: /Use original Genre value for/ })).toHaveAttribute('aria-pressed', 'true');
 
-    await page.locator('#exportUndoBanner').getByRole('button', { name: 'Undo' }).click();
-    await expect(page.locator('#exportSummaryDesc')).toContainText('2 fields changed across 1 score');
-    await expect(page.getByRole('button', { name: /Revert Genre change for/ })).toHaveCount(1);
-
-    await page.getByRole('button', { name: /Revert Genre change for/ }).click();
-    await page.getByRole('button', { name: /Revert Tags change for/ }).click();
-    await expect(page.locator('#exportSummaryDesc')).toContainText('No metadata changes');
-    await expect(page.locator('.export-empty-state')).toContainText('matches the imported library');
+    await page.getByRole('button', { name: /Use original Genre value for/ }).click();
+    await page.getByRole('button', { name: /Use original Tags value for/ }).click();
+    await expect(page.locator('#exportSummaryDesc')).toContainText('No changes selected for export. 2 changes are using original values');
+    await expect(page.locator('.export-change-row')).toHaveCount(2);
+    await expect(page.locator('.export-change-row[aria-pressed="false"]')).toHaveCount(2);
     await expect(page.getByRole('button', { name: 'Save to Files' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('.export-change-row[aria-pressed="false"]')).toHaveCount(2);
+
+    await page.getByRole('button', { name: /Use changed Genre value for/ }).click();
+    await expect(page.locator('#exportSummaryDesc')).toContainText('1 change selected across 1 score. 1 using original');
+    await expect(page.getByRole('button', { name: /Use original Genre value for/ })).toContainText('Using change');
 });
 
 test('export summary reveals large change sets incrementally', async ({ page }) => {

@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { buildExportDiffSummary, resolveLibraryFields } from './data-model.js';
+import { buildExportReviewSummary, resolveLibraryFields } from './data-model.js';
 
 export function parseCsvDocument(text) {
     if (typeof text !== 'string' || !text.trim()) {
@@ -163,6 +163,7 @@ export const csvCore = {
         this.headers = document.headers;
         this.selectedIds.clear();
         this.undoStack = [];
+        this.exportReviewCandidates = new Map();
         this.analyzeData();
         this.renderAll();
     },
@@ -204,13 +205,26 @@ export const csvCore = {
         if (!desc || !list) return;
 
         const previousScrollTop = preserveScroll ? list.scrollTop : 0;
-        const summary = buildExportDiffSummary(this.data, this.originalData, this.headers);
+        if (!(this.exportReviewCandidates instanceof Map)) this.exportReviewCandidates = new Map();
+        const summary = buildExportReviewSummary(
+            this.data,
+            this.originalData,
+            this.headers,
+            this.exportReviewCandidates
+        );
         this._exportDiffSummary = summary;
         this.modifiedCount = summary.changedFieldCount;
 
-        desc.innerHTML = summary.changedFieldCount === 0
-            ? `No metadata changes are currently selected. You can still export all <strong>${this.data.length}</strong> scores.`
-            : `<strong>${summary.changedFieldCount}</strong> field${summary.changedFieldCount !== 1 ? 's' : ''} changed across <strong>${summary.changedScoreCount}</strong> score${summary.changedScoreCount !== 1 ? 's' : ''}.`;
+        if (summary.candidateCount === 0) {
+            desc.innerHTML = `No metadata changes are currently selected. You can still export all <strong>${this.data.length}</strong> scores.`;
+        } else if (summary.changedFieldCount === 0) {
+            desc.innerHTML = `No changes selected for export. <strong>${summary.revertedCount}</strong> change${summary.revertedCount !== 1 ? 's are' : ' is'} using original values.`;
+        } else {
+            const reverted = summary.revertedCount > 0
+                ? ` <strong>${summary.revertedCount}</strong> using original.`
+                : '';
+            desc.innerHTML = `<strong>${summary.changedFieldCount}</strong> change${summary.changedFieldCount !== 1 ? 's' : ''} selected across <strong>${summary.changedScoreCount}</strong> score${summary.changedScoreCount !== 1 ? 's' : ''}.${reverted}`;
+        }
 
         const breakdown = document.getElementById('exportFieldBreakdown');
         const instruction = document.getElementById('exportRevertInstruction');
@@ -224,11 +238,10 @@ export const csvCore = {
             });
             breakdown.classList.toggle('hidden', summary.changedFieldCount === 0);
         }
-        instruction?.classList.toggle('hidden', summary.changedFieldCount === 0);
-        this.renderExportUndoBanner();
+        instruction?.classList.toggle('hidden', summary.candidateCount === 0);
 
         list.textContent = '';
-        if (summary.changedFieldCount === 0) {
+        if (summary.candidateCount === 0) {
             const empty = document.createElement('div');
             empty.className = 'export-empty-state';
             empty.textContent = 'Your export currently matches the imported library.';
@@ -272,9 +285,13 @@ export const csvCore = {
         group.changes.forEach(change => {
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'export-change-row';
-            button.setAttribute('aria-label', `Revert ${change.field} change for ${group.title}, row ${group.rowNum}`);
-            button.addEventListener('click', () => this.revertExportChange(group.rowId, change.field, group.title));
+            button.className = `export-change-row ${change.included ? 'is-included' : 'is-original'}`;
+            button.setAttribute('aria-pressed', String(change.included));
+            button.setAttribute(
+                'aria-label',
+                `${change.included ? 'Use original' : 'Use changed'} ${change.field} value for ${group.title}, row ${group.rowNum}`
+            );
+            button.addEventListener('click', () => this.toggleExportChange(group.rowId, change.field, group.title));
 
             const field = document.createElement('span');
             field.className = 'export-change-field';
@@ -295,7 +312,9 @@ export const csvCore = {
 
             const action = document.createElement('span');
             action.className = 'export-change-action';
-            action.innerHTML = '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7a4 4 0 0 1 0 8H7"/><path d="M6 4L3 7l3 3"/></svg><span>Revert</span>';
+            action.innerHTML = change.included
+                ? '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5 8l2 2 4-4"/></svg><span>Using change</span>'
+                : '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5 8h6"/></svg><span>Using original</span>';
             button.append(field, values, action);
             scoreGroup.appendChild(button);
         });
@@ -308,39 +327,23 @@ export const csvCore = {
         this.renderExportSummary({ preserveScroll: true });
     },
 
-    revertExportChange(rowId, field, title) {
+    toggleExportChange(rowId, field, title) {
         const row = this.dataById.get(rowId);
-        const original = this.originalData.find(item => item.__id === rowId);
-        if (!row || !original || String(row[field] ?? '') === String(original[field] ?? '')) return;
+        const candidate = this.exportReviewCandidates?.get(`${rowId}\u0000${field}`);
+        if (!row || !candidate) return;
 
-        this.pushUndo(`Revert ${field} change`, {
-            type: 'export-revert',
+        const usingChange = String(row[field] ?? '') === candidate.proposedValue;
+        this.pushUndo(`${usingChange ? 'Use original' : 'Use change'} for ${field}`, {
+            type: 'export-toggle',
             field,
             title
         });
-        row[field] = String(original[field] ?? '');
+        row[field] = usingChange ? candidate.originalValue : candidate.proposedValue;
         this.analyzeData();
         this.updateStats();
         this.renderTable();
         this.updateWorkflowSteps?.('return');
         this.renderExportSummary({ preserveScroll: true });
-    },
-
-    renderExportUndoBanner() {
-        const banner = document.getElementById('exportUndoBanner');
-        const message = document.getElementById('exportUndoMessage');
-        if (!banner || !message) return;
-        const lastUndo = this.undoStack[this.undoStack.length - 1];
-        const context = lastUndo?.context;
-        const visible = context?.type === 'export-revert';
-        banner.classList.toggle('hidden', !visible);
-        if (visible) message.textContent = `${context.field} change for ${context.title} reverted.`;
-    },
-
-    undoExportRevert() {
-        const lastUndo = this.undoStack[this.undoStack.length - 1];
-        if (lastUndo?.context?.type !== 'export-revert') return;
-        this.undo();
     },
 
     createExportArtifact() {

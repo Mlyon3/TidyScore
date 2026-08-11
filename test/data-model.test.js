@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildExportDiffSummary, countModifiedFields, resolveLibraryFields } from '../src/core/data-model.js';
+import {
+    buildExportDiffSummary,
+    buildExportReviewSummary,
+    countModifiedFields,
+    resolveLibraryFields
+} from '../src/core/data-model.js';
 
 describe('library field mapping', () => {
     it('maps supported columns case-insensitively while preserving source headers', () => {
@@ -78,5 +83,32 @@ describe('export diff summary', () => {
 
         expect(buildExportDiffSummary(renamed, [original[0]], headers).groups[0].title).toBe('Prelude');
         expect(buildExportDiffSummary(filenameOnlyCurrent, filenameOnlyOriginal, headers).groups[0].title).toBe('fallback.pdf');
+    });
+
+    it('retains reverted candidates and reconciles later external edits', () => {
+        const candidates = new Map();
+        const data = [{ ...original[0], Genre: 'Baroque', Tags: 'Favorite, Recital' }];
+
+        let summary = buildExportReviewSummary(data, [original[0]], headers, candidates);
+        expect(summary.changedFieldCount).toBe(2);
+        expect(summary.revertedCount).toBe(0);
+
+        data[0].Genre = '';
+        summary = buildExportReviewSummary(data, [original[0]], headers, candidates);
+        expect(summary.changedFieldCount).toBe(1);
+        expect(summary.revertedCount).toBe(1);
+        expect(summary.groups[0].changes.find(change => change.field === 'Genre')).toMatchObject({
+            oldValue: '',
+            newValue: 'Baroque',
+            included: false
+        });
+
+        data[0].Genre = 'Modern';
+        summary = buildExportReviewSummary(data, [original[0]], headers, candidates);
+        expect(summary.changedFieldCount).toBe(2);
+        expect(summary.groups[0].changes.find(change => change.field === 'Genre')).toMatchObject({
+            newValue: 'Modern',
+            included: true
+        });
     });
 });

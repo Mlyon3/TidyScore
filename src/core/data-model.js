@@ -76,3 +76,113 @@ export function buildExportDiffSummary(data, originalData, headers) {
         fieldCounts: Object.fromEntries(fieldCounts)
     };
 }
+
+function exportCandidateKey(rowId, field) {
+    return `${rowId}\u0000${field}`;
+}
+
+export function buildExportReviewSummary(data, originalData, headers, candidates = new Map()) {
+    const originalsById = new Map(originalData.map(row => [row.__id, row]));
+    const rowsById = new Map(data.map(row => [row.__id, row]));
+    const headerSet = new Set(headers);
+
+    candidates.forEach((candidate, key) => {
+        const original = originalsById.get(candidate.rowId);
+        if (!rowsById.has(candidate.rowId) || !original || !headerSet.has(candidate.field)) {
+            candidates.delete(key);
+            return;
+        }
+        candidate.originalValue = String(original[candidate.field] ?? '');
+        if (candidate.proposedValue === candidate.originalValue) candidates.delete(key);
+    });
+
+    data.forEach(row => {
+        const original = originalsById.get(row.__id);
+        if (!original) return;
+        headers.forEach(field => {
+            const originalValue = String(original[field] ?? '');
+            const currentValue = String(row[field] ?? '');
+            if (currentValue === originalValue) return;
+
+            const key = exportCandidateKey(row.__id, field);
+            const existing = candidates.get(key);
+            if (!existing || existing.originalValue !== originalValue) {
+                candidates.set(key, {
+                    rowId: row.__id,
+                    field,
+                    originalValue,
+                    proposedValue: currentValue
+                });
+            } else if (currentValue !== existing.proposedValue) {
+                existing.proposedValue = currentValue;
+            }
+        });
+    });
+
+    const fields = resolveLibraryFields(headers);
+    const fieldCounts = new Map();
+    const groups = [];
+    let changedFieldCount = 0;
+    let changedScoreCount = 0;
+    let revertedCount = 0;
+
+    data.forEach((row, index) => {
+        const original = originalsById.get(row.__id);
+        if (!original) return;
+
+        const changes = headers.flatMap(field => {
+            const candidate = candidates.get(exportCandidateKey(row.__id, field));
+            if (!candidate) return [];
+
+            const currentValue = String(row[field] ?? '');
+            if (currentValue !== candidate.originalValue && currentValue !== candidate.proposedValue) {
+                candidate.proposedValue = currentValue;
+            }
+            if (candidate.proposedValue === candidate.originalValue) {
+                candidates.delete(exportCandidateKey(row.__id, field));
+                return [];
+            }
+
+            const included = currentValue === candidate.proposedValue;
+            if (included) {
+                changedFieldCount++;
+                fieldCounts.set(field, (fieldCounts.get(field) || 0) + 1);
+            } else {
+                revertedCount++;
+            }
+            return [{
+                field,
+                oldValue: candidate.originalValue,
+                newValue: candidate.proposedValue,
+                included
+            }];
+        });
+
+        if (changes.length === 0) return;
+        if (changes.some(change => change.included)) changedScoreCount++;
+
+        const currentTitle = fields.title ? String(row[fields.title] ?? '').trim() : '';
+        const originalTitle = fields.title ? String(original[fields.title] ?? '').trim() : '';
+        const currentFilename = fields.filename ? String(row[fields.filename] ?? '').trim() : '';
+        const originalFilename = fields.filename ? String(original[fields.filename] ?? '').trim() : '';
+        const currentComposer = fields.composer ? String(row[fields.composer] ?? '').trim() : '';
+        const originalComposer = fields.composer ? String(original[fields.composer] ?? '').trim() : '';
+
+        groups.push({
+            rowId: row.__id,
+            rowNum: Number.isInteger(row.__id) ? row.__id + 1 : index + 1,
+            title: currentTitle || originalTitle || currentFilename || originalFilename || 'Untitled score',
+            composer: currentComposer || originalComposer || 'Composer unknown',
+            changes
+        });
+    });
+
+    return {
+        groups,
+        changedFieldCount,
+        changedScoreCount,
+        revertedCount,
+        candidateCount: changedFieldCount + revertedCount,
+        fieldCounts: Object.fromEntries(fieldCounts)
+    };
+}

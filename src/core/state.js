@@ -12,6 +12,7 @@ export const baseState = {
     visibleIds: [],
     undoStack: [],
     changeLog: [],
+    exportReviewCandidates: new Map(),
     settingsStorageKey: 'tidyscore-settings',
     settings: null,
     _notificationQueue: [],

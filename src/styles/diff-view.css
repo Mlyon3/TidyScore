@@ -26,33 +26,8 @@
     font-size: 13px;
 }
 
-.export-undo-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 10px 0;
-    padding: 9px 12px;
-    border: 1px solid var(--color-accent);
-    border-radius: var(--radius-sm);
-    background: var(--color-accent-subtle);
-    color: var(--color-text);
-    font-size: 13px;
-}
-
-.export-field-breakdown.hidden,
-.export-undo-banner.hidden {
+.export-field-breakdown.hidden {
     display: none;
-}
-
-.export-undo-banner button {
-    border: 0;
-    background: none;
-    color: var(--color-accent);
-    cursor: pointer;
-    font: inherit;
-    font-weight: 700;
-    padding: 2px 4px;
 }
 
 .export-change-list {
@@ -149,6 +124,20 @@
     font-weight: 550;
 }
 
+.export-change-row.is-original .export-change-old {
+    color: var(--color-success, #48bb78);
+    text-decoration: none;
+    opacity: 1;
+    font-weight: 650;
+}
+
+.export-change-row.is-original .export-change-new {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+    opacity: 0.65;
+    font-weight: 400;
+}
+
 .export-change-arrow {
     flex-shrink: 0;
     color: var(--color-text-muted);
@@ -158,22 +147,18 @@
     display: flex;
     align-items: center;
     gap: 5px;
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: var(--color-accent-subtle);
     color: var(--color-accent);
     font-size: 12px;
     font-weight: 650;
+    white-space: nowrap;
 }
 
-.export-change-action span {
-    max-width: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-width var(--transition-fast), opacity var(--transition-fast);
-}
-
-.export-change-row:hover .export-change-action span,
-.export-change-row:focus-visible .export-change-action span {
-    max-width: 48px;
-    opacity: 1;
+.export-change-row.is-original .export-change-action {
+    background: var(--color-border-light);
+    color: var(--color-text-secondary);
 }
 
 .export-show-more {
@@ -204,7 +189,7 @@
 
 @media (max-width: 540px) {
     .export-change-row {
-        grid-template-columns: minmax(64px, auto) minmax(0, 1fr) auto;
+        grid-template-columns: minmax(64px, auto) minmax(0, 1fr);
         gap: 8px;
         padding: 10px 12px;
     }
@@ -218,7 +203,8 @@
         display: none;
     }
 
-    .export-change-action span {
-        display: none;
+    .export-change-action {
+        grid-column: 2;
+        justify-self: start;
     }
 }

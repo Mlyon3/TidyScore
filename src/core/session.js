@@ -139,6 +139,7 @@ export const sessionCore = {
         this.dataById = new Map(this.data.map(row => [row.__id, row]));
         this.selectedIds.clear();
         this.undoStack = [];
+        this.exportReviewCandidates = new Map();
         this.recoveryEnabled = true;
         try { localStorage.setItem(this.recoveryPreferenceKey, 'true'); } catch (_) {}
         this.analyzeData();

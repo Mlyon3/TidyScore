@@ -579,6 +579,7 @@ export const modalUi = {
         this.modifiedCount = 0;
         this.undoStack = [];
         this.changeLog = [];
+        this.exportReviewCandidates = new Map();
         this.selectedIds.clear();
         this.resetClickTime = null;
         

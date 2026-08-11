@@ -423,11 +423,7 @@
             <h3 class="modal-title">Export Summary</h3>
             <p class="modal-desc" id="exportSummaryDesc"></p>
             <div id="exportFieldBreakdown" class="export-field-breakdown" aria-label="Changes by field"></div>
-            <p id="exportRevertInstruction" class="export-revert-instruction">Tap any change to revert it.</p>
-            <div id="exportUndoBanner" class="export-undo-banner hidden" role="status">
-                <span id="exportUndoMessage"></span>
-                <button type="button" onclick="app.undoExportRevert()">Undo</button>
-            </div>
+            <p id="exportRevertInstruction" class="export-revert-instruction">Tap a change to switch which value will export.</p>
             <div id="exportSummaryList" class="export-change-list"></div>
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="app.closeExportModal()">Cancel</button>
