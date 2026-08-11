@@ -54,6 +54,71 @@ test('export falls back to a download and shows the forScore return steps', asyn
     await expect(page.locator('#exportCompleteModal')).toContainText('scrolled-page icon');
 });
 
+test('export summary identifies scores and can revert Genre and Tags independently', async ({ page }) => {
+    await page.setViewportSize({ width: 540, height: 720 });
+    await page.goto('/TidyScore/');
+    await page.getByRole('link', { name: 'Try a sample library' }).click();
+    await page.locator('#libraryEditor > summary').click();
+
+    const firstRow = page.locator('#tableBody tr').first();
+    await firstRow.locator('td[data-label="Genre"]').click();
+    await firstRow.locator('input.editing').fill('Test Genre');
+    await page.locator('#reviewHeading').click();
+    await expect(page.locator('#modifiedCount')).toHaveText('1');
+
+    const refreshedFirstRow = page.locator('#tableBody tr').first();
+    await refreshedFirstRow.locator('td[data-label="Tags"]').click();
+    await refreshedFirstRow.locator('input.editing').fill('Favorite, Recital');
+    await page.locator('#reviewHeading').click();
+    await expect(page.locator('#modifiedCount')).toHaveText('2');
+
+    await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('#exportSummaryDesc')).toContainText('2 fields changed across 1 score');
+    await expect(page.locator('#exportFieldBreakdown')).toContainText('Genre 1');
+    await expect(page.locator('#exportFieldBreakdown')).toContainText('Tags 1');
+    await expect(page.locator('.export-score-title')).not.toBeEmpty();
+    await expect(page.locator('.export-score-meta')).toContainText('Row 1');
+    await expect(page.locator('#exportUndoBanner')).toBeHidden();
+
+    const genreRevert = page.getByRole('button', { name: /Revert Genre change for/ });
+    const tagsRevert = page.getByRole('button', { name: /Revert Tags change for/ });
+    await genreRevert.click();
+    await expect(page.locator('#exportSummaryDesc')).toContainText('1 field changed across 1 score');
+    await expect(genreRevert).toHaveCount(0);
+    await expect(tagsRevert).toHaveCount(1);
+    await expect(page.locator('#exportUndoBanner')).toContainText('Genre change');
+
+    await page.locator('#exportUndoBanner').getByRole('button', { name: 'Undo' }).click();
+    await expect(page.locator('#exportSummaryDesc')).toContainText('2 fields changed across 1 score');
+    await expect(page.getByRole('button', { name: /Revert Genre change for/ })).toHaveCount(1);
+
+    await page.getByRole('button', { name: /Revert Genre change for/ }).click();
+    await page.getByRole('button', { name: /Revert Tags change for/ }).click();
+    await expect(page.locator('#exportSummaryDesc')).toContainText('No metadata changes');
+    await expect(page.locator('.export-empty-state')).toContainText('matches the imported library');
+    await expect(page.getByRole('button', { name: 'Save to Files' })).toBeEnabled();
+});
+
+test('export summary reveals large change sets incrementally', async ({ page }) => {
+    await page.goto('/TidyScore/');
+    await page.evaluate(() => {
+        const rows = Array.from({ length: 51 }, (_, index) =>
+            `Score ${index + 1},Composer,,tag,file-${index + 1}.pdf`
+        );
+        window.app.parseCSV([
+            'Title,Composers,Genre,Tags,Filename',
+            ...rows
+        ].join('\n'));
+        window.app.data.forEach(row => { row.Genre = 'Changed'; });
+        window.app.renderAll();
+    });
+
+    await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('.export-score-group')).toHaveCount(50);
+    await page.getByRole('button', { name: 'Show 1 more score' }).click();
+    await expect(page.locator('.export-score-group')).toHaveCount(51);
+});
+
 test('opt-in recovery restores the current library after reload', async ({ page }) => {
     await page.goto('/TidyScore/');
     await page.getByRole('link', { name: 'Try a sample library' }).click();
@@ -74,6 +139,9 @@ test('guided workflow fits an iPad portrait viewport', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Recommended fixes' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(page.getByRole('button', { name: /Review & Export/ })).toBeVisible();
+    await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('#exportModal')).toHaveClass(/active/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test('guided workflow fits iPad landscape and Split View widths', async ({ page }) => {
@@ -84,5 +152,8 @@ test('guided workflow fits iPad landscape and Split View widths', async ({ page 
 
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         await expect(page.getByRole('button', { name: /Review & Export/ })).toBeVisible();
+        await page.getByRole('button', { name: /Review & Export/ }).click();
+        await expect(page.locator('#exportModal')).toHaveClass(/active/);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
 });

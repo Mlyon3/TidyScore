@@ -1,77 +1,224 @@
-/* ===== Diff View ===== */
-.diff-toggle {
+/* ===== Export Summary ===== */
+.export-modal-content {
+    max-width: 680px;
+}
+
+.export-field-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 8px;
+}
+
+.export-field-count {
+    padding: 4px 9px;
+    border: 1px solid var(--color-border-light);
+    border-radius: 999px;
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.export-revert-instruction {
+    margin: 8px 0 12px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.export-undo-banner {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: none;
-    border: none;
-    color: var(--color-accent);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 8px 0;
-    margin-top: 8px;
-}
-
-.diff-toggle:hover {
-    text-decoration: underline;
-}
-
-.diff-toggle svg {
-    transition: transform var(--transition-fast);
-}
-
-.diff-toggle.expanded svg {
-    transform: rotate(90deg);
-}
-
-.diff-list {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--color-border-light);
-    border-radius: var(--radius-sm);
-    margin-top: 8px;
-}
-
-.diff-row {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--color-border-light);
-    font-size: 13px;
-}
-
-.diff-row:last-child {
-    border-bottom: none;
-}
-
-.diff-row-header {
-    display: flex;
     justify-content: space-between;
-    margin-bottom: 4px;
+    gap: 12px;
+    margin: 10px 0;
+    padding: 9px 12px;
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-sm);
+    background: var(--color-accent-subtle);
+    color: var(--color-text);
+    font-size: 13px;
 }
 
-.diff-row-num {
+.export-field-breakdown.hidden,
+.export-undo-banner.hidden {
+    display: none;
+}
+
+.export-undo-banner button {
+    border: 0;
+    background: none;
+    color: var(--color-accent);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    padding: 2px 4px;
+}
+
+.export-change-list {
+    max-height: min(52vh, 480px);
+    overflow-y: auto;
+    margin: 12px 0 20px;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+}
+
+.export-score-group + .export-score-group {
+    border-top: 1px solid var(--color-border);
+}
+
+.export-score-header {
+    padding: 12px 14px 9px;
+    background: var(--color-surface);
+}
+
+.export-score-title {
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.export-score-meta {
+    margin-top: 3px;
     color: var(--color-text-muted);
     font-size: 12px;
+    overflow-wrap: anywhere;
 }
 
-.diff-field {
-    color: var(--color-text-muted);
+.export-change-row {
+    display: grid;
+    grid-template-columns: minmax(72px, auto) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 14px;
+    border: 0;
+    border-top: 1px solid var(--color-border-light);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.export-change-row:hover {
+    background: var(--color-accent-subtle);
+}
+
+.export-change-row:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-accent);
+    background: var(--color-accent-subtle);
+}
+
+.export-change-field {
+    align-self: start;
+    color: var(--color-text-secondary);
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 700;
+    overflow-wrap: anywhere;
 }
 
-.diff-old {
+.export-change-values {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 7px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.export-change-old,
+.export-change-new {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.export-change-old {
     color: var(--color-danger, #e53e3e);
     text-decoration: line-through;
-    opacity: 0.7;
+    opacity: 0.75;
 }
 
-.diff-new {
+.export-change-new {
     color: var(--color-success, #48bb78);
+    font-weight: 550;
 }
 
-.diff-arrow {
+.export-change-arrow {
+    flex-shrink: 0;
     color: var(--color-text-muted);
-    margin: 0 6px;
 }
 
+.export-change-action {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--color-accent);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.export-change-action span {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-width var(--transition-fast), opacity var(--transition-fast);
+}
+
+.export-change-row:hover .export-change-action span,
+.export-change-row:focus-visible .export-change-action span {
+    max-width: 48px;
+    opacity: 1;
+}
+
+.export-show-more {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-accent);
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.export-show-more:hover,
+.export-show-more:focus-visible {
+    background: var(--color-accent-subtle);
+}
+
+.export-empty-state {
+    padding: 28px 18px;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+@media (max-width: 540px) {
+    .export-change-row {
+        grid-template-columns: minmax(64px, auto) minmax(0, 1fr) auto;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    .export-change-values {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .export-change-arrow {
+        display: none;
+    }
+
+    .export-change-action span {
+        display: none;
+    }
+}

@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { countModifiedFields, resolveLibraryFields } from './data-model.js';
+import { buildExportDiffSummary, resolveLibraryFields } from './data-model.js';
 
 export function parseCsvDocument(text) {
     if (typeof text !== 'string' || !text.trim()) {
@@ -186,58 +186,9 @@ export const csvCore = {
     },
 
     exportCSV() {
-        this.modifiedCount = countModifiedFields(this.data, this.originalData, this.headers);
-
         const modal = document.getElementById('exportModal');
-        const desc = document.getElementById('exportSummaryDesc');
-        const list = document.getElementById('exportSummaryList');
-
-        desc.innerHTML = this.modifiedCount === 0
-            ? `No metadata changes are currently selected. You can still export all <strong>${this.data.length}</strong> scores.`
-            : `<strong>${this.modifiedCount}</strong> field${this.modifiedCount !== 1 ? 's' : ''} modified across <strong>${this.data.length}</strong> scores.`;
-
-        if (this.changeLog.length > 0) {
-            let html = '';
-            this.changeLog.forEach(c => {
-                html += `<div style="display:flex;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--color-border-light);font-size:14px;">
-                    <span>${c.category}</span>
-                    <strong>${c.count}</strong>
-                </div>`;
-            });
-            list.innerHTML = html;
-            list.style.display = '';
-        } else {
-            list.style.display = 'none';
-        }
-
-        // Compute diff for diff view
-        this._exportDiffs = [];
-        const fields = this.headers;
-        this.data.forEach(row => {
-            const orig = this.originalData[row.__id];
-            if (!orig) return;
-            fields.forEach(field => {
-                const oldVal = orig[field] || '';
-                const newVal = row[field] || '';
-                if (oldVal !== newVal) {
-                    this._exportDiffs.push({ rowNum: row.__id + 1, field, oldVal, newVal });
-                }
-            });
-        });
-
-        // Show/hide diff toggle
-        const diffToggle = document.getElementById('diffToggle');
-        const diffContainer = document.getElementById('diffContainer');
-        if (this._exportDiffs.length > 0) {
-            diffToggle.style.display = '';
-            diffToggle.classList.remove('expanded');
-            document.getElementById('diffToggleLabel').textContent = `Show all changes (${this._exportDiffs.length})`;
-            diffContainer.style.display = 'none';
-            diffContainer.innerHTML = '';
-        } else {
-            diffToggle.style.display = 'none';
-            diffContainer.style.display = 'none';
-        }
+        this._exportVisibleGroupCount = 50;
+        this.renderExportSummary();
 
         const artifact = this.createExportArtifact();
         const shareButton = document.getElementById('shareExportBtn');
@@ -245,6 +196,151 @@ export const csvCore = {
 
         this.updateWorkflowSteps?.('return');
         this.activateModal(modal);
+    },
+
+    renderExportSummary({ preserveScroll = false } = {}) {
+        const desc = document.getElementById('exportSummaryDesc');
+        const list = document.getElementById('exportSummaryList');
+        if (!desc || !list) return;
+
+        const previousScrollTop = preserveScroll ? list.scrollTop : 0;
+        const summary = buildExportDiffSummary(this.data, this.originalData, this.headers);
+        this._exportDiffSummary = summary;
+        this.modifiedCount = summary.changedFieldCount;
+
+        desc.innerHTML = summary.changedFieldCount === 0
+            ? `No metadata changes are currently selected. You can still export all <strong>${this.data.length}</strong> scores.`
+            : `<strong>${summary.changedFieldCount}</strong> field${summary.changedFieldCount !== 1 ? 's' : ''} changed across <strong>${summary.changedScoreCount}</strong> score${summary.changedScoreCount !== 1 ? 's' : ''}.`;
+
+        const breakdown = document.getElementById('exportFieldBreakdown');
+        const instruction = document.getElementById('exportRevertInstruction');
+        if (breakdown) {
+            breakdown.textContent = '';
+            Object.entries(summary.fieldCounts).forEach(([field, count]) => {
+                const item = document.createElement('span');
+                item.className = 'export-field-count';
+                item.textContent = `${field} ${count}`;
+                breakdown.appendChild(item);
+            });
+            breakdown.classList.toggle('hidden', summary.changedFieldCount === 0);
+        }
+        instruction?.classList.toggle('hidden', summary.changedFieldCount === 0);
+        this.renderExportUndoBanner();
+
+        list.textContent = '';
+        if (summary.changedFieldCount === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'export-empty-state';
+            empty.textContent = 'Your export currently matches the imported library.';
+            list.appendChild(empty);
+            return;
+        }
+
+        const visibleCount = this._exportVisibleGroupCount || 50;
+        summary.groups.slice(0, visibleCount).forEach(group => {
+            list.appendChild(this.createExportScoreGroup(group));
+        });
+
+        if (summary.groups.length > visibleCount) {
+            const moreButton = document.createElement('button');
+            moreButton.type = 'button';
+            moreButton.className = 'export-show-more';
+            const remaining = summary.groups.length - visibleCount;
+            moreButton.textContent = `Show ${Math.min(50, remaining)} more score${remaining === 1 ? '' : 's'}`;
+            moreButton.addEventListener('click', () => this.showMoreExportChanges());
+            list.appendChild(moreButton);
+        }
+
+        if (preserveScroll) list.scrollTop = previousScrollTop;
+    },
+
+    createExportScoreGroup(group) {
+        const scoreGroup = document.createElement('section');
+        scoreGroup.className = 'export-score-group';
+
+        const header = document.createElement('div');
+        header.className = 'export-score-header';
+        const title = document.createElement('div');
+        title.className = 'export-score-title';
+        title.textContent = group.title;
+        const meta = document.createElement('div');
+        meta.className = 'export-score-meta';
+        meta.textContent = `${group.composer} · Row ${group.rowNum}`;
+        header.append(title, meta);
+        scoreGroup.appendChild(header);
+
+        group.changes.forEach(change => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'export-change-row';
+            button.setAttribute('aria-label', `Revert ${change.field} change for ${group.title}, row ${group.rowNum}`);
+            button.addEventListener('click', () => this.revertExportChange(group.rowId, change.field, group.title));
+
+            const field = document.createElement('span');
+            field.className = 'export-change-field';
+            field.textContent = change.field;
+            const values = document.createElement('span');
+            values.className = 'export-change-values';
+            const oldValue = document.createElement('span');
+            oldValue.className = 'export-change-old';
+            oldValue.textContent = change.oldValue || '(empty)';
+            const arrow = document.createElement('span');
+            arrow.className = 'export-change-arrow';
+            arrow.setAttribute('aria-hidden', 'true');
+            arrow.textContent = '→';
+            const newValue = document.createElement('span');
+            newValue.className = 'export-change-new';
+            newValue.textContent = change.newValue || '(empty)';
+            values.append(oldValue, arrow, newValue);
+
+            const action = document.createElement('span');
+            action.className = 'export-change-action';
+            action.innerHTML = '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7a4 4 0 0 1 0 8H7"/><path d="M6 4L3 7l3 3"/></svg><span>Revert</span>';
+            button.append(field, values, action);
+            scoreGroup.appendChild(button);
+        });
+
+        return scoreGroup;
+    },
+
+    showMoreExportChanges() {
+        this._exportVisibleGroupCount = (this._exportVisibleGroupCount || 50) + 50;
+        this.renderExportSummary({ preserveScroll: true });
+    },
+
+    revertExportChange(rowId, field, title) {
+        const row = this.dataById.get(rowId);
+        const original = this.originalData.find(item => item.__id === rowId);
+        if (!row || !original || String(row[field] ?? '') === String(original[field] ?? '')) return;
+
+        this.pushUndo(`Revert ${field} change`, {
+            type: 'export-revert',
+            field,
+            title
+        });
+        row[field] = String(original[field] ?? '');
+        this.analyzeData();
+        this.updateStats();
+        this.renderTable();
+        this.updateWorkflowSteps?.('return');
+        this.renderExportSummary({ preserveScroll: true });
+    },
+
+    renderExportUndoBanner() {
+        const banner = document.getElementById('exportUndoBanner');
+        const message = document.getElementById('exportUndoMessage');
+        if (!banner || !message) return;
+        const lastUndo = this.undoStack[this.undoStack.length - 1];
+        const context = lastUndo?.context;
+        const visible = context?.type === 'export-revert';
+        banner.classList.toggle('hidden', !visible);
+        if (visible) message.textContent = `${context.field} change for ${context.title} reverted.`;
+    },
+
+    undoExportRevert() {
+        const lastUndo = this.undoStack[this.undoStack.length - 1];
+        if (lastUndo?.context?.type !== 'export-revert') return;
+        this.undo();
     },
 
     createExportArtifact() {

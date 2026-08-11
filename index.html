@@ -419,15 +419,16 @@
 
     <!-- Export Summary Modal -->
     <div id="exportModal" class="modal">
-        <div class="modal-content" style="max-width: 620px;">
+        <div class="modal-content export-modal-content">
             <h3 class="modal-title">Export Summary</h3>
             <p class="modal-desc" id="exportSummaryDesc"></p>
-            <div id="exportSummaryList" class="extraction-results" style="max-height: 260px;"></div>
-            <button class="diff-toggle" id="diffToggle" onclick="app.toggleDiffView()" style="display:none;">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
-                <span id="diffToggleLabel">Show all changes</span>
-            </button>
-            <div id="diffContainer" class="diff-list" style="display:none;"></div>
+            <div id="exportFieldBreakdown" class="export-field-breakdown" aria-label="Changes by field"></div>
+            <p id="exportRevertInstruction" class="export-revert-instruction">Tap any change to revert it.</p>
+            <div id="exportUndoBanner" class="export-undo-banner hidden" role="status">
+                <span id="exportUndoMessage"></span>
+                <button type="button" onclick="app.undoExportRevert()">Undo</button>
+            </div>
+            <div id="exportSummaryList" class="export-change-list"></div>
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="app.closeExportModal()">Cancel</button>
                 <button class="btn btn-secondary btn-icon" onclick="app.downloadExport()">

@@ -617,12 +617,13 @@ const app = {
         }
     },
 
-    pushUndo(label) {
+    pushUndo(label, context = null) {
         this.undoStack.push({
             data: JSON.parse(JSON.stringify(this.data)),
             modifiedCount: this.modifiedCount,
             changeLog: JSON.parse(JSON.stringify(this.changeLog)),
-            label
+            label,
+            context
         });
         if (this.undoStack.length > 50) this.undoStack.shift();
         this.updateUndoButton();
@@ -630,6 +631,7 @@ const app = {
 
     undo() {
         if (this.undoStack.length === 0) return;
+        const exportModalOpen = document.getElementById('exportModal')?.classList.contains('active');
         const snapshot = this.undoStack.pop();
         this.data = snapshot.data;
         this.dataById = new Map(this.data.map(row => [row.__id, row]));
@@ -638,6 +640,10 @@ const app = {
         this.analyzeData();
         this.renderAll();
         this.updateUndoButton();
+        if (exportModalOpen) {
+            this.updateWorkflowSteps?.('return');
+            this.renderExportSummary?.({ preserveScroll: true });
+        }
         this.showNotification(`Undid "${snapshot.label}"`);
     },
 
@@ -706,48 +712,6 @@ const app = {
 
 
 
-
-    toggleDiffView() {
-        const toggle = document.getElementById('diffToggle');
-        const container = document.getElementById('diffContainer');
-
-        if (container.style.display === 'none') {
-            toggle.classList.add('expanded');
-            document.getElementById('diffToggleLabel').textContent = `Hide changes (${this._exportDiffs.length})`;
-
-            const maxShow = 200;
-            const diffs = this._exportDiffs;
-            const toShow = diffs.slice(0, maxShow);
-
-            let html = '';
-            toShow.forEach(d => {
-                const oldEsc = this.escapeHtml(d.oldVal || '');
-                const newEsc = this.escapeHtml(d.newVal || '');
-                html += `<div class="diff-row">
-                    <div class="diff-row-header">
-                        <span class="diff-row-num">Row ${d.rowNum}</span>
-                        <span class="diff-field">${this.escapeHtml(d.field)}</span>
-                    </div>
-                    <span class="diff-old">${oldEsc || '(empty)'}</span>
-                    <span class="diff-arrow">&rarr;</span>
-                    <span class="diff-new">${newEsc || '(empty)'}</span>
-                </div>`;
-            });
-
-            if (diffs.length > maxShow) {
-                html += `<div class="diff-row" style="text-align:center;color:var(--color-text-muted);">
-                    &hellip; and ${diffs.length - maxShow} more changes
-                </div>`;
-            }
-
-            container.innerHTML = html;
-            container.style.display = '';
-        } else {
-            toggle.classList.remove('expanded');
-            document.getElementById('diffToggleLabel').textContent = `Show all changes (${this._exportDiffs.length})`;
-            container.style.display = 'none';
-        }
-    },
 
     toggleTheme() {
         const html = document.documentElement;
