@@ -424,6 +424,12 @@
             <p class="modal-desc" id="exportSummaryDesc"></p>
             <div id="exportFieldBreakdown" class="export-field-breakdown" aria-label="Changes by field"></div>
             <p id="exportRevertInstruction" class="export-revert-instruction">Tap a change to switch which value will export.</p>
+            <div id="exportSearchWrapper" class="search-wrapper export-search-wrapper hidden">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg>
+                <input type="search" id="exportSearchInput" class="search-input" placeholder="Search changed scores" aria-label="Search Export Summary" oninput="app.filterExportSummary(this.value)">
+                <button id="exportSearchClear" class="search-clear hidden" onclick="app.clearExportSearch()" aria-label="Clear Export Summary search">&times;</button>
+            </div>
+            <div id="exportSearchResults" class="export-search-results hidden" aria-live="polite"></div>
             <div id="exportSummaryList" class="export-change-list"></div>
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="app.closeExportModal()">Cancel</button>

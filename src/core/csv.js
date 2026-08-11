@@ -189,6 +189,8 @@ export const csvCore = {
     exportCSV() {
         const modal = document.getElementById('exportModal');
         this._exportVisibleGroupCount = 50;
+        this.exportSearchQuery = '';
+        this.exportExpandedRows = new Set();
         this.renderExportSummary();
 
         const artifact = this.createExportArtifact();
@@ -228,6 +230,10 @@ export const csvCore = {
 
         const breakdown = document.getElementById('exportFieldBreakdown');
         const instruction = document.getElementById('exportRevertInstruction');
+        const searchWrapper = document.getElementById('exportSearchWrapper');
+        const searchInput = document.getElementById('exportSearchInput');
+        const searchClear = document.getElementById('exportSearchClear');
+        const searchResults = document.getElementById('exportSearchResults');
         if (breakdown) {
             breakdown.textContent = '';
             Object.entries(summary.fieldCounts).forEach(([field, count]) => {
@@ -239,9 +245,13 @@ export const csvCore = {
             breakdown.classList.toggle('hidden', summary.changedFieldCount === 0);
         }
         instruction?.classList.toggle('hidden', summary.candidateCount === 0);
+        searchWrapper?.classList.toggle('hidden', summary.candidateCount === 0);
+        if (searchInput) searchInput.value = this.exportSearchQuery || '';
+        searchClear?.classList.toggle('hidden', !this.exportSearchQuery);
 
         list.textContent = '';
         if (summary.candidateCount === 0) {
+            searchResults?.classList.add('hidden');
             const empty = document.createElement('div');
             empty.className = 'export-empty-state';
             empty.textContent = 'Your export currently matches the imported library.';
@@ -249,16 +259,35 @@ export const csvCore = {
             return;
         }
 
+        const query = (this.exportSearchQuery || '').trim().toLowerCase();
+        const filteredGroups = query
+            ? summary.groups.filter(group => this.exportGroupMatchesSearch(group, query))
+            : summary.groups;
+        if (searchResults) {
+            searchResults.classList.toggle('hidden', !query);
+            if (query) {
+                searchResults.textContent = `Showing ${filteredGroups.length} of ${summary.groups.length} score${summary.groups.length !== 1 ? 's' : ''}`;
+            }
+        }
+
+        if (filteredGroups.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'export-empty-state';
+            empty.textContent = `No changed scores match “${this.exportSearchQuery.trim()}”.`;
+            list.appendChild(empty);
+            return;
+        }
+
         const visibleCount = this._exportVisibleGroupCount || 50;
-        summary.groups.slice(0, visibleCount).forEach(group => {
+        filteredGroups.slice(0, visibleCount).forEach(group => {
             list.appendChild(this.createExportScoreGroup(group));
         });
 
-        if (summary.groups.length > visibleCount) {
+        if (filteredGroups.length > visibleCount) {
             const moreButton = document.createElement('button');
             moreButton.type = 'button';
             moreButton.className = 'export-show-more';
-            const remaining = summary.groups.length - visibleCount;
+            const remaining = filteredGroups.length - visibleCount;
             moreButton.textContent = `Show ${Math.min(50, remaining)} more score${remaining === 1 ? '' : 's'}`;
             moreButton.addEventListener('click', () => this.showMoreExportChanges());
             list.appendChild(moreButton);
@@ -270,17 +299,32 @@ export const csvCore = {
     createExportScoreGroup(group) {
         const scoreGroup = document.createElement('section');
         scoreGroup.className = 'export-score-group';
+        scoreGroup.dataset.exportRowId = group.rowId;
 
-        const header = document.createElement('div');
+        const expanded = this.exportExpandedRows?.has(group.rowId) || false;
+        const header = document.createElement('button');
+        header.type = 'button';
         header.className = 'export-score-header';
+        header.setAttribute('aria-expanded', String(expanded));
+        header.setAttribute('aria-controls', `exportScoreDetails-${group.rowId}`);
+        header.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} details for ${group.title}, row ${group.rowNum}`);
+        header.addEventListener('click', () => this.toggleExportScoreDetails(group.rowId));
+        const heading = document.createElement('span');
+        heading.className = 'export-score-heading';
         const title = document.createElement('div');
         title.className = 'export-score-title';
         title.textContent = group.title;
         const meta = document.createElement('div');
         meta.className = 'export-score-meta';
         meta.textContent = `${group.composer} · Row ${group.rowNum}`;
-        header.append(title, meta);
+        heading.append(title, meta);
+        const detailsAction = document.createElement('span');
+        detailsAction.className = 'export-details-action';
+        detailsAction.innerHTML = `<span>${expanded ? 'Hide details' : 'Details'}</span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5l4 4 4-4"/></svg>`;
+        header.append(heading, detailsAction);
         scoreGroup.appendChild(header);
+
+        if (expanded) scoreGroup.appendChild(this.createExportScoreDetails(group));
 
         group.changes.forEach(change => {
             const button = document.createElement('button');
@@ -320,6 +364,68 @@ export const csvCore = {
         });
 
         return scoreGroup;
+    },
+
+    createExportScoreDetails(group) {
+        const details = document.createElement('div');
+        details.id = `exportScoreDetails-${group.rowId}`;
+        details.className = 'export-score-details';
+        const heading = document.createElement('div');
+        heading.className = 'export-details-heading';
+        heading.textContent = 'Current export values';
+        details.appendChild(heading);
+
+        const grid = document.createElement('dl');
+        grid.className = 'export-details-grid';
+        [
+            ['Title', group.details.title],
+            ['Composer', group.details.composer],
+            ['Genre', group.details.genre],
+            ['Tags', group.details.tags]
+        ].forEach(([label, value]) => {
+            const term = document.createElement('dt');
+            term.textContent = label;
+            const description = document.createElement('dd');
+            description.textContent = value === null ? 'Not in CSV' : (value || '(empty)');
+            grid.append(term, description);
+        });
+        details.appendChild(grid);
+        return details;
+    },
+
+    toggleExportScoreDetails(rowId) {
+        if (!(this.exportExpandedRows instanceof Set)) this.exportExpandedRows = new Set();
+        if (this.exportExpandedRows.has(rowId)) {
+            this.exportExpandedRows.delete(rowId);
+        } else {
+            this.exportExpandedRows.add(rowId);
+        }
+        this.renderExportSummary({ preserveScroll: true });
+        requestAnimationFrame(() => {
+            document.querySelector(`[data-export-row-id="${rowId}"] .export-score-header`)?.focus();
+        });
+    },
+
+    exportGroupMatchesSearch(group, query) {
+        const details = Object.values(group.details || {}).filter(value => value !== null);
+        const changes = group.changes.flatMap(change => [change.field, change.oldValue, change.newValue]);
+        return [group.title, group.composer, `row ${group.rowNum}`, ...details, ...changes]
+            .join(' ')
+            .toLowerCase()
+            .includes(query);
+    },
+
+    filterExportSummary(query) {
+        this.exportSearchQuery = query || '';
+        this._exportVisibleGroupCount = 50;
+        this.renderExportSummary({ preserveScroll: false });
+    },
+
+    clearExportSearch() {
+        this.exportSearchQuery = '';
+        this._exportVisibleGroupCount = 50;
+        this.renderExportSummary({ preserveScroll: false });
+        document.getElementById('exportSearchInput')?.focus();
     },
 
     showMoreExportChanges() {

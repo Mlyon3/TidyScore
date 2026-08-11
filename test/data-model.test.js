@@ -76,13 +76,13 @@ describe('export diff summary', () => {
         });
     });
 
-    it('falls back to the original title, then filename, for score identity', () => {
+    it('falls back to the original title without exposing filenames', () => {
         const renamed = [{ ...original[0], Title: '' }];
         const filenameOnlyOriginal = [{ ...original[1], Filename: 'fallback.pdf' }];
         const filenameOnlyCurrent = [{ ...filenameOnlyOriginal[0], Genre: 'Romantic' }];
 
         expect(buildExportDiffSummary(renamed, [original[0]], headers).groups[0].title).toBe('Prelude');
-        expect(buildExportDiffSummary(filenameOnlyCurrent, filenameOnlyOriginal, headers).groups[0].title).toBe('fallback.pdf');
+        expect(buildExportDiffSummary(filenameOnlyCurrent, filenameOnlyOriginal, headers).groups[0].title).toBe('Untitled score');
     });
 
     it('retains reverted candidates and reconciles later external edits', () => {
@@ -92,6 +92,13 @@ describe('export diff summary', () => {
         let summary = buildExportReviewSummary(data, [original[0]], headers, candidates);
         expect(summary.changedFieldCount).toBe(2);
         expect(summary.revertedCount).toBe(0);
+        expect(summary.groups[0].details).toEqual({
+            title: 'Prelude',
+            composer: 'Bach',
+            genre: 'Baroque',
+            tags: 'Favorite, Recital'
+        });
+        expect(summary.groups[0].details).not.toHaveProperty('filename');
 
         data[0].Genre = '';
         summary = buildExportReviewSummary(data, [original[0]], headers, candidates);

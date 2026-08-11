@@ -127,11 +127,21 @@ test('export summary identifies scores and toggles Genre and Tags independently'
     await expect(page.locator('#exportFieldBreakdown')).toContainText('Tags 1');
     await expect(page.locator('.export-score-title')).not.toBeEmpty();
     await expect(page.locator('.export-score-meta')).toContainText('Row 1');
+
+    const detailsButton = page.getByRole('button', { name: /Show details for/ });
+    await detailsButton.click();
+    await expect(page.getByRole('button', { name: /Hide details for/ })).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.export-score-details')).toContainText('Test Genre');
+    await expect(page.locator('.export-score-details')).toContainText('Favorite, Recital');
+    await expect(page.locator('.export-score-details')).not.toContainText('Filename');
+
     const genreToggle = page.getByRole('button', { name: /Use original Genre value for/ });
     const tagsToggle = page.getByRole('button', { name: /Use original Tags value for/ });
     await expect(genreToggle).toHaveAttribute('aria-pressed', 'true');
     await genreToggle.click();
     await expect(page.locator('#exportSummaryDesc')).toContainText('1 change selected across 1 score. 1 using original');
+    await expect(page.getByRole('button', { name: /Hide details for/ })).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.export-score-details')).not.toContainText('Test Genre');
     await expect(page.getByRole('button', { name: /Use changed Genre value for/ })).toHaveAttribute('aria-pressed', 'false');
     await expect(page.getByRole('button', { name: /Use changed Genre value for/ })).toContainText('Using original');
     await expect(tagsToggle).toHaveCount(1);
@@ -139,6 +149,7 @@ test('export summary identifies scores and toggles Genre and Tags independently'
     await page.keyboard.press('Control+z');
     await expect(page.locator('#exportSummaryDesc')).toContainText('2 changes selected across 1 score');
     await expect(page.getByRole('button', { name: /Use original Genre value for/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.export-score-details')).toContainText('Test Genre');
 
     await page.getByRole('button', { name: /Use original Genre value for/ }).click();
     await page.getByRole('button', { name: /Use original Tags value for/ }).click();
@@ -171,6 +182,15 @@ test('export summary reveals large change sets incrementally', async ({ page }) 
     });
 
     await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('.export-score-group')).toHaveCount(50);
+
+    await page.getByLabel('Search Export Summary').fill('Score 51');
+    await expect(page.locator('#exportSearchResults')).toHaveText('Showing 1 of 51 scores');
+    await expect(page.locator('.export-score-group')).toHaveCount(1);
+    await expect(page.locator('.export-score-title')).toHaveText('Score 51');
+
+    await page.getByRole('button', { name: 'Clear Export Summary search' }).click();
+    await expect(page.locator('#exportSearchResults')).toBeHidden();
     await expect(page.locator('.export-score-group')).toHaveCount(50);
     await page.getByRole('button', { name: 'Show 1 more score' }).click();
     await expect(page.locator('.export-score-group')).toHaveCount(51);

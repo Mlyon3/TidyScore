@@ -55,15 +55,13 @@ export function buildExportDiffSummary(data, originalData, headers) {
 
         const currentTitle = fields.title ? String(row[fields.title] ?? '').trim() : '';
         const originalTitle = fields.title ? String(original[fields.title] ?? '').trim() : '';
-        const currentFilename = fields.filename ? String(row[fields.filename] ?? '').trim() : '';
-        const originalFilename = fields.filename ? String(original[fields.filename] ?? '').trim() : '';
         const currentComposer = fields.composer ? String(row[fields.composer] ?? '').trim() : '';
         const originalComposer = fields.composer ? String(original[fields.composer] ?? '').trim() : '';
 
         groups.push({
             rowId: row.__id,
             rowNum: Number.isInteger(row.__id) ? row.__id + 1 : index + 1,
-            title: currentTitle || originalTitle || currentFilename || originalFilename || 'Untitled score',
+            title: currentTitle || originalTitle || 'Untitled score',
             composer: currentComposer || originalComposer || 'Composer unknown',
             changes
         });
@@ -163,16 +161,20 @@ export function buildExportReviewSummary(data, originalData, headers, candidates
 
         const currentTitle = fields.title ? String(row[fields.title] ?? '').trim() : '';
         const originalTitle = fields.title ? String(original[fields.title] ?? '').trim() : '';
-        const currentFilename = fields.filename ? String(row[fields.filename] ?? '').trim() : '';
-        const originalFilename = fields.filename ? String(original[fields.filename] ?? '').trim() : '';
         const currentComposer = fields.composer ? String(row[fields.composer] ?? '').trim() : '';
         const originalComposer = fields.composer ? String(original[fields.composer] ?? '').trim() : '';
 
         groups.push({
             rowId: row.__id,
             rowNum: Number.isInteger(row.__id) ? row.__id + 1 : index + 1,
-            title: currentTitle || originalTitle || currentFilename || originalFilename || 'Untitled score',
+            title: currentTitle || originalTitle || 'Untitled score',
             composer: currentComposer || originalComposer || 'Composer unknown',
+            details: {
+                title: fields.title ? String(row[fields.title] ?? '') : null,
+                composer: fields.composer ? String(row[fields.composer] ?? '') : null,
+                genre: fields.genre ? String(row[fields.genre] ?? '') : null,
+                tags: fields.tags ? String(row[fields.tags] ?? '') : null
+            },
             changes
         });
     });
