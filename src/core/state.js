@@ -17,4 +17,8 @@ export const baseState = {
     _notificationQueue: [],
     _notificationActive: false,
     scanResults: null,
+    sourceFileName: 'forscore-library.csv',
+    recoveryEnabled: false,
+    recoveryPreferenceKey: 'tidyscore-recovery-enabled',
+    savedSession: null,
 };

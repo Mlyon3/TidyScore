@@ -387,8 +387,7 @@ export const modalUi = {
         this._showPreview('Find & Replace Preview', `Found <strong>${changes.length}</strong> match${changes.length !== 1 ? 'es' : ''}.`, changes, 'Find & replace edits', 'Find & Replace');
     },
 
-    quickClean() {
-        const targetIndices = this.getTargetIds();
+    getQuickCleanChanges(targetIndices = this.getTargetIds()) {
         const changes = [];
 
         targetIndices.forEach(idx => {
@@ -445,6 +444,12 @@ export const modalUi = {
                 });
             });
         });
+
+        return changes;
+    },
+
+    quickClean() {
+        const changes = this.getQuickCleanChanges();
 
         if (changes.length === 0) {
             this.showNotification('Already clean! No issues found.');
@@ -557,6 +562,7 @@ export const modalUi = {
 
     closeExportModal() {
         document.getElementById('exportModal').classList.remove('active');
+        if (this.data.length > 0) this.updateWorkflowSteps?.('review');
     },
 
     reset() {
@@ -577,10 +583,13 @@ export const modalUi = {
         this.resetClickTime = null;
         
         document.getElementById('uploadSection').classList.remove('hidden');
+        document.getElementById('importIntro')?.classList.remove('hidden');
         document.getElementById('samplePrompt').classList.remove('hidden');
         document.getElementById('helpLink').classList.remove('hidden');
         document.getElementById('privacyNote').classList.remove('hidden');
         document.getElementById('statsSection').classList.add('hidden');
         document.getElementById('tableSection').classList.add('hidden');
+        this.updateWorkflowSteps?.('import');
+        this.deleteSavedSession?.({ quiet: true, preservePreference: true });
     }
 };

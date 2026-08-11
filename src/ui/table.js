@@ -7,15 +7,30 @@ export const tableUi = {
     },
 
     renderAll() {
+        document.getElementById('importIntro')?.classList.add('hidden');
         document.getElementById('uploadSection').classList.add('hidden');
         document.getElementById('samplePrompt').classList.add('hidden');
         document.getElementById('helpLink').classList.add('hidden');
         document.getElementById('privacyNote').classList.add('hidden');
         document.getElementById('statsSection').classList.remove('hidden');
         document.getElementById('tableSection').classList.remove('hidden');
+        this.updateWorkflowSteps('review');
+        this.updateRecoveryUi?.();
 
         this.updateStats();
         this.renderTable();
+        this.scheduleSessionSave?.();
+    },
+
+    updateWorkflowSteps(activeStep = 'review') {
+        const order = ['import', 'review', 'edit', 'return'];
+        const activeIndex = order.indexOf(activeStep);
+        order.forEach((step, index) => {
+            const el = document.getElementById(`workflowStep${step[0].toUpperCase()}${step.slice(1)}`);
+            if (!el) return;
+            el.classList.toggle('active', index === activeIndex);
+            el.classList.toggle('complete', index < activeIndex);
+        });
     },
 
     updateStats() {
@@ -29,8 +44,11 @@ export const tableUi = {
         document.getElementById('totalScores').textContent = this.data.length;
         document.getElementById('uniqueComposers').textContent = composers.size;
         document.getElementById('modifiedCount').textContent = this.modifiedCount;
+        const exportModifiedCount = document.getElementById('exportModifiedCount');
+        if (exportModifiedCount) exportModifiedCount.textContent = this.modifiedCount;
         this.scanResults = this.computeScanResults();
         this.updateScanResults();
+        this.scheduleSessionSave?.();
     },
 
     renderTable() {

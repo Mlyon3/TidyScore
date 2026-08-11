@@ -5,6 +5,7 @@ import { composerTools } from './tools/composer-tools.js';
 import { tagTools } from './tools/tag-tools.js';
 import { duplicateTools } from './tools/duplicate-tools.js';
 import { accessibilityUi } from './ui/accessibility.js';
+import { sessionCore } from './core/session.js';
 
 import { SETTINGS_VERSION, DEFAULT_SETTINGS } from './data/settings-defaults.js';
 import { baseState } from './core/state.js';
@@ -494,8 +495,10 @@ const app = {
 
     init() {
         this.loadSettings();
+        this.loadRecoveryPreference();
         this.updateComposerToolDescriptions();
         this.initializeAccessibility();
+        this.checkSavedSession();
 
         // Restore saved theme
         try {
@@ -538,6 +541,10 @@ const app = {
             clearBtn.classList.toggle('hidden', !e.target.value);
         });
 
+        document.getElementById('libraryEditor')?.addEventListener('toggle', event => {
+            if (this.data.length > 0) this.updateWorkflowSteps(event.currentTarget.open ? 'edit' : 'review');
+        });
+
         // Warn before closing with unsaved changes
         window.addEventListener('beforeunload', (e) => {
             if (this.refreshModificationState() > 0) { e.preventDefault(); }
@@ -569,6 +576,12 @@ const app = {
                 }
             }
         });
+
+        if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(`${import.meta.env.BASE_URL}service-worker.js`).catch(() => {});
+            });
+        }
     },
 
 
@@ -752,7 +765,7 @@ const app = {
 
 
 export function buildApp() {
-    return Object.assign(app, csvCore, tableUi, modalUi, composerTools, tagTools, duplicateTools, accessibilityUi);
+    return Object.assign(app, csvCore, tableUi, modalUi, composerTools, tagTools, duplicateTools, accessibilityUi, sessionCore);
 }
 
 const composedApp = buildApp();

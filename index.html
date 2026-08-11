@@ -10,6 +10,12 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="TidyScore">
     <meta name="twitter:description" content="Clean up your forScore library. Fix composer names, standardize formatting, and tidy metadata — all in your browser.">
+    <meta name="theme-color" content="#121a24">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/tidyscore-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/tidyscore-192.png">
     <title>TidyScore</title>
     <link rel="stylesheet" href="src/styles/index.css">
 </head>
@@ -31,13 +37,6 @@
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <button class="settings-btn" onclick="app.openSettingsModal()" aria-label="Open settings" aria-haspopup="dialog" aria-controls="settingsModal">
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="10" cy="10" r="3"/>
-                        <path d="M16.6 12a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V16a1.2 1.2 0 0 1-1.2 1.2h-.2A1.2 1.2 0 0 1 10.7 16v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H6a1.2 1.2 0 0 1-1.2-1.2v-.2A1.2 1.2 0 0 1 6 9.1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2h0a1 1 0 0 0 .6-.9V4a1.2 1.2 0 0 1 1.2-1.2h.2A1.2 1.2 0 0 1 13.1 4v.2a1 1 0 0 0 .6.9h0a1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l.1.1a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1v0a1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 19 9.3v.2a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.6Z"/>
-                    </svg>
-                    <span>Settings</span>
-                </button>
                 <button class="help-btn" onclick="app.showHelp()" aria-label="How it works">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="10" cy="10" r="8"/>
@@ -59,6 +58,30 @@
     </header>
 
     <div class="container">
+        <nav class="workflow-steps" aria-label="TidyScore workflow">
+            <div class="workflow-step active" id="workflowStepImport"><span>1</span> Import</div>
+            <div class="workflow-step" id="workflowStepReview"><span>2</span> Review</div>
+            <div class="workflow-step" id="workflowStepEdit"><span>3</span> Edit</div>
+            <div class="workflow-step" id="workflowStepReturn"><span>4</span> Return to forScore</div>
+        </nav>
+
+        <div id="recoveryPrompt" class="recovery-prompt hidden" role="status">
+            <div>
+                <strong>Continue your previous local session?</strong>
+                <span id="recoveryPromptDetail">A library saved on this iPad is available.</span>
+            </div>
+            <div class="recovery-actions">
+                <button class="btn btn-secondary btn-sm" onclick="app.deleteSavedSession()">Delete</button>
+                <button class="btn btn-primary btn-sm" onclick="app.restoreSavedSession()">Continue</button>
+            </div>
+        </div>
+
+        <section id="importIntro" class="import-intro">
+            <div class="eyebrow">Step 1 · Import</div>
+            <h1>Get your library CSV from forScore</h1>
+            <p>In forScore, open <strong>Tools → Backups</strong>, tap the <strong>scrolled-page icon</strong>, then choose <strong>Export</strong>. Save the CSV to Files and select it below.</p>
+            <button class="text-button" onclick="app.showHelp()">See illustrated step-by-step instructions</button>
+        </section>
         <div id="uploadSection" class="upload-section">
             <div class="upload-icon">
                 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -68,15 +91,15 @@
                     <path d="M36 28l-4-4-4 4M32 24v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </div>
-            <div class="upload-text">Drop your forScore CSV file here or click to browse</div>
-            <div class="upload-hint">Not sure where your CSV file is? Click 'How Does this Work' below.</div>
+            <div class="upload-text">Choose your forScore CSV</div>
+            <div class="upload-hint">Tap to browse Files, or drag the CSV here in Split View.</div>
             <input type="file" id="fileInput" accept=".csv">
         </div>
         <div id="samplePrompt" class="sample-prompt">
-            or <a href="#" class="sample-link" onclick="event.preventDefault(); app.loadSample();">try with sample data</a> to explore the tools
+            No CSV handy? <a href="#" class="sample-link" onclick="event.preventDefault(); app.loadSample();">Try a sample library</a>
         </div>
         <div id="helpLink" class="help-link">
-            <a href="#" onclick="event.preventDefault(); app.showHelp();">How does this work?</a> &mdash; step-by-step setup guide
+            <a href="#" onclick="event.preventDefault(); app.showHelp();">How does the forScore round trip work?</a>
         </div>
         <div id="privacyNote" class="privacy-note">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="8" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
@@ -118,46 +141,21 @@
             </div>
         </div>
 
-        <div id="tableSection" class="table-section hidden">
-            <div class="section-header">
-                <h2>Your Library</h2>
-                <span id="scopeIndicator" class="scope-indicator"></span>
-            </div>
-            
-            <div id="bulkControls" class="bulk-controls">
-                <span class="bulk-label"><span id="selectedCount">0</span> selected</span>
-                <button class="btn btn-secondary btn-sm" onclick="app.clearSelection()">Clear</button>
-            </div>
-
-            <div class="search-wrapper">
-                <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                    <circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/>
-                </svg>
-                <input type="text" id="searchInput" class="search-input" placeholder="Search...">
-                <button id="searchClear" class="search-clear hidden" onclick="app.clearSearch()">&times;</button>
-            </div>
-            <span id="rowCountIndicator" class="row-count-indicator" aria-live="polite"></span>
-
-            <div class="mobile-sort">
-                <label for="mobileSortSelect">Sort by:</label>
-                <select id="mobileSortSelect" onchange="app.mobileSortChanged(this.value)">
-                    <option value="">Default order</option>
-                    <option value="title-asc">Title A-Z</option>
-                    <option value="title-desc">Title Z-A</option>
-                    <option value="composer-asc">Composer A-Z</option>
-                    <option value="composer-desc">Composer Z-A</option>
-                    <option value="genre-asc">Genre A-Z</option>
-                    <option value="genre-desc">Genre Z-A</option>
-                    <option value="tags-asc">Tags A-Z</option>
-                    <option value="tags-desc">Tags Z-A</option>
-                </select>
-            </div>
-
-            <div class="scan-results-panel" aria-label="Scan results">
+        <main id="tableSection" class="table-section hidden">
+            <section class="review-section" aria-labelledby="reviewHeading">
+                <div class="section-header">
+                    <div>
+                        <div class="eyebrow">Step 2 · Review</div>
+                        <h2 id="reviewHeading">Recommended fixes</h2>
+                    </div>
+                    <span id="scopeIndicator" class="scope-indicator"></span>
+                </div>
+                <p class="section-intro">TidyScore found these opportunities. Every change opens a preview so you stay in control.</p>
+                <div class="scan-results-panel" aria-label="Recommended fixes">
                 <div class="scan-results-header">
                     <div>
-                        <div class="scan-results-title">Scan results</div>
-                        <div class="scan-results-subtitle">Start with these quick fixes, then use advanced tools below.</div>
+                        <div class="scan-results-title">Your cleanup checklist</div>
+                        <div class="scan-results-subtitle">Counts update as you apply or undo changes.</div>
                     </div>
                 </div>
                 <div class="scan-results-list">
@@ -176,7 +174,7 @@
                             <span id="scanCountVariantComposer" class="scan-count-badge">0</span>
                             <div class="scan-result-copy">
                                 <div class="scan-result-label">Inconsistent composer formatting</div>
-                                <div class="scan-result-desc">Finds names that can be standardized to a consistent composer format.</div>
+                                <div id="standardizeToolDesc" class="scan-result-desc">Applies Last, First name format consistently.</div>
                             </div>
                         </div>
                         <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('composerFormatting')">Standardize composer names</button>
@@ -191,29 +189,27 @@
                         </div>
                         <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('imslpTitles')">Fix titles</button>
                     </div>
+                    <div class="scan-result-row">
+                        <div class="scan-result-meta">
+                            <span id="scanCountQuickClean" class="scan-count-badge">0</span>
+                            <div class="scan-result-copy">
+                                <div class="scan-result-label">Minor formatting cleanup</div>
+                                <div class="scan-result-desc">Trims whitespace and tidies commas and tags.</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm scan-fix-btn" onclick="app.runScanFix('quickClean')">Review cleanup</button>
+                    </div>
                 </div>
             </div>
+            </section>
 
-            <div class="table-controls">
-                <button class="btn btn-secondary btn-tool" onclick="app.smartExtract()">
-                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 14L14 2"/><circle cx="5" cy="2" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="5" r="0.7" fill="currentColor" stroke="none"/></svg>
-                    <span class="btn-tool-label">Smart Extract</span>
-                    <span class="btn-tool-desc">Find and correct incomplete composer names</span>
-                </button>
-                <button class="btn btn-secondary btn-tool" onclick="app.standardizeComposers()">
-                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3h10M3 8h7M3 13h4"/><path d="M13 8v6l2-2M13 14l-2-2"/></svg>
-                    <span class="btn-tool-label">Standardize</span>
-                    <span id="standardizeToolDesc" class="btn-tool-desc">Apply Last, First name format to composers</span>
-                </button>
+            <details id="advancedTools" class="advanced-tools">
+                <summary>Advanced tools <span>Find, replace, tag, and inspect special cases</span></summary>
+                <div class="table-controls">
                 <button class="btn btn-secondary btn-tool" onclick="app.findReplace()">
                     <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><path d="M9 9l4 4"/></svg>
                     <span class="btn-tool-label">Find & Replace</span>
                     <span class="btn-tool-desc">Search and edit in bulk</span>
-                </button>
-                <button class="btn btn-secondary btn-tool" onclick="app.cleanImslpTitles()">
-                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14l3-6h4l3 6H3zM8 8V2M5 5h6"/></svg>
-                    <span class="btn-tool-label">Clean IMSLP</span>
-                    <span class="btn-tool-desc">Simplify imported titles</span>
                 </button>
                 <div class="btn-tool-wrapper">
                     <button id="genreTagMenuTrigger" class="btn btn-secondary btn-tool" onclick="app.toggleGenreTagMenu(event)" aria-expanded="false" aria-controls="genreTagDropdown">
@@ -228,13 +224,6 @@
                         </svg>
                     </button>
                     <div id="genreTagDropdown" class="tool-dropdown">
-                        <button class="tool-dropdown-item" onclick="app.quickClean()">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z"/><path d="M11 8l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z"/></svg>
-                            <div>
-                                <div>Quick Clean</div>
-                                <div class="tool-dropdown-item-desc">Minor formatting cleanup</div>
-                            </div>
-                        </button>
                         <button class="tool-dropdown-item" onclick="app.suggestGenres()">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M2 7h8M2 11h5"/><circle cx="12" cy="10" r="3"/><path d="M12 9v2M11 10h2"/></svg>
                             <div>
@@ -272,9 +261,31 @@
                         </button>
                     </div>
                 </div>
+                <button class="btn btn-secondary btn-tool" onclick="app.openSettingsModal()">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v3M10 15v3M2 10h3M15 10h3"/></svg>
+                    <span class="btn-tool-label">Settings</span>
+                    <span class="btn-tool-desc">Composer formats and aliases</span>
+                </button>
             </div>
-            <div class="toolbar-helper-hint">Suggested flow: <strong>Smart Extract</strong> → <strong>Standardize</strong> → <strong>Optional cleanup</strong>.</div>
+            </details>
 
+            <details id="libraryEditor" class="library-editor">
+                <summary><span><span class="eyebrow">Step 3 · Edit</span><strong>Inspect and edit your library</strong></span><span id="rowCountIndicator" class="row-count-indicator" aria-live="polite"></span></summary>
+                <div id="bulkControls" class="bulk-controls">
+                    <span class="bulk-label"><span id="selectedCount">0</span> selected</span>
+                    <button class="btn btn-secondary btn-sm" onclick="app.clearSelection()">Clear</button>
+                </div>
+                <div class="search-wrapper">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search titles, composers, genres, or tags">
+                    <button id="searchClear" class="search-clear hidden" onclick="app.clearSearch()" aria-label="Clear search">&times;</button>
+                </div>
+                <div class="mobile-sort">
+                    <label for="mobileSortSelect">Sort by:</label>
+                    <select id="mobileSortSelect" onchange="app.mobileSortChanged(this.value)">
+                        <option value="">Default order</option><option value="title-asc">Title A-Z</option><option value="title-desc">Title Z-A</option><option value="composer-asc">Composer A-Z</option><option value="composer-desc">Composer Z-A</option><option value="genre-asc">Genre A-Z</option><option value="genre-desc">Genre Z-A</option><option value="tags-asc">Tags A-Z</option><option value="tags-desc">Tags Z-A</option>
+                    </select>
+                </div>
             <div class="table-wrapper">
                 <table>
                     <thead>
@@ -288,14 +299,19 @@
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
+            </details>
 
-            <div class="export-section">
+            <div class="export-section" aria-label="Session actions">
+                <div class="session-recovery-control">
+                    <label><input type="checkbox" id="sessionRecoveryToggle" onchange="app.setSessionRecovery(this.checked)"> Recover this session on this device</label>
+                    <button id="deleteSessionBtn" class="text-button hidden" onclick="app.deleteSavedSession()">Delete local copy</button>
+                </div>
                 <button class="btn btn-primary btn-action" onclick="app.exportCSV()">
                     <span class="btn-action-content">
                         <svg class="btn-action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
                         <span class="btn-action-text">
-                            <span class="btn-action-label">Export Cleaned CSV</span>
-                            <span class="btn-action-desc">Download updated library</span>
+                            <span class="btn-action-label">Review &amp; Export</span>
+                            <span class="btn-action-desc"><span id="exportModifiedCount">0</span> changed fields · share or save CSV</span>
                         </span>
                     </span>
                 </button>
@@ -318,7 +334,7 @@
                     </span>
                 </button>
             </div>
-        </div>
+        </main>
     </div>
 
     <footer class="app-footer">
@@ -418,10 +434,32 @@
             <div id="diffContainer" class="diff-list" style="display:none;"></div>
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="app.closeExportModal()">Cancel</button>
-                <button class="btn btn-primary btn-icon" onclick="app.doExport()">
+                <button class="btn btn-secondary btn-icon" onclick="app.downloadExport()">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v10M4 8l4 4 4-4"/><path d="M2 13v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
-                    Download CSV
+                    Save to Files
                 </button>
+                <button id="shareExportBtn" class="btn btn-primary btn-icon" onclick="app.shareExport()">
+                    Share CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="exportCompleteModal" class="modal">
+        <div class="modal-content" style="max-width: 620px;">
+            <div class="completion-icon" aria-hidden="true">✓</div>
+            <div class="eyebrow">Step 4 · Return to forScore</div>
+            <h3 class="modal-title">Your cleaned CSV is ready</h3>
+            <p class="modal-desc" id="exportCompleteFilename"></p>
+            <ol class="return-steps">
+                <li>In forScore, use the main <strong>Import</strong> button to add the cleaned CSV if you saved it to Files.</li>
+                <li>Open <strong>Tools → Backups</strong> and tap the <strong>scrolled-page icon</strong>.</li>
+                <li>Choose <strong>Import</strong>, select the cleaned CSV, and confirm to apply its metadata.</li>
+            </ol>
+            <p class="help-step-note">Importing the file into forScore may not visibly change anything until you complete the Backups import.</p>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.downloadExport()">Save another copy</button>
+                <button class="btn btn-primary" onclick="app.closeExportCompleteModal()">Done</button>
             </div>
         </div>
     </div>
@@ -556,8 +594,8 @@
                         <div class="help-step-title">Export Your Metadata from forScore</div>
                         <ol class="help-step-list">
                             <li>Open <strong>forScore</strong>.</li>
-                            <li>Tap the <strong>Backup</strong> menu (under the suitcase tools).</li>
-                            <li>Tap the small <strong>"scroll" icon</strong> (the slightly hidden export button).</li>
+                            <li>Open <strong>Tools → Backups</strong>.</li>
+                            <li>Tap the <strong>scrolled-page icon</strong> in the top-left corner.</li>
                             <li>Choose <strong>Export</strong>.</li>
                             <li>Save the exported file to Files, iCloud, or wherever you can access it.</li>
                         </ol>
@@ -581,7 +619,7 @@
                         <div class="help-step-title">Import the Updated File Back into forScore</div>
                         <ol class="help-step-list">
                             <li>Return to <strong>forScore</strong>.</li>
-                            <li>Under the music note button, select <strong>'Import'</strong>.</li>
+                            <li>Use forScore's main <strong>Import</strong> button.</li>
                             <li>Select the updated CSV file you exported from TidyScore.</li>
                         </ol>
                         <div class="help-step-note">Don't worry if nothing appears to change immediately &mdash; that's normal.</div>
@@ -592,8 +630,8 @@
                     <div class="help-step-body">
                         <div class="help-step-title">Apply the Imported Metadata</div>
                         <ol class="help-step-list">
-                            <li>Go back to the <strong>Backups</strong> screen.</li>
-                            <li>Tap the <strong>"scroll" icon</strong> again.</li>
+                            <li>Open <strong>Tools → Backups</strong>.</li>
+                            <li>Tap the <strong>scrolled-page icon</strong> again.</li>
                             <li>Select <strong>Import</strong> this time.</li>
                             <li>Choose the file and confirm.</li>
                         </ol>

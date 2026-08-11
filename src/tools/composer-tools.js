@@ -257,7 +257,8 @@ export const composerTools = {
         const candidates = {
             missingComposer: [],
             composerFormatting: [],
-            imslpTitles: []
+            imslpTitles: [],
+            quickClean: []
         };
 
         const extractionSignals = this.getComposerExtractionSignals(ids);
@@ -281,11 +282,14 @@ export const composerTools = {
 
         });
 
+        candidates.quickClean = this.getQuickCleanChanges(ids);
+
         return {
             counts: {
                 missingComposer: candidates.missingComposer.length,
                 composerFormatting: candidates.composerFormatting.length,
-                imslpTitles: candidates.imslpTitles.length
+                imslpTitles: candidates.imslpTitles.length,
+                quickClean: candidates.quickClean.length
             },
             candidates,
             extractionSignals: {
@@ -326,7 +330,8 @@ export const composerTools = {
         const targets = {
             scanCountMissingComposer: counts.missingComposer,
             scanCountVariantComposer: counts.composerFormatting,
-            scanCountImslpTitles: counts.imslpTitles
+            scanCountImslpTitles: counts.imslpTitles,
+            scanCountQuickClean: counts.quickClean || 0
         };
 
         Object.entries(targets).forEach(([id, value]) => {
@@ -347,6 +352,9 @@ export const composerTools = {
         if (type === 'imslpTitles') {
             this.cleanImslpTitles();
             return;
+        }
+        if (type === 'quickClean') {
+            this.quickClean();
         }
     },
 

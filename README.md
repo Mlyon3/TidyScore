@@ -31,12 +31,15 @@ pnpm preview
 ## How to Use
 
 1. Start the app with `pnpm dev`.
-2. Export your metadata from forScore: **Menu → Share → CSV**.
+2. In forScore, open **Tools → Backups**, tap the **scrolled-page icon**, and choose **Export**.
 3. Upload your CSV (or drag and drop it).
 4. Clean up your data using the tools below.
-5. Export the cleaned CSV and import it back into forScore.
+5. Review and share or save the cleaned CSV.
+6. In forScore, use the main **Import** button to add the CSV if needed, then return to **Tools → Backups → scrolled-page icon → Import** to apply its metadata.
 
 No accounts and no backend required for your data — all CSV processing remains browser-only.
+
+On iPad, TidyScore can be added to the Home Screen for an app-like, offline-capable experience. Export uses the system share sheet when file sharing is supported and falls back to a normal Files download. Optional session recovery stores the current library only in that browser's local IndexedDB and can be disabled or deleted from the workflow screen.
 
 ## Project Structure
 
@@ -132,6 +135,7 @@ TidyScore recognizes 170+ composer name variations and maps them to their canoni
 - Run the Chromium smoke suite with `pnpm test:e2e` after installing its browser once with `pnpm exec playwright install chromium`.
 - GitHub Actions runs tests, the production build, and the browser smoke suite for pushes and pull requests.
 - A manual composer-settings checklist remains in `docs/regression-checklist.md`.
+- The five-participant workflow protocol and feature decision rubric live in `docs/usability-study.md`.
 
 ---
 

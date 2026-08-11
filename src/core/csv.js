@@ -56,12 +56,32 @@ export function serializeCsvDocument(headers, rows) {
     });
 }
 
+export function buildExportFilename(sourceFileName = 'forscore-library.csv', date = new Date()) {
+    const sourceBase = sourceFileName.replace(/\.csv$/i, '')
+        .normalize('NFKD')
+        .replace(/[^a-zA-Z0-9._-]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'forscore-library';
+    const dateStamp = date.toISOString().slice(0, 10);
+    return `${sourceBase}-tidyscore-${dateStamp}.csv`;
+}
+
+export function canShareFile(navigatorLike, file) {
+    if (!navigatorLike || typeof navigatorLike.share !== 'function' || typeof navigatorLike.canShare !== 'function') return false;
+    try {
+        return navigatorLike.canShare({ files: [file] });
+    } catch (_) {
+        return false;
+    }
+}
+
 export const csvCore = {
     handleFile(file) {
-        if (!file || !file.name.endsWith('.csv')) {
+        if (!file || !file.name.toLowerCase().endsWith('.csv')) {
             this.showNotification('Please upload a CSV file');
             return;
         }
+
+        this.sourceFileName = file.name;
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -74,6 +94,7 @@ export const csvCore = {
     },
 
     loadSample() {
+        this.sourceFileName = 'sample-library.csv';
         const sampleCSV = [
             'Title,Composers,Genre,Tags,Filename',
             'Bach - Cello Suite No. 1 in G Major,,Baroque,cello,Bach - Cello Suite No.1 in G Major.pdf',
@@ -166,16 +187,14 @@ export const csvCore = {
 
     exportCSV() {
         this.modifiedCount = countModifiedFields(this.data, this.originalData, this.headers);
-        if (this.modifiedCount === 0) {
-            this.doExport();
-            return;
-        }
 
         const modal = document.getElementById('exportModal');
         const desc = document.getElementById('exportSummaryDesc');
         const list = document.getElementById('exportSummaryList');
 
-        desc.innerHTML = `<strong>${this.modifiedCount}</strong> field${this.modifiedCount !== 1 ? 's' : ''} modified across <strong>${this.data.length}</strong> scores.`;
+        desc.innerHTML = this.modifiedCount === 0
+            ? `No metadata changes are currently selected. You can still export all <strong>${this.data.length}</strong> scores.`
+            : `<strong>${this.modifiedCount}</strong> field${this.modifiedCount !== 1 ? 's' : ''} modified across <strong>${this.data.length}</strong> scores.`;
 
         if (this.changeLog.length > 0) {
             let html = '';
@@ -220,21 +239,68 @@ export const csvCore = {
             diffContainer.style.display = 'none';
         }
 
+        const artifact = this.createExportArtifact();
+        const shareButton = document.getElementById('shareExportBtn');
+        if (shareButton) shareButton.classList.toggle('hidden', !canShareFile(navigator, artifact.file));
+
+        this.updateWorkflowSteps?.('return');
         this.activateModal(modal);
     },
 
-    doExport() {
-        this.closeExportModal();
+    createExportArtifact() {
         const headers = this.headers.filter(h => h !== '__id');
-
         const csv = serializeCsvDocument(headers, this.data);
+        const filename = buildExportFilename(this.sourceFileName);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const file = typeof File === 'function' ? new File([blob], filename, { type: 'text/csv' }) : blob;
+        return { csv, filename, blob, file };
+    },
 
-        const blob = new Blob([csv], { type: 'text/csv' });
+    downloadExport() {
+        const { blob, filename } = this.createExportArtifact();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'tidyscore-export.csv';
+        a.download = filename;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        this.showExportComplete(filename);
+    },
+
+    doExport() {
+        this.downloadExport();
+    },
+
+    async shareExport() {
+        const artifact = this.createExportArtifact();
+        if (!canShareFile(navigator, artifact.file)) {
+            this.downloadExport();
+            return;
+        }
+
+        try {
+            await navigator.share({
+                files: [artifact.file],
+                title: 'TidyScore cleaned forScore library',
+                text: 'Cleaned forScore metadata CSV'
+            });
+            this.showExportComplete(artifact.filename);
+        } catch (error) {
+            if (error?.name !== 'AbortError') {
+                this.showNotification('Sharing was unavailable. Use “Save to Files” instead.');
+            }
+        }
+    },
+
+    showExportComplete(filename) {
+        this.closeExportModal();
+        const filenameElement = document.getElementById('exportCompleteFilename');
+        if (filenameElement) filenameElement.textContent = filename;
+        this.updateWorkflowSteps?.('return');
+        this.activateModal(document.getElementById('exportCompleteModal'));
+    },
+
+    closeExportCompleteModal() {
+        document.getElementById('exportCompleteModal').classList.remove('active');
     },
 };

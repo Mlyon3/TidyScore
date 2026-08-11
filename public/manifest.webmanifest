@@ -1,0 +1,32 @@
+{
+  "name": "TidyScore",
+  "short_name": "TidyScore",
+  "description": "Clean up your forScore library metadata privately on your device.",
+  "id": "/TidyScore/",
+  "start_url": "/TidyScore/",
+  "scope": "/TidyScore/",
+  "display": "standalone",
+  "background_color": "#121a24",
+  "theme_color": "#121a24",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icons/tidyscore-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/tidyscore-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/tidyscore-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
