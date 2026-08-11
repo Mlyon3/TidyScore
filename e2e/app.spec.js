@@ -201,6 +201,70 @@ test('export summary identifies scores and toggles Genre and Tags independently'
     await expect(page.getByRole('button', { name: /Use original Genre value for/ })).toContainText('Using change');
 });
 
+test('direct cell-to-cell editing commits once and Escape cancels', async ({ page }) => {
+    await page.goto('/TidyScore/');
+    await page.getByRole('link', { name: 'Try a sample library' }).click();
+    await page.locator('#libraryEditor > summary').click();
+
+    const firstRow = page.locator('#tableBody tr').first();
+    await firstRow.locator('td[data-label="Genre"]').click();
+    await firstRow.locator('input.editing').fill('Test Genre');
+    await firstRow.locator('td[data-label="Tags"]').click();
+    await firstRow.locator('input.editing').fill('Test Tags');
+    await page.locator('#reviewHeading').click();
+
+    expect(await page.evaluate(() => ({
+        genre: window.app.data[0].Genre,
+        tags: window.app.data[0].Tags,
+        manualEdits: window.app.changeLog.find(change => change.category === 'Manual edits')?.count,
+        undoEntries: window.app.undoStack.filter(entry => entry.label === 'Edit').length
+    }))).toEqual({ genre: 'Test Genre', tags: 'Test Tags', manualEdits: 2, undoEntries: 2 });
+
+    const refreshedFirstRow = page.locator('#tableBody tr').first();
+    const originalTitle = await refreshedFirstRow.locator('td[data-label="Title"]').innerText();
+    await refreshedFirstRow.locator('td[data-label="Title"]').click();
+    await refreshedFirstRow.locator('input.editing').fill('Should not commit');
+    await refreshedFirstRow.locator('input.editing').press('Escape');
+    expect(await page.evaluate(() => window.app.data[0].Title)).toBe(originalTitle);
+
+    await page.locator('#tableBody tr').first().locator('td[data-label="Composer"]').click();
+    await page.locator('#tableBody tr').first().locator('input.editing').fill('Brahms');
+    await page.evaluate(() => {
+        const input = document.querySelector('#tableBody tr:first-child input.editing');
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+        document.querySelector('#tableBody tr:first-child td[data-label="Genre"]').click();
+    });
+    await page.waitForTimeout(20);
+    expect(await page.evaluate(() => window.app._activeCellEdit?.field)).toBe('Genre');
+    await page.locator('#tableBody tr').first().locator('input.editing').press('Escape');
+
+    await page.locator('#tableBody tr').first().locator('td[data-label="Title"]').click();
+    await page.locator('#tableBody tr').first().locator('input.editing').fill('Old library edit');
+    await page.evaluate(() => window.app.parseCSV('Title,Composers,Genre,Tags,Filename\nNew library,,,,new.pdf', {
+        sourceFileName: 'new.csv'
+    }));
+    expect(await page.evaluate(() => ({
+        title: window.app.data[0].Title,
+        filename: window.app.sourceFileName,
+        undoDepth: window.app.undoStack.length
+    }))).toEqual({ title: 'New library', filename: 'new.csv', undoDepth: 0 });
+});
+
+test('native undo remains available inside modal inputs', async ({ page }) => {
+    await page.goto('/TidyScore/');
+    await page.getByRole('link', { name: 'Try a sample library' }).click();
+    await page.locator('#advancedTools > summary').click();
+    await page.getByRole('button', { name: 'Find & Replace' }).click();
+
+    const findInput = page.locator('#findText');
+    await findInput.fill('native undo');
+    const undoDepth = await page.evaluate(() => window.app.undoStack.length);
+    await findInput.press('Meta+z');
+
+    await expect(findInput).toHaveValue('');
+    expect(await page.evaluate(() => window.app.undoStack.length)).toBe(undoDepth);
+});
+
 test('export summary reveals large change sets incrementally', async ({ page }) => {
     await page.goto('/TidyScore/');
     await page.evaluate(() => {

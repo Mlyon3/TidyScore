@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import { buildExportReviewSummary, resolveLibraryFields } from './data-model.js';
+import { assignRowIds, buildRowsById, cloneRowsWithIds } from './row-identity.js';
 
 export function parseCsvDocument(text) {
     if (typeof text !== 'string' || !text.trim()) {
@@ -129,53 +130,82 @@ export const SAMPLE_LIBRARY_CSV = [
 
 export const csvCore = {
     handleFile(file) {
-        if (!file || !file.name.toLowerCase().endsWith('.csv')) {
-            this.showNotification('Please upload a CSV file');
-            return;
+        this._fileReadGeneration = (this._fileReadGeneration || 0) + 1;
+        const generation = this._fileReadGeneration;
+        if (this._activeFileReader?.readyState === globalThis.FileReader?.LOADING) {
+            this._activeFileReader.abort();
         }
 
-        this.sourceFileName = file.name;
+        if (!file || !file.name.toLowerCase().endsWith('.csv')) {
+            this.showNotification('Please upload a CSV file');
+            return { ok: false, code: 'INVALID_FILE_TYPE', message: 'Please upload a CSV file' };
+        }
 
         const reader = new FileReader();
+        this._activeFileReader = reader;
         reader.onload = (e) => {
-            this.parseCSV(e.target.result);
+            if (generation !== this._fileReadGeneration) return;
+            this._activeFileReader = null;
+            this.parseCSV(e.target.result, { sourceFileName: file.name, requestGeneration: generation });
         };
         reader.onerror = () => {
+            if (generation !== this._fileReadGeneration) return;
+            this._activeFileReader = null;
             this.showNotification('The CSV file could not be read. Please try again.');
         };
+        reader.onabort = () => {
+            if (generation === this._fileReadGeneration) this._activeFileReader = null;
+        };
         reader.readAsText(file);
+        return { ok: true, pending: true };
     },
 
     loadSample() {
-        this.sourceFileName = 'sample-library.csv';
-        this.parseCSV(SAMPLE_LIBRARY_CSV);
+        return this.parseCSV(SAMPLE_LIBRARY_CSV, { sourceFileName: 'sample-library.csv' });
     },
 
-    parseCSV(text) {
+    parseCSV(text, { sourceFileName, requestGeneration } = {}) {
+        if (requestGeneration == null) {
+            this._fileReadGeneration = (this._fileReadGeneration || 0) + 1;
+            this._activeFileReader?.abort?.();
+            this._activeFileReader = null;
+        } else if (requestGeneration !== this._fileReadGeneration) {
+            return { ok: false, code: 'STALE_IMPORT', message: 'A newer import has already started.' };
+        }
+
         let document;
         try {
             document = parseCsvDocument(text);
         } catch (error) {
-            this.showNotification(error.message || 'Invalid CSV. Please check the file format.');
-            return;
+            const message = error.message || 'Invalid CSV. Please check the file format.';
+            this.showNotification(message);
+            return { ok: false, code: 'INVALID_CSV', message };
         }
 
         const fields = resolveLibraryFields(document.headers);
         if (!fields.title && !fields.filename) {
-            this.showNotification('This CSV needs a Title or Filename column. No data was imported.');
-            return;
+            const message = 'This CSV needs a Title or Filename column. No data was imported.';
+            this.showNotification(message);
+            return { ok: false, code: 'MISSING_IDENTITY_FIELD', message };
         }
 
-        this.data = document.rows;
-        this.data.forEach((row, i) => { row.__id = i; });
-        this.dataById = new Map(this.data.map(row => [row.__id, row]));
-        this.originalData = JSON.parse(JSON.stringify(this.data));
+        const nextData = assignRowIds(document.rows);
+        const nextOriginalData = cloneRowsWithIds(nextData);
+
+        this.finishActiveCellEdit?.({ cancel: true, render: false });
+        this.editGeneration = (this.editGeneration || 0) + 1;
+        this.data = nextData;
+        this.dataById = buildRowsById(nextData);
+        this.originalData = nextOriginalData;
+        this.originalDataById = buildRowsById(nextOriginalData);
         this.headers = document.headers;
+        if (sourceFileName) this.sourceFileName = sourceFileName;
         this.selectedIds.clear();
         this.undoStack = [];
         this.exportReviewCandidates = new Map();
         this.analyzeData();
         this.renderAll();
+        return { ok: true };
     },
 
     analyzeData() {
@@ -463,7 +493,7 @@ export const csvCore = {
     },
 
     createExportArtifact() {
-        const headers = this.headers.filter(h => h !== '__id');
+        const headers = [...this.headers];
         const csv = serializeCsvDocument(headers, this.data);
         const filename = buildExportFilename(this.sourceFileName);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });

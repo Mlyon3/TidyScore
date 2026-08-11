@@ -1,4 +1,5 @@
 import { countModifiedFields } from '../core/data-model.js';
+import { getRowId } from '../core/row-identity.js';
 
 export const tableUi = {
     refreshModificationState() {
@@ -51,6 +52,7 @@ export const tableUi = {
     },
 
     renderTable() {
+        if (this._activeCellEdit) this.finishActiveCellEdit({ render: false });
         this.refreshModificationState();
         const modifiedCountEl = document.getElementById('modifiedCount');
         if (modifiedCountEl) modifiedCountEl.textContent = this.modifiedCount;
@@ -58,7 +60,7 @@ export const tableUi = {
         const tbody = document.getElementById('tableBody');
         const thead = document.querySelector('thead');
 
-        // Build entries using stable __id
+        // Build entries using stable internal row identity.
         let entries;
         const query = this.currentFilter;
         if (query) {
@@ -67,11 +69,11 @@ export const tableUi = {
             this.data.forEach(row => {
                 const searchStr = `${this.titleField ? row[this.titleField] : ''} ${this.composerField ? row[this.composerField] : ''} ${this.genreField ? row[this.genreField] : ''} ${this.tagsField ? row[this.tagsField] : ''}`.toLowerCase();
                 if (searchStr.includes(q)) {
-                    entries.push({row, _id: row.__id});
+                    entries.push({row, _id: getRowId(row)});
                 }
             });
         } else {
-            entries = this.data.map(row => ({row, _id: row.__id}));
+            entries = this.data.map(row => ({row, _id: getRowId(row)}));
         }
 
         // Sort entries for display (this.data stays in import order)
@@ -164,7 +166,7 @@ export const tableUi = {
             const tags = this.tagsField ? row[this.tagsField] : '';
             const isSelected = this.selectedIds.has(_id);
 
-            const orig = this.originalData[_id];
+            const orig = this.originalDataById.get(_id);
             const titleMod = orig && title !== (orig[this.titleField] || '') ? ' cell-modified' : '';
             const composerMod = orig && composer !== (orig[this.composerField] || '') ? ' cell-modified' : '';
             const genreMod = orig && genre !== (orig[this.genreField] || '') ? ' cell-modified' : '';
@@ -200,8 +202,12 @@ export const tableUi = {
                 td.setAttribute('data-editable', 'true');
                 td.tabIndex = 0;
                 if (modClass) td.className = modClass.trim();
-                td.addEventListener('click', () => this.editCell(_id, field, td));
+                td.addEventListener('click', event => {
+                    if (event.target.closest('input.editing')) return;
+                    this.editCell(_id, field, td);
+                });
                 td.addEventListener('keydown', event => {
+                    if (event.target.matches('input.editing')) return;
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         this.editCell(_id, field, td);
@@ -244,148 +250,157 @@ export const tableUi = {
         }
     },
 
-    editCell(id, field, cellElement) {
-        this.editGeneration++;
-        const myGeneration = this.editGeneration;
+    finishActiveCellEdit({ cancel = false, render = true } = {}) {
+        const active = this._activeCellEdit;
+        if (!active || active.finished) return false;
 
-        // Clean up any previously-editing cell
-        const prev = document.querySelector('#tableBody .editing');
-        if (prev) {
+        active.finished = true;
+        active.suggestionsDropdown?.remove();
+        this._activeCellEdit = null;
+
+        let valueToDisplay = active.currentValue;
+        let changed = false;
+        if (!cancel) {
+            valueToDisplay = active.field === this.composerField
+                ? this.normalizeComposerValue(active.input.value).formatted
+                : active.input.value;
+            if (valueToDisplay !== active.currentValue) {
+                this.pushUndo('Edit');
+                active.row[active.field] = valueToDisplay;
+                this.logChange('Manual edits', 1);
+                this.analyzeData();
+                this.updateStats();
+                changed = true;
+            }
+        }
+
+        if (!render && active.cell.isConnected) {
             const span = document.createElement('span');
             span.className = 'editable';
-            span.textContent = prev.value;
-            prev.parentNode.replaceChild(span, prev);
+            span.textContent = valueToDisplay;
+            active.cell.textContent = '';
+            active.cell.appendChild(span);
+            const original = this.originalDataById.get(active.id);
+            active.cell.classList.toggle(
+                'cell-modified',
+                String(valueToDisplay ?? '') !== String(original?.[active.field] ?? '')
+            );
         }
+        if (render) this.renderTable();
+        return changed;
+    },
+
+    editCell(id, field, cellElement) {
+        this.finishActiveCellEdit({ render: false });
+        this.editGeneration++;
 
         const cell = cellElement;
         const row = this.dataById.get(id);
+        if (!row) return;
         const currentValue = row[field] || '';
-        
+
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'editing';
         input.value = currentValue;
-        
-        let isEscaping = false;
-        let suggestionsDropdown = null;
-        
-        // Function to show suggestions
+
+        const active = {
+            id,
+            field,
+            cell,
+            row,
+            input,
+            currentValue,
+            suggestionsDropdown: null,
+            finished: false
+        };
+        this._activeCellEdit = active;
+
         const showSuggestions = () => {
-            // Only show suggestions for composer field
-            if (field !== this.composerField) return;
-            
+            if (field !== this.composerField || active.finished) return;
+
             const normalized = this.normalizeComposerValue(input.value);
             const formattedSuggestion = normalized.entries.some(entry => entry.canonical !== entry.extracted)
                 ? normalized.formatted
                 : null;
             if (!formattedSuggestion || formattedSuggestion === input.value) {
-                if (suggestionsDropdown) {
-                    suggestionsDropdown.remove();
-                    suggestionsDropdown = null;
-                }
+                active.suggestionsDropdown?.remove();
+                active.suggestionsDropdown = null;
                 return;
             }
-            
-            if (!suggestionsDropdown) {
-                suggestionsDropdown = document.createElement('div');
-                suggestionsDropdown.className = 'suggestions-dropdown';
-                
+
+            if (!active.suggestionsDropdown) {
+                const dropdown = document.createElement('div');
+                dropdown.className = 'suggestions-dropdown';
                 const rect = cell.getBoundingClientRect();
-                suggestionsDropdown.style.position = 'fixed';
-                suggestionsDropdown.style.left = rect.left + 'px';
-                suggestionsDropdown.style.top = (rect.bottom + 4) + 'px';
-                suggestionsDropdown.style.minWidth = rect.width + 'px';
-                
-                document.body.appendChild(suggestionsDropdown);
+                dropdown.style.position = 'fixed';
+                dropdown.style.left = rect.left + 'px';
+                dropdown.style.top = (rect.bottom + 4) + 'px';
+                dropdown.style.minWidth = rect.width + 'px';
+                document.body.appendChild(dropdown);
+                active.suggestionsDropdown = dropdown;
             }
-            
-            suggestionsDropdown.innerHTML = `
+
+            active.suggestionsDropdown.innerHTML = `
                 <div class="suggestion-item">
                     <div class="suggestion-label">Suggested full name:</div>
                     <div class="suggestion-value">${this.escapeHtml(formattedSuggestion)}</div>
                 </div>
             `;
-            
-            suggestionsDropdown.querySelector('.suggestion-item').addEventListener('click', () => {
+            const suggestionItem = active.suggestionsDropdown.querySelector('.suggestion-item');
+            suggestionItem.addEventListener('mousedown', event => event.preventDefault());
+            suggestionItem.addEventListener('click', () => {
                 input.value = formattedSuggestion;
-                input.blur();
+                this.finishActiveCellEdit();
             });
         };
-        
+
         input.addEventListener('input', showSuggestions);
-        
         input.addEventListener('blur', () => {
-            if (isEscaping) return;
-            
-            // Small delay to allow clicking on suggestions
-            setTimeout(() => {
-                if (suggestionsDropdown) {
-                    suggestionsDropdown.remove();
-                    suggestionsDropdown = null;
-                }
-                
-                const newValue = input.value;
-                const valueToSave = field === this.composerField
-                    ? this.normalizeComposerValue(newValue).formatted
-                    : newValue;
-                if (valueToSave !== currentValue) {
-                    this.pushUndo('Edit');
-                    row[field] = valueToSave;
-                    this.modifiedCount++;
-                    this.logChange('Manual edits', 1);
-                    this.analyzeData();
-                    this.updateStats();
-                }
-                // Only re-render if no other cell started editing
-                if (this.editGeneration === myGeneration) {
-                    this.renderTable();
-                }
-            }, 200);
+            if (this._activeCellEdit === active) this.finishActiveCellEdit({ render: false });
         });
 
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                input.blur();
-                // Move down: edit same field in next visible row
-                const idx = this.visibleIds.indexOf(id);
-                if (idx !== -1 && idx + 1 < this.visibleIds.length) {
-                    const fieldIndex = this.getFieldIndex(field);
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.finishActiveCellEdit({ cancel: true });
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                event.stopPropagation();
+                const rowIndex = this.visibleIds.indexOf(id);
+                const fieldIndex = this.getFieldIndex(field);
+                const navigationGeneration = this.editGeneration;
+                this.finishActiveCellEdit();
+                if (rowIndex !== -1 && rowIndex + 1 < this.visibleIds.length) {
                     setTimeout(() => {
-                        const tbody = document.getElementById('tableBody');
-                        const nextRow = tbody && tbody.children[idx + 1];
-                        if (nextRow) {
-                            const cells = nextRow.querySelectorAll('td[data-editable="true"]');
-                            if (cells[fieldIndex]) cells[fieldIndex].click();
-                        }
-                    }, 50);
+                        if (this.editGeneration !== navigationGeneration) return;
+                        const nextRow = document.getElementById('tableBody')?.children[rowIndex + 1];
+                        nextRow?.querySelectorAll('td[data-editable="true"]')[fieldIndex]?.click();
+                    }, 0);
                 }
+                return;
             }
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                input.blur();
+
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                event.stopPropagation();
                 const fields = [this.titleField, this.composerField, this.genreField, this.tagsField].filter(Boolean);
-                const curIdx = fields.indexOf(field);
-                const nextFieldIdx = e.shiftKey
-                    ? (curIdx > 0 ? curIdx - 1 : fields.length - 1)
-                    : (curIdx < fields.length - 1 ? curIdx + 1 : 0);
+                const currentFieldIndex = fields.indexOf(field);
+                const nextFieldIndex = event.shiftKey
+                    ? (currentFieldIndex > 0 ? currentFieldIndex - 1 : fields.length - 1)
+                    : (currentFieldIndex < fields.length - 1 ? currentFieldIndex + 1 : 0);
+                const rowIndex = this.visibleIds.indexOf(id);
+                const navigationGeneration = this.editGeneration;
+                this.finishActiveCellEdit();
                 setTimeout(() => {
-                    const tbody = document.getElementById('tableBody');
-                    const visIdx = this.visibleIds.indexOf(id);
-                    const row = tbody && tbody.children[visIdx];
-                    if (row) {
-                        const cells = row.querySelectorAll('td[data-editable="true"]');
-                        if (cells[nextFieldIdx]) cells[nextFieldIdx].click();
-                    }
-                }, 50);
-            }
-            if (e.key === 'Escape') {
-                isEscaping = true;
-                if (suggestionsDropdown) {
-                    suggestionsDropdown.remove();
-                    suggestionsDropdown = null;
-                }
-                this.renderTable();
+                    if (this.editGeneration !== navigationGeneration) return;
+                    const visibleRow = document.getElementById('tableBody')?.children[rowIndex];
+                    visibleRow?.querySelectorAll('td[data-editable="true"]')[nextFieldIndex]?.click();
+                }, 0);
             }
         });
 
@@ -393,8 +408,6 @@ export const tableUi = {
         cell.appendChild(input);
         input.focus();
         input.select();
-        
-        // Show suggestions immediately if there's already a value
         showSuggestions();
     },
 

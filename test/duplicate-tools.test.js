@@ -1,23 +1,28 @@
 import { describe, expect, it, vi } from 'vitest';
 import { duplicateTools } from '../src/tools/duplicate-tools.js';
+import { assignRowIds, buildRowsById, getRowId } from '../src/core/row-identity.js';
 
 function context(data, overrides = {}) {
+    const ids = data.map((row, index) => Number.isInteger(row.__id) ? row.__id : index);
+    data.forEach(row => { delete row.__id; });
+    assignRowIds(data, ids);
     return {
         ...duplicateTools,
         data,
-        dataById: new Map(data.map(row => [row.__id, row])),
+        dataById: buildRowsById(data),
         titleField: 'Title',
         filenameField: 'Filename',
         composerField: 'Composers',
         tagsField: 'Tags',
         modifiedCount: 0,
+        getTargetIds() { return data.map(getRowId); },
         ...overrides
     };
 }
 
 function detect(data, overrides = {}) {
     const app = context(data, overrides);
-    return duplicateTools.detectDuplicates.call(app);
+    return duplicateTools.detectDuplicates.call(app).result;
 }
 
 function categories(groups) {
@@ -48,6 +53,50 @@ describe('structured duplicate parsing', () => {
 });
 
 describe('evidence-based duplicate detection', () => {
+    it('handles 500 identical titles without argument overflow', () => {
+        const rows = Array.from({ length: 500 }, (_, index) => ({
+            __id: index,
+            Title: 'Identical Prelude',
+            Filename: `scan-${index}.pdf`,
+            Composers: 'Example'
+        }));
+        const result = duplicateTools.detectDuplicates.call(context(rows));
+
+        expect(result.ok).toBe(true);
+        expect(result.result[0].items).toHaveLength(500);
+    }, 15000);
+
+    it('returns a typed error when the candidate-pair budget is exceeded', () => {
+        const rows = Array.from({ length: 20 }, (_, index) => ({
+            __id: index,
+            Title: 'Identical Prelude',
+            Filename: `scan-${index}.pdf`,
+            Composers: 'Example'
+        }));
+        const result = duplicateTools.detectDuplicates.call(context(rows), null, { pairBudget: 10 });
+
+        expect(result).toMatchObject({
+            ok: false,
+            code: 'DUPLICATE_SCOPE_TOO_BROAD',
+            details: { pairBudget: 10, scopedRowCount: 20 }
+        });
+    });
+
+    it('honors selected and filtered row scopes', () => {
+        const rows = [
+            { __id: 0, Title: 'Prelude', Filename: 'prelude-a.pdf', Composers: 'Bach' },
+            { __id: 1, Title: 'Prelude', Filename: 'prelude-b.pdf', Composers: 'Bach' },
+            { __id: 2, Title: 'Prelude', Filename: 'prelude-c.pdf', Composers: 'Bach' }
+        ];
+        const selected = duplicateTools.detectDuplicates.call(context(rows.map(row => ({ ...row }))), [0, 1]);
+        const filtered = duplicateTools.detectDuplicates.call(context(rows.map(row => ({ ...row })), {
+            getTargetIds: () => [1, 2]
+        }));
+
+        expect(selected.result[0].items.map(item => item.id)).toEqual([0, 1]);
+        expect(filtered.result[0].items.map(item => item.id)).toEqual([1, 2]);
+    });
+
     it('finds duplicate filenames even when titles differ', () => {
         const groups = detect([
             { __id: 0, Title: 'Mozart: Sonata in C Major, K.545', Filename: 'Sonata in C Major K545.pdf', Composers: 'Mozart' },

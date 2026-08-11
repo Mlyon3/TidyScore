@@ -1,3 +1,5 @@
+import { getRowId } from './row-identity.js';
+
 const FIELD_ALIASES = {
     composer: ['composers', 'composer'],
     title: ['title'],
@@ -20,11 +22,11 @@ export function resolveLibraryFields(headers) {
 }
 
 export function countModifiedFields(data, originalData, headers) {
-    const originalsById = new Map(originalData.map(row => [row.__id, row]));
+    const originalsById = new Map(originalData.map(row => [getRowId(row), row]));
     let count = 0;
 
     data.forEach(row => {
-        const original = originalsById.get(row.__id);
+        const original = originalsById.get(getRowId(row));
         headers.forEach(header => {
             if (String(row[header] ?? '') !== String(original?.[header] ?? '')) count++;
         });
@@ -34,13 +36,14 @@ export function countModifiedFields(data, originalData, headers) {
 }
 
 export function buildExportDiffSummary(data, originalData, headers) {
-    const originalsById = new Map(originalData.map(row => [row.__id, row]));
+    const originalsById = new Map(originalData.map(row => [getRowId(row), row]));
     const fields = resolveLibraryFields(headers);
     const fieldCounts = new Map();
     const groups = [];
 
     data.forEach((row, index) => {
-        const original = originalsById.get(row.__id);
+        const rowId = getRowId(row);
+        const original = originalsById.get(rowId);
         if (!original) return;
 
         const changes = headers.flatMap(field => {
@@ -59,8 +62,8 @@ export function buildExportDiffSummary(data, originalData, headers) {
         const originalComposer = fields.composer ? String(original[fields.composer] ?? '').trim() : '';
 
         groups.push({
-            rowId: row.__id,
-            rowNum: Number.isInteger(row.__id) ? row.__id + 1 : index + 1,
+            rowId,
+            rowNum: Number.isInteger(rowId) ? rowId + 1 : index + 1,
             title: currentTitle || originalTitle || 'Untitled score',
             composer: currentComposer || originalComposer || 'Composer unknown',
             changes
@@ -80,8 +83,8 @@ function exportCandidateKey(rowId, field) {
 }
 
 export function buildExportReviewSummary(data, originalData, headers, candidates = new Map()) {
-    const originalsById = new Map(originalData.map(row => [row.__id, row]));
-    const rowsById = new Map(data.map(row => [row.__id, row]));
+    const originalsById = new Map(originalData.map(row => [getRowId(row), row]));
+    const rowsById = new Map(data.map(row => [getRowId(row), row]));
     const headerSet = new Set(headers);
 
     candidates.forEach((candidate, key) => {
@@ -95,18 +98,19 @@ export function buildExportReviewSummary(data, originalData, headers, candidates
     });
 
     data.forEach(row => {
-        const original = originalsById.get(row.__id);
+        const rowId = getRowId(row);
+        const original = originalsById.get(rowId);
         if (!original) return;
         headers.forEach(field => {
             const originalValue = String(original[field] ?? '');
             const currentValue = String(row[field] ?? '');
             if (currentValue === originalValue) return;
 
-            const key = exportCandidateKey(row.__id, field);
+            const key = exportCandidateKey(rowId, field);
             const existing = candidates.get(key);
             if (!existing || existing.originalValue !== originalValue) {
                 candidates.set(key, {
-                    rowId: row.__id,
+                    rowId,
                     field,
                     originalValue,
                     proposedValue: currentValue
@@ -125,11 +129,12 @@ export function buildExportReviewSummary(data, originalData, headers, candidates
     let revertedCount = 0;
 
     data.forEach((row, index) => {
-        const original = originalsById.get(row.__id);
+        const rowId = getRowId(row);
+        const original = originalsById.get(rowId);
         if (!original) return;
 
         const changes = headers.flatMap(field => {
-            const candidate = candidates.get(exportCandidateKey(row.__id, field));
+            const candidate = candidates.get(exportCandidateKey(rowId, field));
             if (!candidate) return [];
 
             const currentValue = String(row[field] ?? '');
@@ -137,7 +142,7 @@ export function buildExportReviewSummary(data, originalData, headers, candidates
                 candidate.proposedValue = currentValue;
             }
             if (candidate.proposedValue === candidate.originalValue) {
-                candidates.delete(exportCandidateKey(row.__id, field));
+                candidates.delete(exportCandidateKey(rowId, field));
                 return [];
             }
 
@@ -165,8 +170,8 @@ export function buildExportReviewSummary(data, originalData, headers, candidates
         const originalComposer = fields.composer ? String(original[fields.composer] ?? '').trim() : '';
 
         groups.push({
-            rowId: row.__id,
-            rowNum: Number.isInteger(row.__id) ? row.__id + 1 : index + 1,
+            rowId,
+            rowNum: Number.isInteger(rowId) ? rowId + 1 : index + 1,
             title: currentTitle || originalTitle || 'Untitled score',
             composer: currentComposer || originalComposer || 'Composer unknown',
             details: {
