@@ -8,9 +8,12 @@ This map tracks sections extracted from `index.html` into `src/` modules/partial
 
 | Responsibility | Source of truth | Integration point |
 | --- | --- | --- |
-| Duplicate parsing/detection/UI actions (`parseTitleForDedup` → `closeDuplicateModal`) | `src/tools/duplicate-tools.js` | `index.html` loads a module script, imports `mergeToolsIntoApp` from `src/main.js`, merges tools into the inline `app`, then sets `window.app = ...` so inline `onclick="app..."` handlers continue to work. |
+| Duplicate parsing and result rendering | `src/tools/duplicate-tools.js` | `src/workers/analysis-worker.js` performs candidate analysis; `src/ui/bindings.js` wires the static modal controls. |
+| Composer cleanup scans | `src/tools/composer-tools.js` | `src/core/analysis-client.js` caches row results and sends uncached rows to `src/workers/analysis-worker.js`. |
+| Static UI actions | `src/ui/bindings.js` | `index.html` exposes allowlisted `data-action` hooks and loads `src/bootstrap.js`; no inline JavaScript or global app object remains. |
+| Generated UI actions | Owning renderer in `src/ui`, `src/tools` | Renderers attach direct listeners after creating controls. |
 
-There is no duplicate-detection implementation left inside the inline `app` object in `index.html`.
+There is no executable application logic in `index.html`.
 
 ## CSS
 

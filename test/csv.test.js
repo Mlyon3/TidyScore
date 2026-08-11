@@ -4,6 +4,8 @@ import {
     buildExportFilename,
     canShareFile,
     csvCore,
+    MAX_IMPORT_BYTES,
+    MAX_IMPORT_ROWS,
     parseCsvDocument,
     SAMPLE_LIBRARY_CSV,
     serializeCsvDocument
@@ -172,6 +174,41 @@ describe('CSV import and export', () => {
         csvCore.handleFile.call(context, { name: 'not-csv.txt' });
         third.onload({ target: { result: 'third' } });
         expect(context.parseCSV).not.toHaveBeenCalled();
+    });
+
+    it('rejects oversized text and files without replacing the library', () => {
+        const existingData = [{ Title: 'Keep me' }];
+        const context = {
+            data: existingData,
+            sourceFileName: 'current.csv',
+            _fileReadGeneration: 0,
+            _activeFileReader: null,
+            showNotification: vi.fn()
+        };
+        const textResult = csvCore.parseCSV.call(context, 'x'.repeat(MAX_IMPORT_BYTES + 1), { sourceFileName: 'large.csv' });
+        const fileResult = csvCore.handleFile.call(context, { name: 'large.csv', size: MAX_IMPORT_BYTES + 1 });
+
+        expect(textResult.code).toBe('TEXT_TOO_LARGE');
+        expect(fileResult.code).toBe('FILE_TOO_LARGE');
+        expect(context.data).toBe(existingData);
+        expect(context.sourceFileName).toBe('current.csv');
+    });
+
+    it('warns above 5,000 rows and rejects more than 25,000 atomically', () => {
+        const makeCsv = count => ['Title', ...Array.from({ length: count }, (_, index) => `Score ${index}`)].join('\n');
+        const context = {
+            data: [{ Title: 'Existing' }], originalData: [], dataById: new Map(), originalDataById: new Map(),
+            headers: ['Title'], selectedIds: new Set(), undoStack: [], exportReviewCandidates: new Map(),
+            sourceFileName: 'current.csv', showNotification: vi.fn(), analyzeData: vi.fn(), renderAll: vi.fn()
+        };
+
+        expect(csvCore.parseCSV.call(context, makeCsv(5001), { sourceFileName: 'large.csv' }).ok).toBe(true);
+        expect(context.scaleWarning).toEqual({ rowCount: 5001, validatedTarget: 5000 });
+        const acceptedData = context.data;
+        const rejected = csvCore.parseCSV.call(context, makeCsv(MAX_IMPORT_ROWS + 1), { sourceFileName: 'too-many.csv' });
+        expect(rejected.code).toBe('ROW_LIMIT_EXCEEDED');
+        expect(context.data).toBe(acceptedData);
+        expect(context.sourceFileName).toBe('large.csv');
     });
 });
 

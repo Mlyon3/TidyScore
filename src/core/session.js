@@ -235,9 +235,22 @@ export const sessionCore = {
         this.changeLog = restored.changeLog;
         this.dataById = buildRowsById(this.data);
         this.originalDataById = buildRowsById(this.originalData);
+        this.scaleWarning = this.data.length > 5000
+            ? { rowCount: this.data.length, validatedTarget: 5000 }
+            : null;
+        this.currentFilter = '';
+        this.filteredIds = [];
+        this.visibleIds = [];
+        this.currentPage = 0;
+        this.sortColumn = null;
+        this.sortDirection = 'asc';
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = '';
+        document.getElementById('searchClear')?.classList.add('hidden');
         this.selectedIds.clear();
         this.undoStack = [];
         this.exportReviewCandidates = new Map();
+        this.invalidateAnalysis?.({ clearCache: true });
         this.recoveryEnabled = true;
         try { localStorage.setItem(this.recoveryPreferenceKey, 'true'); } catch (_) {}
         this.analyzeData();

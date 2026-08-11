@@ -1,6 +1,14 @@
 import Papa from 'papaparse';
-import { buildExportReviewSummary, resolveLibraryFields } from './data-model.js';
+import { buildExportReviewSummary, detectFormulaRisks, resolveLibraryFields } from './data-model.js';
 import { assignRowIds, buildRowsById, cloneRowsWithIds } from './row-identity.js';
+
+export const MAX_IMPORT_BYTES = 25 * 1024 * 1024;
+export const VALIDATED_ROW_TARGET = 5000;
+export const MAX_IMPORT_ROWS = 25000;
+
+export function getTextByteLength(text) {
+    return new TextEncoder().encode(text).byteLength;
+}
 
 export function parseCsvDocument(text) {
     if (typeof text !== 'string' || !text.trim()) {
@@ -132,13 +140,18 @@ export const csvCore = {
     handleFile(file) {
         this._fileReadGeneration = (this._fileReadGeneration || 0) + 1;
         const generation = this._fileReadGeneration;
-        if (this._activeFileReader?.readyState === globalThis.FileReader?.LOADING) {
+        if (this._activeFileReader && this._activeFileReader.readyState === globalThis.FileReader?.LOADING) {
             this._activeFileReader.abort();
         }
 
         if (!file || !file.name.toLowerCase().endsWith('.csv')) {
             this.showNotification('Please upload a CSV file');
             return { ok: false, code: 'INVALID_FILE_TYPE', message: 'Please upload a CSV file' };
+        }
+        if (file.size > MAX_IMPORT_BYTES) {
+            const message = 'This CSV is larger than the 25 MiB safety limit. The current library was not changed.';
+            this.showNotification(message);
+            return { ok: false, code: 'FILE_TOO_LARGE', message };
         }
 
         const reader = new FileReader();
@@ -173,6 +186,12 @@ export const csvCore = {
             return { ok: false, code: 'STALE_IMPORT', message: 'A newer import has already started.' };
         }
 
+        if (typeof text !== 'string' || getTextByteLength(text) > MAX_IMPORT_BYTES) {
+            const message = 'This CSV is larger than the 25 MiB safety limit. The current library was not changed.';
+            this.showNotification(message);
+            return { ok: false, code: 'TEXT_TOO_LARGE', message };
+        }
+
         let document;
         try {
             document = parseCsvDocument(text);
@@ -188,6 +207,11 @@ export const csvCore = {
             this.showNotification(message);
             return { ok: false, code: 'MISSING_IDENTITY_FIELD', message };
         }
+        if (document.rows.length > MAX_IMPORT_ROWS) {
+            const message = `This CSV has more than ${MAX_IMPORT_ROWS.toLocaleString()} rows. The current library was not changed.`;
+            this.showNotification(message);
+            return { ok: false, code: 'ROW_LIMIT_EXCEEDED', message };
+        }
 
         const nextData = assignRowIds(document.rows);
         const nextOriginalData = cloneRowsWithIds(nextData);
@@ -199,10 +223,23 @@ export const csvCore = {
         this.originalData = nextOriginalData;
         this.originalDataById = buildRowsById(nextOriginalData);
         this.headers = document.headers;
+        this.scaleWarning = document.rows.length > VALIDATED_ROW_TARGET
+            ? { rowCount: document.rows.length, validatedTarget: VALIDATED_ROW_TARGET }
+            : null;
         if (sourceFileName) this.sourceFileName = sourceFileName;
+        this.currentFilter = '';
+        this.filteredIds = [];
+        this.visibleIds = [];
+        this.currentPage = 0;
+        this.sortColumn = null;
+        this.sortDirection = 'asc';
+        const searchInput = globalThis.document?.getElementById('searchInput');
+        if (searchInput) searchInput.value = '';
+        globalThis.document?.getElementById('searchClear')?.classList.add('hidden');
         this.selectedIds.clear();
         this.undoStack = [];
         this.exportReviewCandidates = new Map();
+        this.invalidateAnalysis?.({ clearCache: true });
         this.analyzeData();
         this.renderAll();
         return { ok: true };
@@ -255,6 +292,8 @@ export const csvCore = {
             this.exportReviewCandidates
         );
         this._exportDiffSummary = summary;
+        const formulaRisk = detectFormulaRisks(this.headers, this.data);
+        this._formulaRiskSummary = formulaRisk;
         this.modifiedCount = summary.changedFieldCount;
 
         if (summary.candidateCount === 0) {
@@ -269,6 +308,7 @@ export const csvCore = {
         }
 
         const breakdown = document.getElementById('exportFieldBreakdown');
+        const formulaWarning = document.getElementById('exportFormulaWarning');
         const instruction = document.getElementById('exportRevertInstruction');
         const searchWrapper = document.getElementById('exportSearchWrapper');
         const searchInput = document.getElementById('exportSearchInput');
@@ -283,6 +323,12 @@ export const csvCore = {
                 breakdown.appendChild(item);
             });
             breakdown.classList.toggle('hidden', summary.changedFieldCount === 0);
+        }
+        if (formulaWarning) {
+            formulaWarning.classList.toggle('hidden', formulaRisk.cellCount === 0);
+            formulaWarning.textContent = formulaRisk.cellCount === 0
+                ? ''
+                : `${formulaRisk.cellCount} cell${formulaRisk.cellCount === 1 ? '' : 's'} across ${formulaRisk.rowCount} row${formulaRisk.rowCount === 1 ? '' : 's'} begin with a spreadsheet formula character. Values will be preserved exactly; review them carefully when opening the CSV.`;
         }
         instruction?.classList.toggle('hidden', summary.candidateCount === 0);
         searchWrapper?.classList.toggle('hidden', summary.candidateCount === 0);

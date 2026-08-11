@@ -30,6 +30,24 @@ and includes one end-to-end UI flow that saves settings then applies **Smart Ext
 
 > If re-running in the same browser profile, clear stale data by running `localStorage.removeItem('tidyscore-settings')` in devtools and refresh.
 
+For automated fixture coverage, run `pnpm test` and `pnpm test:e2e`. The forScore round-trip fixture is `test/fixtures/forscore-roundtrip.csv`; do not substitute personal library exports in committed tests.
+
+## Import, scale, and browser-safety checks
+
+1. Attempt an invalid CSV, a file above 25 MiB, and a CSV above 25,000 rows while another library is open.
+2. Import 5,001 rows and confirm the unsupported-scale warning remains visible.
+3. Import 5,000 rows and confirm no more than 200 editor rows render at once.
+4. Search, sort, navigate pages, select rows on different pages, and use **Select all filtered**.
+5. While analysis is running, edit a cell and open Export Review.
+6. Replace the library before analysis finishes and confirm old results never appear.
+7. Open a production build after exercising every workflow and confirm no CSP violations appear.
+
+Expected: rejected imports are atomic; paging announces position and count; tool scope covers the full selection/filter; analysis failures offer Retry without disabling edit/export.
+
+## Export formula warning
+
+Import cells beginning with whitespace plus each of `=`, `+`, `-`, and `@`. Export Review must report only affected cell/row counts, must not expose cell content in the warning, and the downloaded CSV must preserve the exact original values.
+
 ---
 
 ## A) Sanitization + custom precedence + blacklist in Settings save
@@ -164,3 +182,4 @@ This scenario is the regression guard for the full user workflow.
 - Applying tags adds `_Duplicate_Delete_Me` to selected rows in the tags field.
 - Closing/reopening duplicate modal resets selection according to high-confidence preselect behavior.
 - The modal warns that annotations are unavailable in CSV metadata and files must be compared in forScore before deletion.
+- A deliberately broad identical-title scope returns an actionable filter/select-fewer error instead of freezing or overflowing.

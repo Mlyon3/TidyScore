@@ -28,14 +28,15 @@ export const tagTools = {
         trigger.setAttribute('aria-expanded', 'false');
     },
 
-    getComposerEra(composerValue) {
+    getComposerEra(composerValue, aliasMap = null) {
         if (!composerValue) return null;
-        const entries = this.normalizeComposerValue(composerValue).entries;
+        aliasMap = aliasMap || this.getComposerAliasMap();
+        const entries = this.normalizeComposerValue(composerValue, aliasMap).entries;
         if (!entries.length) return null;
 
         const eras = entries.map(entry => {
             if (this.composerEraDatabase[entry.canonical]) return this.composerEraDatabase[entry.canonical];
-            const canonical = this.getSuggestion(entry.extracted);
+            const canonical = this.getSuggestion(entry.extracted, aliasMap);
             return canonical ? this.composerEraDatabase[canonical] || null : null;
         });
         if (eras.some(era => !era)) return null;
@@ -53,6 +54,7 @@ export const tagTools = {
 
         const targetIndices = this.getTargetIds();
         let suggestions = [];
+        const aliasMap = this.getComposerAliasMap();
 
         targetIndices.forEach(idx => {
             const row = this.dataById.get(idx);
@@ -60,7 +62,7 @@ export const tagTools = {
             const composer = (row[this.composerField] || '').trim();
             if (genre || !composer) return;
 
-            const era = this.getComposerEra(composer);
+            const era = this.getComposerEra(composer, aliasMap);
             if (era) {
                 suggestions.push({
                     id: idx,
@@ -94,7 +96,7 @@ export const tagTools = {
                 <div class="extraction-item">
                     <input type="checkbox" class="extraction-checkbox"
                            id="genre_${index}"
-                           onchange="app.toggleGenreSuggestion(${index})" checked>
+                           data-index="${index}" checked>
                     <label for="genre_${index}" class="extraction-label">
                         <div class="extraction-mapping">
                             <span class="extraction-original">${this.escapeHtml(item.composer)}</span>
@@ -108,6 +110,9 @@ export const tagTools = {
         });
 
         resultsDiv.innerHTML = html;
+        resultsDiv.querySelectorAll('.extraction-checkbox').forEach(input => {
+            input.addEventListener('change', () => this.toggleGenreSuggestion(Number(input.dataset.index)));
+        });
         this.updateGenreSuggestSelectedCount();
         this.activateModal(modal);
     },
@@ -249,7 +254,7 @@ export const tagTools = {
                 <div class="extraction-item">
                     <input type="checkbox" class="extraction-checkbox"
                            id="tagsug_${index}"
-                           onchange="app.toggleTagSuggestion(${index})" checked>
+                           data-index="${index}" checked>
                     <label for="tagsug_${index}" class="extraction-label">
                         <div class="extraction-title">${this.escapeHtml(item.title)}</div>
                         <div class="extraction-mapping" style="margin-top:4px">${tagBadges}</div>
@@ -259,6 +264,9 @@ export const tagTools = {
         });
 
         resultsDiv.innerHTML = html;
+        resultsDiv.querySelectorAll('.extraction-checkbox').forEach(input => {
+            input.addEventListener('change', () => this.toggleTagSuggestion(Number(input.dataset.index)));
+        });
         this.updateTagSuggestSelectedCount();
         this.activateModal(modal);
     },
@@ -585,7 +593,6 @@ export const tagTools = {
             html += `
                 <div class="manager-item">
                     <input type="checkbox" data-index="${index}"
-                           onchange="app.toggleManagerItem(${index})"
                            ${isChecked ? 'checked' : ''}>
                     <span class="${nameClass}">${this.escapeHtml(displayName)}</span>
                     <span class="manager-item-count">${item.count}</span>
@@ -594,6 +601,9 @@ export const tagTools = {
         });
 
         container.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--color-text-muted);">No values found</div>';
+        container.querySelectorAll('input[data-index]').forEach(input => {
+            input.addEventListener('change', () => this.toggleManagerItem(Number(input.dataset.index)));
+        });
         this.updateManagerSelectedCount();
     },
 

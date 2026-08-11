@@ -1,5 +1,53 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+        globalThis.__tidyScoreCspViolations = [];
+        document.addEventListener('securitypolicyviolation', event => {
+            globalThis.__tidyScoreCspViolations.push({
+                directive: event.violatedDirective,
+                blockedUri: event.blockedURI
+            });
+        });
+    });
+});
+
+test.afterEach(async ({ page }) => {
+    if (!page.isClosed()) {
+        expect(await page.evaluate(() => globalThis.__tidyScoreCspViolations || [])).toEqual([]);
+    }
+});
+
+async function importCsv(page, csv, options = {}) {
+    return page.evaluate(async ({ csvText, importOptions }) => {
+        const { default: app } = await import('/TidyScore/src/main.js');
+        return app.parseCSV(csvText, importOptions);
+    }, { csvText: csv, importOptions: options });
+}
+
+async function readApp(page, selector) {
+    return page.evaluate(async selectorName => {
+        const { default: app } = await import('/TidyScore/src/main.js');
+        if (selectorName === 'composer0') return app.data[0].Composers;
+        if (selectorName === 'tags') return app.data.map(row => row.Tags);
+        if (selectorName === 'editState') return {
+            genre: app.data[0].Genre,
+            tags: app.data[0].Tags,
+            manualEdits: app.changeLog.find(change => change.category === 'Manual edits')?.count,
+            undoEntries: app.undoStack.filter(entry => entry.label === 'Edit').length
+        };
+        if (selectorName === 'title0') return app.data[0].Title;
+        if (selectorName === 'activeField') return app._activeCellEdit?.field;
+        if (selectorName === 'replacementState') return {
+            title: app.data[0].Title,
+            filename: app.sourceFileName,
+            undoDepth: app.undoStack.length
+        };
+        if (selectorName === 'undoDepth') return app.undoStack.length;
+        throw new Error(`Unknown app selector: ${selectorName}`);
+    }, selector);
+}
+
 test('sample cleanup, undo, and duplicate detection work without console errors', async ({ page }) => {
     const errors = [];
     page.on('console', message => {
@@ -53,12 +101,10 @@ test('multi-composer extraction flags incomplete title lists and uses first-last
     await expect(page.locator('#settingsModal')).toContainText('Composer names use First Last format');
     await page.locator('#settingsCancelBtn').click();
 
-    await page.evaluate(() => {
-        window.app.parseCSV([
+    await importCsv(page, [
             'Title,Composers,Genre,Tags,Filename',
             'Sonatas Brahms Tchiak Beethoven,,,,partial.pdf'
         ].join('\n'));
-    });
 
     await page.getByRole('button', { name: 'Fix composers' }).click();
     const result = page.locator('#extractionResults .extraction-item').first();
@@ -69,15 +115,14 @@ test('multi-composer extraction flags incomplete title lists and uses first-last
 
     await result.locator('.extraction-checkbox').check();
     await page.getByRole('button', { name: 'Apply Selected' }).click();
-    expect(await page.evaluate(() => window.app.data[0].Composers))
+    expect(await readApp(page, 'composer0'))
         .toBe('Johannes Brahms, Ludwig van Beethoven');
 });
 
 test('duplicate review explains evidence and tags a unique review queue', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/TidyScore/');
-    await page.evaluate(() => {
-        window.app.parseCSV([
+    await importCsv(page, [
             'Title,Composers,Genre,Tags,Filename',
             'Concerto Full Score,Example,,,concerto-score.pdf',
             'Concerto Full Score (2),Example,,,concerto-score-copy.pdf',
@@ -85,7 +130,6 @@ test('duplicate review explains evidence and tags a unique review queue', async 
             'Etude Violin,Example,,,etude-vln.pdf',
             'Etude,Example,,,etude-scan.pdf'
         ].join('\n'));
-    });
 
     await page.locator('#advancedTools > summary').click();
     await page.getByRole('button', { name: 'Find Duplicates' }).click();
@@ -108,7 +152,7 @@ test('duplicate review explains evidence and tags a unique review queue', async 
     await expect(modal.locator('#dupSelectedCount')).toHaveText('4 of 5 unique files selected');
     await page.getByRole('button', { name: "Tag Selected as '_Duplicate_Delete_Me'" }).click();
 
-    const tags = await page.evaluate(() => window.app.data.map(row => row.Tags));
+    const tags = await readApp(page, 'tags');
     expect(tags).toEqual([
         '_Duplicate_Delete_Me',
         '_Duplicate_Delete_Me',
@@ -213,19 +257,14 @@ test('direct cell-to-cell editing commits once and Escape cancels', async ({ pag
     await firstRow.locator('input.editing').fill('Test Tags');
     await page.locator('#reviewHeading').click();
 
-    expect(await page.evaluate(() => ({
-        genre: window.app.data[0].Genre,
-        tags: window.app.data[0].Tags,
-        manualEdits: window.app.changeLog.find(change => change.category === 'Manual edits')?.count,
-        undoEntries: window.app.undoStack.filter(entry => entry.label === 'Edit').length
-    }))).toEqual({ genre: 'Test Genre', tags: 'Test Tags', manualEdits: 2, undoEntries: 2 });
+    expect(await readApp(page, 'editState')).toEqual({ genre: 'Test Genre', tags: 'Test Tags', manualEdits: 2, undoEntries: 2 });
 
     const refreshedFirstRow = page.locator('#tableBody tr').first();
     const originalTitle = await refreshedFirstRow.locator('td[data-label="Title"]').innerText();
     await refreshedFirstRow.locator('td[data-label="Title"]').click();
     await refreshedFirstRow.locator('input.editing').fill('Should not commit');
     await refreshedFirstRow.locator('input.editing').press('Escape');
-    expect(await page.evaluate(() => window.app.data[0].Title)).toBe(originalTitle);
+    expect(await readApp(page, 'title0')).toBe(originalTitle);
 
     await page.locator('#tableBody tr').first().locator('td[data-label="Composer"]').click();
     await page.locator('#tableBody tr').first().locator('input.editing').fill('Brahms');
@@ -235,19 +274,13 @@ test('direct cell-to-cell editing commits once and Escape cancels', async ({ pag
         document.querySelector('#tableBody tr:first-child td[data-label="Genre"]').click();
     });
     await page.waitForTimeout(20);
-    expect(await page.evaluate(() => window.app._activeCellEdit?.field)).toBe('Genre');
+    expect(await readApp(page, 'activeField')).toBe('Genre');
     await page.locator('#tableBody tr').first().locator('input.editing').press('Escape');
 
     await page.locator('#tableBody tr').first().locator('td[data-label="Title"]').click();
     await page.locator('#tableBody tr').first().locator('input.editing').fill('Old library edit');
-    await page.evaluate(() => window.app.parseCSV('Title,Composers,Genre,Tags,Filename\nNew library,,,,new.pdf', {
-        sourceFileName: 'new.csv'
-    }));
-    expect(await page.evaluate(() => ({
-        title: window.app.data[0].Title,
-        filename: window.app.sourceFileName,
-        undoDepth: window.app.undoStack.length
-    }))).toEqual({ title: 'New library', filename: 'new.csv', undoDepth: 0 });
+    await importCsv(page, 'Title,Composers,Genre,Tags,Filename\nNew library,,,,new.pdf', { sourceFileName: 'new.csv' });
+    expect(await readApp(page, 'replacementState')).toEqual({ title: 'New library', filename: 'new.csv', undoDepth: 0 });
 });
 
 test('native undo remains available inside modal inputs', async ({ page }) => {
@@ -258,25 +291,24 @@ test('native undo remains available inside modal inputs', async ({ page }) => {
 
     const findInput = page.locator('#findText');
     await findInput.fill('native undo');
-    const undoDepth = await page.evaluate(() => window.app.undoStack.length);
+    const undoDepth = await readApp(page, 'undoDepth');
     await findInput.press('Meta+z');
 
     await expect(findInput).toHaveValue('');
-    expect(await page.evaluate(() => window.app.undoStack.length)).toBe(undoDepth);
+    expect(await readApp(page, 'undoDepth')).toBe(undoDepth);
 });
 
 test('export summary reveals large change sets incrementally', async ({ page }) => {
     await page.goto('/TidyScore/');
-    await page.evaluate(() => {
-        const rows = Array.from({ length: 51 }, (_, index) =>
-            `Score ${index + 1},Composer,,tag,file-${index + 1}.pdf`
-        );
-        window.app.parseCSV([
+    await page.evaluate(async () => {
+        const { default: app } = await import('/TidyScore/src/main.js');
+        const rows = Array.from({ length: 51 }, (_, index) => `Score ${index + 1},Composer,,tag,file-${index + 1}.pdf`);
+        app.parseCSV([
             'Title,Composers,Genre,Tags,Filename',
             ...rows
         ].join('\n'));
-        window.app.data.forEach(row => { row.Genre = 'Changed'; });
-        window.app.renderAll();
+        app.data.forEach(row => { row.Genre = 'Changed'; });
+        app.renderAll();
     });
 
     await page.getByRole('button', { name: /Review & Export/ }).click();
@@ -331,4 +363,102 @@ test('guided workflow fits iPad landscape and Split View widths', async ({ page 
         await expect(page.locator('#exportModal')).toHaveClass(/active/);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
+});
+
+test('a 5,000-row library paginates while full-scope tools and selection remain available', async ({ page }) => {
+    test.setTimeout(45000);
+    await page.goto('/TidyScore/');
+    const csv = [
+        'Title,Composers,Genre,Tags,Filename',
+        ...Array.from({ length: 5000 }, (_, index) =>
+            `Score ${index + 1},${index % 2 ? 'Bach' : 'Mozart'},,tag,file-${index + 1}.pdf`
+        )
+    ].join('\n');
+    await importCsv(page, csv, { sourceFileName: 'five-thousand.csv' });
+    await page.locator('#libraryEditor > summary').click();
+
+    await expect(page.locator('#tableBody tr')).toHaveCount(200);
+    await expect(page.locator('#paginationStatus')).toHaveText('Page 1 of 25');
+    await expect(page.locator('#rowCountIndicator')).toContainText('Showing 1–200 of 5000');
+
+    await page.locator('#tableBody tr').first().locator('input[type="checkbox"]').check();
+    await page.locator('#paginationNext').click();
+    await expect(page.locator('#paginationStatus')).toHaveText('Page 2 of 25');
+    await page.locator('#tableBody tr').first().locator('input[type="checkbox"]').check();
+    await expect(page.locator('#selectedCount')).toHaveText('2');
+
+    await page.locator('#selectAll').check();
+    await expect(page.locator('#selectedCount')).toHaveText('5000');
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await expect(page.locator('#selectedCount')).toHaveText('0');
+    await page.locator('#paginationPrevious').click();
+
+    const lastTitle = page.locator('#tableBody tr').last().locator('td[data-label="Title"]');
+    await lastTitle.click();
+    await lastTitle.locator('input.editing').press('Enter');
+    await expect(page.locator('#paginationStatus')).toHaveText('Page 2 of 25');
+    await expect(page.locator('#tableBody tr').first().locator('input.editing')).toBeFocused();
+    await page.locator('#tableBody tr').first().locator('input.editing').press('Escape');
+
+    await page.locator('#searchInput').fill('Score 4999');
+    await expect(page.locator('#tableBody tr')).toHaveCount(1);
+    await expect(page.locator('#rowCountIndicator')).toHaveText('Showing 1 of 5000');
+    await page.locator('th[aria-label="Sort by Title"]').click();
+    await expect(page.locator('#tableBody tr td[data-label="Title"]')).toHaveText('Score 4999');
+
+    await page.locator('#advancedTools > summary').click();
+    await page.getByRole('button', { name: 'Find & Replace' }).click();
+    await page.locator('#findText').fill('Score 4999');
+    await page.locator('#replaceText').fill('Renamed 4999');
+    await page.locator('#replaceField').selectOption('title');
+    await page.getByRole('button', { name: 'Replace All' }).click();
+    await page.getByRole('button', { name: 'Apply 1 Change' }).click();
+    await expect(page.locator('#undoBtn')).toBeEnabled();
+    await page.locator('#undoBtn').click();
+
+    await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('#exportModal')).toHaveClass(/active/);
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await importCsv(page, 'Title,Composers,Genre,Tags,Filename\nReplacement,Bach,,,replacement.pdf');
+    await page.waitForTimeout(300);
+    await expect(page.locator('#totalScores')).toHaveText('1');
+    expect(await readApp(page, 'title0')).toBe('Replacement');
+});
+
+test('scale, formula, and worker failures are visible without blocking export', async ({ page }) => {
+    await page.goto('/TidyScore/');
+    const rows = Array.from({ length: 5001 }, (_, index) =>
+        `${index === 0 ? '=FORMULA' : `Score ${index + 1}`},Bach,,,file-${index + 1}.pdf`
+    );
+    await importCsv(page, ['Title,Composers,Genre,Tags,Filename', ...rows].join('\n'));
+
+    await expect(page.locator('#scaleWarning')).toBeVisible();
+    await expect(page.locator('#scaleWarning')).toContainText('5,001 rows');
+    await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('#exportFormulaWarning')).toContainText('1 cell across 1 row');
+    await expect(page.locator('#exportFormulaWarning')).not.toContainText('=FORMULA');
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    const duplicates = Array.from({ length: 709 }, (_, index) =>
+        `Identical Prelude,Bach,,,scan-${index + 1}.pdf`
+    );
+    await importCsv(page, ['Title,Composers,Genre,Tags,Filename', ...duplicates].join('\n'));
+    await page.locator('#advancedTools > summary').click();
+    await page.getByRole('button', { name: 'Find Duplicates' }).click();
+    await expect(page.locator('.toast-notification')).toContainText('too many possible duplicate pairs', { timeout: 15000 });
+
+    await page.evaluate(async () => {
+        const { default: app } = await import('/TidyScore/src/main.js');
+        app._analysisWorker?.terminate();
+        app._analysisWorker = null;
+        app._workerFactory = () => { throw new Error('simulated failure'); };
+        app.invalidateAnalysis({ clearCache: true });
+        await app.requestScanAnalysis();
+    });
+    await expect(page.locator('#analysisRetry')).toBeVisible();
+    await expect(page.locator('#analysisStatus')).toContainText('Editing and export still work');
+    await expect(page.getByRole('button', { name: /Review & Export/ })).toBeEnabled();
+    await page.getByRole('button', { name: /Review & Export/ }).click();
+    await expect(page.locator('#exportModal')).toHaveClass(/active/);
 });

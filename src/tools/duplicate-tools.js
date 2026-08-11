@@ -116,12 +116,12 @@ function evidence(label, points, values = []) {
     return { label, points, values };
 }
 
-function normalizeComposer(value, context) {
+function normalizeComposer(value, context, aliasMap = null) {
     const raw = (value || '').toString().trim();
     if (!raw) return '';
 
     if (typeof context.normalizeComposerValue === 'function') {
-        return context.normalizeComposerValue(raw).entries
+        return context.normalizeComposerValue(raw, aliasMap).entries
             .map(entry => wordsOnly(entry.canonical).split(' ').filter(Boolean).sort().join(' '))
             .sort()
             .join('|');
@@ -299,7 +299,7 @@ export const duplicateTools = {
         };
     },
 
-    _buildDuplicateIdentity(row) {
+    _buildDuplicateIdentity(row, aliasMap = null) {
         const title = this.parseTitleForDedup(this.titleField ? row[this.titleField] : '');
         const filename = this.parseTitleForDedup(this.filenameField ? row[this.filenameField] : '');
         return {
@@ -309,7 +309,7 @@ export const duplicateTools = {
                 (this.filenameField ? row[this.filenameField] : '') || '',
             displayFilename: this.filenameField ? (row[this.filenameField] || '') : '',
             displayComposer: this.composerField ? (row[this.composerField] || '') : '',
-            composer: normalizeComposer(this.composerField ? row[this.composerField] : '', this),
+            composer: normalizeComposer(this.composerField ? row[this.composerField] : '', this, aliasMap),
             title,
             filename,
             copyMarkers: mergeSets(title.copyMarkers, filename.copyMarkers),
@@ -448,9 +448,10 @@ export const duplicateTools = {
             ? (typeof this.getTargetIds === 'function' ? this.getTargetIds() : this.data.map(getRowId))
             : targetIds;
         const targetSet = new Set(scopedIds);
+        const aliasMap = typeof this.getComposerAliasMap === 'function' ? this.getComposerAliasMap() : null;
         const identities = this.data
             .filter(row => targetSet.has(getRowId(row)))
-            .map(row => duplicateTools._buildDuplicateIdentity.call(this, row));
+            .map(row => duplicateTools._buildDuplicateIdentity.call(this, row, aliasMap));
         const identitiesById = new Map(identities.map(identity => [identity.id, identity]));
         const coreBuckets = new Map();
         identities.forEach(identity => {
@@ -505,10 +506,13 @@ export const duplicateTools = {
         return { ok: true, result: groups };
     },
 
-    openDuplicateModal() {
+    async openDuplicateModal() {
         this.closeGenreTagMenu();
-        const duplicateResult = this.detectDuplicates(this.getTargetIds());
+        const duplicateResult = this.requestDuplicateAnalysis
+            ? await this.requestDuplicateAnalysis(this.getTargetIds(), DUPLICATE_PAIR_BUDGET)
+            : this.detectDuplicates(this.getTargetIds());
         if (!duplicateResult.ok) {
+            if (duplicateResult.code === 'STALE_ANALYSIS') return;
             this.showNotification(duplicateResult.message);
             return;
         }
@@ -570,7 +574,7 @@ export const duplicateTools = {
             const indeterminate = someSelected ? 'data-indeterminate="true"' : '';
             html += '<section class="dup-group">';
             html += '<div class="dup-group-header">';
-            html += `<label><input class="dup-group-checkbox" data-group-index="${groupIndex}" ${indeterminate} type="checkbox" ${allSelected ? 'checked' : ''} onchange="app.toggleDupGroup(${groupIndex})"> Group ${groupIndex + 1} (${group.items.length} items)</label>`;
+            html += `<label><input class="dup-group-checkbox" data-group-index="${groupIndex}" ${indeterminate} type="checkbox" ${allSelected ? 'checked' : ''}> Group ${groupIndex + 1} (${group.items.length} items)</label>`;
             html += `<span class="dup-badge dup-badge-${group.category}">${labels[group.category]}</span>`;
             html += '</div>';
             html += `<p class="dup-summary">${this.escapeHtml(group.summary)}</p>`;
@@ -584,7 +588,7 @@ export const duplicateTools = {
             group.items.forEach(item => {
                 const checked = this._dupSelected.has(item.id) ? 'checked' : '';
                 html += '<div class="dup-item">';
-                html += `<input type="checkbox" ${checked} onchange="app.toggleDupItem(${item.id})" aria-label="Select ${this.escapeHtml(item.displayTitle)} for duplicate review tagging">`;
+                html += `<input type="checkbox" ${checked} data-item-id="${item.id}" aria-label="Select ${this.escapeHtml(item.displayTitle)} for duplicate review tagging">`;
                 html += '<div class="dup-item-info">';
                 html += `<div class="dup-item-title">${this.escapeHtml(item.displayTitle)}</div>`;
                 html += `<div class="dup-item-meta">${this._renderDuplicateItemMeta(item)}</div>`;
@@ -594,6 +598,12 @@ export const duplicateTools = {
         });
 
         resultsDiv.innerHTML = html;
+        resultsDiv.querySelectorAll('.dup-group-checkbox').forEach(input => {
+            input.addEventListener('change', () => this.toggleDupGroup(Number(input.dataset.groupIndex)));
+        });
+        resultsDiv.querySelectorAll('input[data-item-id]').forEach(input => {
+            input.addEventListener('change', () => this.toggleDupItem(Number(input.dataset.itemId)));
+        });
         resultsDiv.querySelectorAll('.dup-group-checkbox[data-indeterminate="true"]').forEach(input => {
             input.indeterminate = true;
         });

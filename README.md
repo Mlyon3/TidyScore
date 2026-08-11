@@ -49,6 +49,7 @@ Application code now lives under `src/` in modular JavaScript and CSS files:
 - `src/core` — app state and core processing logic
 - `src/ui` — rendering, events, and interaction wiring
 - `src/tools` — feature-specific cleanup tools (for example duplicate detection)
+- `src/workers` — on-device composer and duplicate analysis workers
 - `src/styles` — modular stylesheet files imported in order
 
 > Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow uses Vite via the pnpm scripts above.
@@ -60,7 +61,7 @@ Application code now lives under `src/` in modular JavaScript and CSS files:
 
 - ✅ **Modularized in `src/`**: core app logic, UI interactions, data definitions, feature tools (including duplicate tooling), and stylesheet modules.
 - ✅ **Vite-based local workflow**: repository root now includes `package.json` scripts (`dev`, `build`, `preview`) and Vite dependency entries as the source of truth for local startup/build.
-- ⚠️ **Still inline in `index.html`**: the application shell markup and static structure remain in the root HTML file while importing the modular runtime from `src/main.js`.
+- ✅ **Explicit browser bindings**: `index.html` contains the static shell and declarative `data-action` hooks; `src/ui/bindings.js` owns the allowlisted event wiring. There are no inline JavaScript handlers or global `window.app` object.
 
 This section should be updated as remaining inline structure is moved into fully componentized/modules-first architecture.
 
@@ -114,13 +115,14 @@ Browse every unique genre or tag in your library with frequency counts. Select m
 
 All tools are scope-aware:
 - **Select rows** with checkboxes, then run any tool — it only affects your selection
-- **Search** to filter the table, then use "Select All" — it selects only visible rows
+- **Search** to filter the table, then use "Select All" — it selects the complete filtered result, including rows on other pages
 - The **scope indicator** next to "Your Library" always shows what you're working with
 
 ## Other Features
 
 - **Inline editing** — click any cell to edit it directly; composer cells show smart suggestions as you type
 - **Sorting** — click column headers to sort; empty values always go to the bottom
+- **Adaptive pagination** — filtered libraries above 200 rows render 200 at a time while search, selection, sorting, and tools continue to use the complete filtered result
 - **Undo** — Ctrl/Cmd+Z or the Undo button; 50 levels of history
 - **Dark mode** — toggle in the header; remembers your preference
 - **Export summary** — before downloading, see a log of every change made during your session
@@ -137,10 +139,19 @@ Composer names are always written as `First Last`. forScore supports multiple co
 - Run the Chromium smoke suite with `pnpm test:e2e` after installing its browser once with `pnpm exec playwright install chromium`.
 - GitHub Actions runs tests, the production build, and the browser smoke suite for pushes and pull requests.
 - A manual composer-settings checklist remains in `docs/regression-checklist.md`.
+- Realistic CSV coverage uses `test/fixtures/forscore-roundtrip.csv`; large-library cases are generated deterministically in tests rather than uploading user data.
 - The five-participant workflow protocol and feature decision rubric live in `docs/usability-study.md`.
 
 ---
 
 ## Privacy
 
-All CSV processing happens in your browser. CSV contents stay in memory for the current tab and are never uploaded or transmitted by TidyScore. The app stores your theme and composer-cleanup settings in your browser's local storage so they persist between visits. TidyScore has no usage counter or telemetry endpoint.
+All CSV processing—including worker-based analysis—happens on-device in your browser. CSV contents stay in memory for the current tab and are never uploaded or transmitted by TidyScore. Optional recovery stores the library in that browser's IndexedDB until you disable recovery or delete the copy. Theme and composer-cleanup settings use local storage. TidyScore has no usage counter, telemetry endpoint, remote processing, or uploaded performance data.
+
+## Input and security boundaries
+
+- CSV files and direct text imports are limited to 25 MiB and 25,000 rows. Imports above the validated 5,000-row target remain allowed with a persistent unsupported-scale warning.
+- Imports are atomic: invalid, stale, oversized, or over-limit input leaves the current library and filename unchanged.
+- Export Review warns when cells begin with optional whitespace followed by `=`, `+`, `-`, or `@`. TidyScore does not rewrite these values, so the exported metadata remains exact.
+- A restrictive Content Security Policy limits scripts, workers, images, manifests, and connections to the deployed origin. Inline presentation styles remain allowed; CSP does not make unsafe CSV content trustworthy in other spreadsheet programs.
+- See [`docs/threat-model.md`](docs/threat-model.md) for trust assumptions, local-storage behavior, and recovery guidance.

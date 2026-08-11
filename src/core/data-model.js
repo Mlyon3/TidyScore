@@ -193,3 +193,21 @@ export function buildExportReviewSummary(data, originalData, headers, candidates
         fieldCounts: Object.fromEntries(fieldCounts)
     };
 }
+
+const FORMULA_RISK_PATTERN = /^\s*[=+\-@]/;
+
+export function detectFormulaRisks(headers, rows) {
+    let cellCount = 0;
+    let rowCount = 0;
+    for (const row of rows) {
+        let rowHasRisk = false;
+        for (const header of headers) {
+            if (FORMULA_RISK_PATTERN.test(String(row[header] ?? ''))) {
+                cellCount++;
+                rowHasRisk = true;
+            }
+        }
+        if (rowHasRisk) rowCount++;
+    }
+    return { cellCount, rowCount };
+}
