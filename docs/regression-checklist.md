@@ -30,7 +30,7 @@ and includes one end-to-end UI flow that saves settings then applies **Smart Ext
 
 > If re-running in the same browser profile, clear stale data by running `localStorage.removeItem('tidyscore-settings')` in devtools and refresh.
 
-For automated fixture coverage, run `pnpm test` and `pnpm test:e2e`. The forScore round-trip fixture is `test/fixtures/forscore-roundtrip.csv`; do not substitute personal library exports in committed tests.
+For automated fixture coverage, run `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:e2e`, and then `pnpm test:e2e:pwa`. The forScore round-trip fixture is `test/fixtures/forscore-roundtrip.csv`; do not substitute personal library exports in committed tests. Large fixtures are generated deterministically and contain no personal data.
 
 ## Import, scale, and browser-safety checks
 
@@ -47,6 +47,18 @@ Expected: rejected imports are atomic; paging announces position and count; tool
 ## Export formula warning
 
 Import cells beginning with whitespace plus each of `=`, `+`, `-`, and `@`. Export Review must report only affected cell/row counts, must not expose cell content in the warning, and the downloaded CSV must preserve the exact original values.
+
+## Production PWA and update behavior
+
+1. Run `pnpm build`, followed by `pnpm test:e2e:pwa`.
+2. Confirm the first online visit installs the generated `sw.js` under `/TidyScore/` and removes the legacy `tidyscore-shell-v1` cache.
+3. Go offline, reload, load the sample library, open **Fix composers**, and apply the preview.
+4. Simulate an update-ready callback with no library open and confirm the update prompt can apply it.
+5. Repeat with a library open and confirm **Update now** leaves the library intact and asks the user to finish or export first.
+
+Expected: revisioned HTML, JavaScript, CSS, manifest, worker, and icon assets support the cleanup workflow offline after one successful visit; navigation is network-first while online; updates never force-reload active data.
+
+Before a release, run `pnpm audit:release` separately. It requires registry access and is deliberately not part of the network-independent CI gate.
 
 ---
 

@@ -7,6 +7,7 @@ import { duplicateTools } from './tools/duplicate-tools.js';
 import { accessibilityUi } from './ui/accessibility.js';
 import { sessionCore } from './core/session.js';
 import { analysisClient } from './core/analysis-client.js';
+import { pwaUi } from './ui/pwa.js';
 
 import { SETTINGS_VERSION, DEFAULT_SETTINGS } from './data/settings-defaults.js';
 import { createBaseState } from './core/state.js';
@@ -160,7 +161,7 @@ const appMethods = {
             }
 
             return this.settings;
-        } catch (e) {
+        } catch (_) {
             this.settings = this._deepClone(DEFAULT_SETTINGS);
             return this.settings;
         }
@@ -174,7 +175,9 @@ const appMethods = {
         this.invalidateAnalysis?.({ clearCache: true });
         try {
             localStorage.setItem(this.settingsStorageKey, JSON.stringify(next));
-        } catch (e) {}
+        } catch (_) {
+            // Settings persistence is optional.
+        }
         if (this.data.length) this.scheduleScanAnalysis?.();
         return this.settings;
     },
@@ -554,7 +557,9 @@ const appMethods = {
                 document.querySelector('.theme-icon--light').style.display = 'none';
                 document.querySelector('.theme-icon--dark').style.display = '';
             }
-        } catch(e) {}
+        } catch (_) {
+            // Theme persistence is optional.
+        }
 
         const uploadSection = document.getElementById('uploadSection');
         const fileInput = document.getElementById('fileInput');
@@ -619,11 +624,6 @@ const appMethods = {
             }
         });
 
-        if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register(`${import.meta.env.BASE_URL}service-worker.js`).catch(() => {});
-            });
-        }
     },
 
 
@@ -742,7 +742,9 @@ const appMethods = {
         html.setAttribute('data-theme', isDark ? 'light' : 'dark');
         document.querySelector('.theme-icon--light').style.display = isDark ? '' : 'none';
         document.querySelector('.theme-icon--dark').style.display = isDark ? 'none' : '';
-        try { localStorage.setItem('tidyscore-theme', isDark ? 'light' : 'dark'); } catch(e) {}
+        try { localStorage.setItem('tidyscore-theme', isDark ? 'light' : 'dark'); } catch (_) {
+            // Theme persistence is optional.
+        }
     },
 
     // ===== Duplicate Detection =====
@@ -765,6 +767,7 @@ export function createApp(options = {}) {
         accessibilityUi,
         sessionCore,
         analysisClient,
+        pwaUi,
         options
     );
     instance._ambiguousAliases = new Set(appMethods._ambiguousAliases);

@@ -462,3 +462,28 @@ test('scale, formula, and worker failures are visible without blocking export', 
     await page.getByRole('button', { name: /Review & Export/ }).click();
     await expect(page.locator('#exportModal')).toHaveClass(/active/);
 });
+
+test('an available update never reloads an active library', async ({ page }) => {
+    await page.goto('/TidyScore/');
+    await page.getByRole('link', { name: 'Try a sample library' }).click();
+    await page.evaluate(async () => {
+        const { default: app } = await import('/TidyScore/src/main.js');
+        globalThis.__tidyScoreAppliedUpdate = 0;
+        app.setPwaUpdateReady(() => { globalThis.__tidyScoreAppliedUpdate++; });
+    });
+
+    await expect(page.locator('#pwaUpdatePrompt')).toBeVisible();
+    await page.getByRole('button', { name: 'Update now' }).click();
+    await expect(page.locator('.toast-notification')).toContainText('Finish or export the open library first');
+    await expect(page.locator('#totalScores')).toHaveText('49');
+    expect(await page.evaluate(() => globalThis.__tidyScoreAppliedUpdate)).toBe(0);
+
+    await page.evaluate(async () => {
+        const { default: app } = await import('/TidyScore/src/main.js');
+        app.data = [];
+        app.dataById.clear();
+    });
+    await page.getByRole('button', { name: 'Update now' }).click();
+    expect(await page.evaluate(() => globalThis.__tidyScoreAppliedUpdate)).toBe(1);
+    await expect(page.locator('#pwaUpdatePrompt')).toBeHidden();
+});

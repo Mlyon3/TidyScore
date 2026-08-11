@@ -160,7 +160,9 @@ export const sessionCore = {
         this.recoveryEnabled = Boolean(enabled);
         try {
             localStorage.setItem(this.recoveryPreferenceKey, String(this.recoveryEnabled));
-        } catch (_) {}
+        } catch (_) {
+            // Preference persistence is optional.
+        }
 
         if (this.recoveryEnabled) {
             await this.persistSession();
@@ -202,7 +204,9 @@ export const sessionCore = {
             this.updateRecoveryUi();
         } catch (_) {
             this.recoveryEnabled = false;
-            try { localStorage.setItem(this.recoveryPreferenceKey, 'false'); } catch (_) {}
+            try { localStorage.setItem(this.recoveryPreferenceKey, 'false'); } catch (_) {
+                // Preference persistence is optional.
+            }
             this.updateRecoveryUi();
             this.showNotification('This browser could not save the library locally. Your open session is unchanged.');
         }
@@ -252,7 +256,9 @@ export const sessionCore = {
         this.exportReviewCandidates = new Map();
         this.invalidateAnalysis?.({ clearCache: true });
         this.recoveryEnabled = true;
-        try { localStorage.setItem(this.recoveryPreferenceKey, 'true'); } catch (_) {}
+        try { localStorage.setItem(this.recoveryPreferenceKey, 'true'); } catch (_) {
+            // Preference persistence is optional.
+        }
         this.analyzeData();
         this.renderAll();
         document.getElementById('recoveryPrompt')?.classList.add('hidden');
@@ -260,13 +266,17 @@ export const sessionCore = {
     },
 
     async deleteSavedSession(options = {}) {
-        try { await clearLocalSession(); } catch (_) {}
+        try { await clearLocalSession(); } catch (_) {
+            // Deletion is best effort when storage is unavailable.
+        }
         this.savedSession = null;
         this.savedSessionInvalid = false;
         document.getElementById('recoveryPrompt')?.classList.add('hidden');
         if (!options.preservePreference) {
             this.recoveryEnabled = false;
-            try { localStorage.setItem(this.recoveryPreferenceKey, 'false'); } catch (_) {}
+            try { localStorage.setItem(this.recoveryPreferenceKey, 'false'); } catch (_) {
+                // Preference persistence is optional.
+            }
         }
         this.updateRecoveryUi();
         if (!options.quiet) this.showNotification('Saved local session deleted.');
