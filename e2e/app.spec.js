@@ -292,7 +292,7 @@ test('native undo remains available inside modal inputs', async ({ page }) => {
     const findInput = page.locator('#findText');
     await findInput.fill('native undo');
     const undoDepth = await readApp(page, 'undoDepth');
-    await findInput.press('Meta+z');
+    await findInput.press('ControlOrMeta+z');
 
     await expect(findInput).toHaveValue('');
     expect(await readApp(page, 'undoDepth')).toBe(undoDepth);
