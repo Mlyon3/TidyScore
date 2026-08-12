@@ -28,6 +28,8 @@ Preview the production build locally:
 pnpm preview
 ```
 
+Node.js and pnpm are the only required developer tools; Homebrew is not required.
+
 ## How to Use
 
 1. Start the app with `pnpm dev`.
@@ -39,7 +41,7 @@ pnpm preview
 
 No accounts and no backend required for your data — all CSV processing remains browser-only.
 
-On iPad, TidyScore can be added to the Home Screen for an app-like, offline-capable experience. Export uses the system share sheet when file sharing is supported and falls back to a normal Files download. Optional session recovery stores the current library only in that browser's local IndexedDB and can be disabled or deleted from the workflow screen.
+On iPad, TidyScore can be added to the Home Screen for an app-like, offline-capable experience. The production build precaches its revisioned app shell with Workbox after one successful visit. When a new version is ready, TidyScore prompts instead of reloading an active library. Export uses the system share sheet when file sharing is supported and falls back to a normal Files download. Optional session recovery stores the current library only in that browser's local IndexedDB and can be disabled or deleted from the workflow screen.
 
 ## Project Structure
 
@@ -50,6 +52,7 @@ Application code now lives under `src/` in modular JavaScript and CSS files:
 - `src/ui` — rendering, events, and interaction wiring
 - `src/tools` — feature-specific cleanup tools (for example duplicate detection)
 - `src/workers` — on-device composer and duplicate analysis workers
+- `src/pwa.js` and `src/ui/pwa.js` — generated-service-worker registration and update-safe UI
 - `src/styles` — modular stylesheet files imported in order
 
 > Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow uses Vite via the pnpm scripts above.
@@ -62,6 +65,7 @@ Application code now lives under `src/` in modular JavaScript and CSS files:
 - ✅ **Modularized in `src/`**: core app logic, UI interactions, data definitions, feature tools (including duplicate tooling), and stylesheet modules.
 - ✅ **Vite-based local workflow**: repository root now includes `package.json` scripts (`dev`, `build`, `preview`) and Vite dependency entries as the source of truth for local startup/build.
 - ✅ **Explicit browser bindings**: `index.html` contains the static shell and declarative `data-action` hooks; `src/ui/bindings.js` owns the allowlisted event wiring. There are no inline JavaScript handlers or global `window.app` object.
+- ✅ **Generated offline shell**: `vite-plugin-pwa` and Workbox generate the service worker, revisioned precache, network-first navigation fallback, immutable-asset caching, and obsolete-cache cleanup.
 
 This section should be updated as remaining inline structure is moved into fully componentized/modules-first architecture.
 
@@ -135,9 +139,13 @@ Composer names are always written as `First Last`. forScore supports multiple co
 
 ## Regression Coverage
 
+- Run the static quality gate with `pnpm lint`.
 - Run unit and regression tests with `pnpm test`.
 - Run the Chromium smoke suite with `pnpm test:e2e` after installing its browser once with `pnpm exec playwright install chromium`.
-- GitHub Actions runs tests, the production build, and the browser smoke suite for pushes and pull requests.
+- After `pnpm build`, run the production offline suite with `pnpm test:e2e:pwa`.
+- GitHub Actions runs lint, tests, the production build, both Chromium suites, diff validation, and a tracked-worktree cleanliness check for pushes and pull requests.
+- Run `pnpm audit:release` as a network-dependent release check. Dependency auditing is intentionally not a blocking PR job.
+- Dependabot checks pnpm dependencies and GitHub Actions weekly.
 - A manual composer-settings checklist remains in `docs/regression-checklist.md`.
 - Realistic CSV coverage uses `test/fixtures/forscore-roundtrip.csv`; large-library cases are generated deterministically in tests rather than uploading user data.
 - The five-participant workflow protocol and feature decision rubric live in `docs/usability-study.md`.

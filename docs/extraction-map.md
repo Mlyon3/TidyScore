@@ -12,8 +12,11 @@ This map tracks sections extracted from `index.html` into `src/` modules/partial
 | Composer cleanup scans | `src/tools/composer-tools.js` | `src/core/analysis-client.js` caches row results and sends uncached rows to `src/workers/analysis-worker.js`. |
 | Static UI actions | `src/ui/bindings.js` | `index.html` exposes allowlisted `data-action` hooks and loads `src/bootstrap.js`; no inline JavaScript or global app object remains. |
 | Generated UI actions | Owning renderer in `src/ui`, `src/tools` | Renderers attach direct listeners after creating controls. |
+| PWA registration and update prompt | `src/pwa.js`, `src/ui/pwa.js` | `src/bootstrap.js` registers the Workbox-generated worker; `vite.config.js` defines precache and runtime strategies. |
 
 There is no executable application logic in `index.html`.
+
+`public/service-worker.js` no longer exists. `vite-plugin-pwa` generates `dist/sw.js` and its revisioned Workbox runtime during production builds. `public/pwa-cache-cleanup.js` is a narrowly scoped activation migration that removes the obsolete handwritten-worker cache.
 
 ## CSS
 

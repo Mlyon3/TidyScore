@@ -39,6 +39,7 @@ export function createBaseState() {
         _scanAnalysisTimer: null,
         _scanCache: new Map(),
         _settingsRevision: 0,
+        _pwaUpdateCallback: null,
         sourceFileName: 'forscore-library.csv',
         scaleWarning: null,
         recoveryEnabled: false,

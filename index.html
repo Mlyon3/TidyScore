@@ -83,6 +83,17 @@
             </div>
         </div>
 
+        <div id="pwaUpdatePrompt" class="recovery-prompt hidden" role="status" aria-live="polite">
+            <div>
+                <strong>A TidyScore update is ready.</strong>
+                <span>Finish or export an open library before updating.</span>
+            </div>
+            <div class="recovery-actions">
+                <button class="btn btn-secondary btn-sm" data-action="dismissPwaUpdate">Later</button>
+                <button class="btn btn-primary btn-sm" data-action="applyPwaUpdate">Update now</button>
+            </div>
+        </div>
+
         <section id="importIntro" class="import-intro">
             <div class="eyebrow">Step 1 · Import</div>
             <h1>Get your library CSV from forScore</h1>
