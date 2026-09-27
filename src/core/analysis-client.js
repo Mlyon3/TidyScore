@@ -1,4 +1,4 @@
-import { getRowId } from './row-identity.js';
+import { getRowId } from '../domain/row-identity.js';
 
 const ANALYSIS_ERROR = 'ANALYSIS_WORKER_FAILURE';
 

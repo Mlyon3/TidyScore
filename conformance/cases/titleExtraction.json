@@ -1,0 +1,703 @@
+{
+  "version": 1,
+  "description": "extractComposerFromTitle(input, builtInAliasMap); null when nothing is found.",
+  "cases": [
+    {
+      "input": "Bach - Cello Suite No. 1 in G Major",
+      "expected": {
+        "extracted": "Bach",
+        "suggestion": "Bach, Johann Sebastian",
+        "matches": [
+          {
+            "extracted": "Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formattedSuggestion": "Johann Sebastian Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Prelude in C Major",
+      "expected": null
+    },
+    {
+      "input": "Moonlight Sonata",
+      "expected": null
+    },
+    {
+      "input": "Moonlight Sonata (2)",
+      "expected": null
+    },
+    {
+      "input": "Symphony No. 5, Op. 67",
+      "expected": null
+    },
+    {
+      "input": "Clair de Lune",
+      "expected": null
+    },
+    {
+      "input": "The Four Seasons - Spring",
+      "expected": null
+    },
+    {
+      "input": "Nocturne Op. 9, No. 2",
+      "expected": null
+    },
+    {
+      "input": "Hungarian Rhapsody No. 2",
+      "expected": null
+    },
+    {
+      "input": "Ave Maria",
+      "expected": null
+    },
+    {
+      "input": "Gymnopédie No. 1",
+      "expected": null
+    },
+    {
+      "input": "Canon in D",
+      "expected": null
+    },
+    {
+      "input": "Für Elise",
+      "expected": null
+    },
+    {
+      "input": "IMSLP00001-Beethoven - Piano Sonata No.8, Op.13",
+      "expected": null
+    },
+    {
+      "input": "Rêverie",
+      "expected": null
+    },
+    {
+      "input": "Boléro",
+      "expected": null
+    },
+    {
+      "input": "Träumerei",
+      "expected": null
+    },
+    {
+      "input": "Liebestraum No. 3",
+      "expected": null
+    },
+    {
+      "input": "The Nutcracker Suite",
+      "expected": null
+    },
+    {
+      "input": "New World Symphony",
+      "expected": null
+    },
+    {
+      "input": "Piano Concerto No. 2",
+      "expected": null
+    },
+    {
+      "input": "C.P.E. Bach - Solfeggietto in C Minor",
+      "expected": {
+        "extracted": "C.P.E. Bach",
+        "suggestion": "Bach, Carl Philipp Emanuel",
+        "matches": [
+          {
+            "extracted": "C.P.E. Bach",
+            "canonical": "Bach, Carl Philipp Emanuel",
+            "formatted": "Carl Philipp Emanuel Bach"
+          }
+        ],
+        "formattedSuggestion": "Carl Philipp Emanuel Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Solfeggietto in C Minor",
+      "expected": null
+    },
+    {
+      "input": "Clara Schumann - Romance in A Minor, Op. 21 No. 1",
+      "expected": {
+        "extracted": "Clara Schumann",
+        "suggestion": "Schumann, Clara",
+        "matches": [
+          {
+            "extracted": "Clara Schumann",
+            "canonical": "Schumann, Clara",
+            "formatted": "Clara Schumann"
+          }
+        ],
+        "formattedSuggestion": "Clara Schumann",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Romance in A Minor, Op. 21 No. 1",
+      "expected": null
+    },
+    {
+      "input": "J.S. Bach: Invention No. 1 in C Major",
+      "expected": {
+        "extracted": "J.S. Bach",
+        "suggestion": "Bach, Johann Sebastian",
+        "matches": [
+          {
+            "extracted": "J.S. Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formattedSuggestion": "Johann Sebastian Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "WTC Book I - Prelude and Fugue in C major (Bach)",
+      "expected": {
+        "extracted": "Bach",
+        "suggestion": "Bach, Johann Sebastian",
+        "matches": [
+          {
+            "extracted": "Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formattedSuggestion": "Johann Sebastian Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Haydn - Cello Concerto No. 1 in C Major",
+      "expected": {
+        "extracted": "Haydn",
+        "suggestion": "Haydn, Joseph",
+        "matches": [
+          {
+            "extracted": "Haydn",
+            "canonical": "Haydn, Joseph",
+            "formatted": "Joseph Haydn"
+          }
+        ],
+        "formattedSuggestion": "Joseph Haydn",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Mozart: Sonata in C Major, K.545",
+      "expected": {
+        "extracted": "Mozart",
+        "suggestion": "Mozart, Wolfgang Amadeus",
+        "matches": [
+          {
+            "extracted": "Mozart",
+            "canonical": "Mozart, Wolfgang Amadeus",
+            "formatted": "Wolfgang Amadeus Mozart"
+          }
+        ],
+        "formattedSuggestion": "Wolfgang Amadeus Mozart",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Sonata in C Major K.545",
+      "expected": null
+    },
+    {
+      "input": "Rachmaninoff - Vocalise Op.34 No.14",
+      "expected": {
+        "extracted": "Rachmaninoff",
+        "suggestion": "Rachmaninoff, Sergei",
+        "matches": [
+          {
+            "extracted": "Rachmaninoff",
+            "canonical": "Rachmaninoff, Sergei",
+            "formatted": "Sergei Rachmaninoff"
+          }
+        ],
+        "formattedSuggestion": "Sergei Rachmaninoff",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Mahler: Symphony No. 5 - Adagietto",
+      "expected": {
+        "extracted": "Mahler",
+        "suggestion": "Mahler, Gustav",
+        "matches": [
+          {
+            "extracted": "Mahler",
+            "canonical": "Mahler, Gustav",
+            "formatted": "Gustav Mahler"
+          }
+        ],
+        "formattedSuggestion": "Gustav Mahler",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Gershwin - Rhapsody in Blue",
+      "expected": {
+        "extracted": "Gershwin",
+        "suggestion": "Gershwin, George",
+        "matches": [
+          {
+            "extracted": "Gershwin",
+            "canonical": "Gershwin, George",
+            "formatted": "George Gershwin"
+          }
+        ],
+        "formattedSuggestion": "George Gershwin",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Scott Joplin - The Entertainer",
+      "expected": {
+        "extracted": "Scott Joplin",
+        "suggestion": "Joplin, Scott",
+        "matches": [
+          {
+            "extracted": "Scott Joplin",
+            "canonical": "Joplin, Scott",
+            "formatted": "Scott Joplin"
+          }
+        ],
+        "formattedSuggestion": "Scott Joplin",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Piazzolla: Libertango",
+      "expected": {
+        "extracted": "Piazzolla",
+        "suggestion": "Piazzolla, Astor",
+        "matches": [
+          {
+            "extracted": "Piazzolla",
+            "canonical": "Piazzolla, Astor",
+            "formatted": "Astor Piazzolla"
+          }
+        ],
+        "formattedSuggestion": "Astor Piazzolla",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Arvo Pärt - Spiegel im Spiegel",
+      "expected": {
+        "extracted": "Arvo Pärt",
+        "suggestion": "Pärt, Arvo",
+        "matches": [
+          {
+            "extracted": "Arvo Pärt",
+            "canonical": "Pärt, Arvo",
+            "formatted": "Arvo Pärt"
+          }
+        ],
+        "formattedSuggestion": "Arvo Pärt",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Hans Zimmer - Time",
+      "expected": {
+        "extracted": "Hans Zimmer",
+        "suggestion": "Zimmer, Hans",
+        "matches": [
+          {
+            "extracted": "Hans Zimmer",
+            "canonical": "Zimmer, Hans",
+            "formatted": "Hans Zimmer"
+          }
+        ],
+        "formattedSuggestion": "Hans Zimmer",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Yiruma - River Flows in You",
+      "expected": {
+        "extracted": "Yiruma",
+        "suggestion": "Yiruma",
+        "matches": [
+          {
+            "extracted": "Yiruma",
+            "canonical": "Yiruma",
+            "formatted": "Yiruma"
+          }
+        ],
+        "formattedSuggestion": "Yiruma",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Satie: Gnossienne No. 1",
+      "expected": {
+        "extracted": "Satie",
+        "suggestion": "Satie, Erik",
+        "matches": [
+          {
+            "extracted": "Satie",
+            "canonical": "Satie, Erik",
+            "formatted": "Erik Satie"
+          }
+        ],
+        "formattedSuggestion": "Erik Satie",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Debussy Arabesque No.1",
+      "expected": {
+        "extracted": "Debussy",
+        "suggestion": "Debussy, Claude",
+        "matches": [
+          {
+            "extracted": "Debussy",
+            "canonical": "Debussy, Claude",
+            "formatted": "Claude Debussy"
+          }
+        ],
+        "formattedSuggestion": "Claude Debussy",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Prokofiev: Dance of the Knights",
+      "expected": {
+        "extracted": "Prokofiev",
+        "suggestion": "Prokofiev, Sergei",
+        "matches": [
+          {
+            "extracted": "Prokofiev",
+            "canonical": "Prokofiev, Sergei",
+            "formatted": "Sergei Prokofiev"
+          }
+        ],
+        "formattedSuggestion": "Sergei Prokofiev",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Intermezzo for Piano, Op. 118 No. 2",
+      "expected": null
+    },
+    {
+      "input": "Intermezzo, Op. 118 No. 2",
+      "expected": null
+    },
+    {
+      "input": "Academic Festival Overture Full Score",
+      "expected": null
+    },
+    {
+      "input": "Academic Festival Overture Violin Part",
+      "expected": null
+    },
+    {
+      "input": "Brahms and Beethoven - Variations",
+      "expected": {
+        "extracted": "Brahms, Beethoven",
+        "suggestion": "Brahms, Johannes",
+        "matches": [
+          {
+            "extracted": "Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          },
+          {
+            "extracted": "Beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formattedSuggestion": "Johannes Brahms, Ludwig van Beethoven",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "C.P.E. Bach and J.S. Bach - Two Bachs",
+      "expected": {
+        "extracted": "C.P.E. Bach, J.S. Bach",
+        "suggestion": "Bach, Carl Philipp Emanuel",
+        "matches": [
+          {
+            "extracted": "C.P.E. Bach",
+            "canonical": "Bach, Carl Philipp Emanuel",
+            "formatted": "Carl Philipp Emanuel Bach"
+          },
+          {
+            "extracted": "J.S. Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formattedSuggestion": "Carl Philipp Emanuel Bach, Johann Sebastian Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Piano Miniatures Brahms Kapustin Beethoven",
+      "expected": {
+        "extracted": "Brahms, Beethoven",
+        "suggestion": "Brahms, Johannes",
+        "matches": [
+          {
+            "extracted": "Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          },
+          {
+            "extracted": "Beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formattedSuggestion": "Johannes Brahms, Ludwig van Beethoven",
+        "isPartial": true,
+        "unresolvedTokens": [
+          "Kapustin"
+        ]
+      }
+    },
+    {
+      "input": "Slavonic Dances",
+      "expected": null
+    },
+    {
+      "input": "Sonatas Brahms Beethoven",
+      "expected": {
+        "extracted": "Brahms, Beethoven",
+        "suggestion": "Brahms, Johannes",
+        "matches": [
+          {
+            "extracted": "Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          },
+          {
+            "extracted": "Beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formattedSuggestion": "Johannes Brahms, Ludwig van Beethoven",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Sonatas Brahms Tchiak Beethoven",
+      "expected": {
+        "extracted": "Brahms, Beethoven",
+        "suggestion": "Brahms, Johannes",
+        "matches": [
+          {
+            "extracted": "Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          },
+          {
+            "extracted": "Beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formattedSuggestion": "Johannes Brahms, Ludwig van Beethoven",
+        "isPartial": true,
+        "unresolvedTokens": [
+          "Tchiak"
+        ]
+      }
+    },
+    {
+      "input": "Tchiak Brahms and Beethoven Unknownname",
+      "expected": {
+        "extracted": "Brahms, Beethoven",
+        "suggestion": "Brahms, Johannes",
+        "matches": [
+          {
+            "extracted": "Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          },
+          {
+            "extracted": "Beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formattedSuggestion": "Johannes Brahms, Ludwig van Beethoven",
+        "isPartial": true,
+        "unresolvedTokens": [
+          "Tchiak",
+          "Unknownname"
+        ]
+      }
+    },
+    {
+      "input": "C.P.E. Bach and J.S. Bach",
+      "expected": {
+        "extracted": "C.P.E. Bach, J.S. Bach",
+        "suggestion": "Bach, Carl Philipp Emanuel",
+        "matches": [
+          {
+            "extracted": "C.P.E. Bach",
+            "canonical": "Bach, Carl Philipp Emanuel",
+            "formatted": "Carl Philipp Emanuel Bach"
+          },
+          {
+            "extracted": "J.S. Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formattedSuggestion": "Carl Philipp Emanuel Bach, Johann Sebastian Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Glass Houses and Barber Poles",
+      "expected": null
+    },
+    {
+      "input": "The Barber of Seville",
+      "expected": null
+    },
+    {
+      "input": "Adagio for Strings (Barber)",
+      "expected": {
+        "extracted": "Barber",
+        "suggestion": "Barber, Samuel",
+        "matches": [
+          {
+            "extracted": "Barber",
+            "canonical": "Barber, Samuel",
+            "formatted": "Samuel Barber"
+          }
+        ],
+        "formattedSuggestion": "Samuel Barber",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Suite No. 1 by Bach",
+      "expected": {
+        "extracted": "Bach",
+        "suggestion": "Bach, Johann Sebastian",
+        "matches": [
+          {
+            "extracted": "Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formattedSuggestion": "Johann Sebastian Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Dvorak_SQ12",
+      "expected": {
+        "extracted": "Dvorak",
+        "suggestion": "Dvořák, Antonín",
+        "matches": [
+          {
+            "extracted": "Dvorak",
+            "canonical": "Dvořák, Antonín",
+            "formatted": "Antonín Dvořák"
+          }
+        ],
+        "formattedSuggestion": "Antonín Dvořák",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Beethoven 5th",
+      "expected": {
+        "extracted": "Beethoven",
+        "suggestion": "Beethoven, Ludwig van",
+        "matches": [
+          {
+            "extracted": "Beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formattedSuggestion": "Ludwig van Beethoven",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Prelude - Bach",
+      "expected": {
+        "extracted": "Bach",
+        "suggestion": "Bach, Johann Sebastian",
+        "matches": [
+          {
+            "extracted": "Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formattedSuggestion": "Johann Sebastian Bach",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Einstein on the Beach - Glass",
+      "expected": {
+        "extracted": "Glass",
+        "suggestion": "Glass, Philip",
+        "matches": [
+          {
+            "extracted": "Glass",
+            "canonical": "Glass, Philip",
+            "formatted": "Philip Glass"
+          }
+        ],
+        "formattedSuggestion": "Philip Glass",
+        "isPartial": false,
+        "unresolvedTokens": []
+      }
+    },
+    {
+      "input": "Hello",
+      "expected": null
+    },
+    {
+      "input": "",
+      "expected": null
+    }
+  ]
+}

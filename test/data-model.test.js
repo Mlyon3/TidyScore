@@ -5,9 +5,9 @@ import {
     countModifiedFields,
     detectFormulaRisks,
     resolveLibraryFields
-} from '../src/core/data-model.js';
-import { assignRowIds, cloneRowsWithIds } from '../src/core/row-identity.js';
-import { parseCsvDocument, serializeCsvDocument } from '../src/core/csv.js';
+} from '../src/domain/data-model.js';
+import { assignRowIds, cloneRowsWithIds } from '../src/domain/row-identity.js';
+import { parseCsvDocument, serializeCsvDocument } from '../src/domain/csv-document.js';
 
 function identified(rows) {
     const ids = rows.map((row, index) => Number.isInteger(row.__id) ? row.__id : index);

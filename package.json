@@ -1,7 +1,7 @@
 {
   "name": "tidyscore",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "packageManager": "pnpm@11.16.0",
   "type": "module",
   "scripts": {
@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:pwa": "playwright test --config playwright.pwa.config.js",
-    "audit:release": "pnpm audit --audit-level high"
+    "audit:release": "pnpm audit --audit-level high",
+    "conformance": "node scripts/generate-conformance.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

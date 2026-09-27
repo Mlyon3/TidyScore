@@ -1,5 +1,5 @@
-import { countModifiedFields } from '../core/data-model.js';
-import { getRowId } from '../core/row-identity.js';
+import { countModifiedFields } from '../domain/data-model.js';
+import { getRowId } from '../domain/row-identity.js';
 
 export const tableUi = {
     refreshModificationState() {

@@ -1,0 +1,287 @@
+[
+  {
+    "tag": "piano",
+    "pattern": "\\bpiano\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "violin",
+    "pattern": "\\bviolin\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "viola",
+    "pattern": "\\bviola\\b(?!\\s+da)",
+    "flags": "i"
+  },
+  {
+    "tag": "cello",
+    "pattern": "\\bcello\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "flute",
+    "pattern": "\\bflute\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "oboe",
+    "pattern": "\\boboe\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "clarinet",
+    "pattern": "\\bclarinet\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "bassoon",
+    "pattern": "\\bbassoon\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "trumpet",
+    "pattern": "\\btrumpet\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "horn",
+    "pattern": "\\bhorn\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "trombone",
+    "pattern": "\\btrombone\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "guitar",
+    "pattern": "\\bguitar\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "harp",
+    "pattern": "\\bharp\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "organ",
+    "pattern": "\\borgan\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "orchestra",
+    "pattern": "\\borchestra\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "chamber",
+    "pattern": "\\bchamber\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "string quartet",
+    "pattern": "\\bstring quartet\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "trio",
+    "pattern": "\\btrio\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "duo",
+    "pattern": "\\bduo\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "solo",
+    "pattern": "\\bsolo\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "sonata",
+    "pattern": "\\bsonata\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "sonatina",
+    "pattern": "\\bsonatina\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "concerto",
+    "pattern": "\\bconcerto\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "symphony",
+    "pattern": "\\bsymphon(?:y|ie)\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "suite",
+    "pattern": "\\bsuite\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "prelude",
+    "pattern": "\\bprelude\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "fugue",
+    "pattern": "\\bfugue\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "etude",
+    "pattern": "\\b[eé]tude\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "nocturne",
+    "pattern": "\\bnocturne\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "waltz",
+    "pattern": "\\bwaltz\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "mazurka",
+    "pattern": "\\bmazurka\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "polonaise",
+    "pattern": "\\bpolonaise\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "ballade",
+    "pattern": "\\bballade\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "scherzo",
+    "pattern": "\\bscherzo\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "rondo",
+    "pattern": "\\brondo\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "aria",
+    "pattern": "\\baria\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "mass",
+    "pattern": "\\bmass\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "requiem",
+    "pattern": "\\brequiem\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "cantata",
+    "pattern": "\\bcantata\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "opera",
+    "pattern": "\\bopera\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "overture",
+    "pattern": "\\boverture\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "rhapsody",
+    "pattern": "\\brhapsod(?:y|ie)\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "fantasy",
+    "pattern": "\\bfantas(?:y|ia|ie)\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "variations",
+    "pattern": "\\bvariations?\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "minuet",
+    "pattern": "\\bminuet\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "gavotte",
+    "pattern": "\\bgavotte\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "sarabande",
+    "pattern": "\\bsarabande\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "allemande",
+    "pattern": "\\ballemande\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "bourree",
+    "pattern": "\\bbourr[eé]e\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "gigue",
+    "pattern": "\\bgigue\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "toccata",
+    "pattern": "\\btoccata\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "invention",
+    "pattern": "\\binvention\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "partita",
+    "pattern": "\\bpartita\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "serenade",
+    "pattern": "\\bserenade\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "divertimento",
+    "pattern": "\\bdivertimento\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "choral",
+    "pattern": "\\bchoir\\b|\\bchoral\\b|\\bchorus\\b",
+    "flags": "i"
+  },
+  {
+    "tag": "lied",
+    "pattern": "\\blied(?:er)?\\b",
+    "flags": "i"
+  }
+]

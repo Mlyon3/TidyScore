@@ -1,16 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { canShareFile, csvCore } from '../src/core/csv.js';
 import {
     buildExportFilename,
-    canShareFile,
-    csvCore,
     MAX_IMPORT_BYTES,
     MAX_IMPORT_ROWS,
     parseCsvDocument,
     SAMPLE_LIBRARY_CSV,
     serializeCsvDocument
-} from '../src/core/csv.js';
-import { getRowId } from '../src/core/row-identity.js';
+} from '../src/domain/csv-document.js';
+import { getRowId } from '../src/domain/row-identity.js';
 
 const fixtureUrl = new URL('./fixtures/forscore-roundtrip.csv', import.meta.url);
 const originalFileReader = globalThis.FileReader;

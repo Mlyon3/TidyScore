@@ -1,3 +1,7 @@
+import { proposeFindReplace, proposeQuickClean } from '../domain/cleanup.js';
+import { applyChanges } from '../domain/library.js';
+import { cleanImslpTitle } from '../domain/titles.js';
+
 export const modalUi = {
     showExtractionModal() {
         const modal = document.getElementById('extractionModal');
@@ -233,9 +237,9 @@ export const modalUi = {
                            data-index="${index}"
                            ${isChecked}>
                     <div class="extraction-content">
-                        <div class="extraction-title">Original: ${this.escapeHtml(item.original.substring(0, 60))}${item.original.length > 60 ? '...' : ''}</div>
+                        <div class="extraction-title">Original: ${this.escapeHtml(item.oldValue.substring(0, 60))}${item.oldValue.length > 60 ? '...' : ''}</div>
                         <div class="extraction-mapping">
-                            <span class="extraction-arrow">→</span><strong>${this.escapeHtml(item.cleaned)}</strong>
+                            <span class="extraction-arrow">→</span><strong>${this.escapeHtml(item.newValue)}</strong>
                         </div>
                     </div>
                 </div>
@@ -266,7 +270,7 @@ export const modalUi = {
     toggleImslpLabel() {
         const addLabel = document.getElementById('imslpAddLabel').checked;
         this.pendingImslpCleanup.forEach(item => {
-            item.cleaned = this.cleanImslpTitle(item.original, addLabel);
+            item.newValue = cleanImslpTitle(item.oldValue, addLabel);
         });
         this.showImslpModal();
     },
@@ -331,14 +335,9 @@ export const modalUi = {
         }
         
         this.pushUndo('Clean IMSLP');
-        let count = 0;
-        this.selectedImslpCleanups.forEach(index => {
-            const cleanup = this.pendingImslpCleanup[index];
-            this.dataById.get(cleanup.id)[this.titleField] = cleanup.cleaned;
-            this.modifiedCount++;
-            count++;
-        });
-        
+        const selected = [...this.selectedImslpCleanups].map(index => this.pendingImslpCleanup[index]);
+        const count = applyChanges(this.dataById, selected);
+        this.modifiedCount += count;
         this.logChange('IMSLP titles cleaned', count);
         this.closeImslpModal();
         this.analyzeData();
@@ -375,27 +374,7 @@ export const modalUi = {
             return;
         }
 
-        const targetIndices = this.getTargetIds();
-        const changes = [];
-
-        targetIndices.forEach(idx => {
-            const row = this.dataById.get(idx);
-            if (row[actualField] && row[actualField].includes(find)) {
-                const oldVal = row[actualField];
-                const newVal = oldVal.replace(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replace);
-                if (oldVal !== newVal) {
-                    changes.push({
-                        id: idx,
-                        label: `Row ${idx + 1}: ${actualField}`,
-                        detail: oldVal,
-                        newDetail: newVal,
-                        field: actualField,
-                        newVal
-                    });
-                }
-            }
-        });
-
+        const changes = proposeFindReplace(this.getLibrary(), this.getTargetIds(), { find, replace, field: actualField });
         if (changes.length === 0) {
             this.showNotification('No matches found.');
             return;
@@ -405,69 +384,8 @@ export const modalUi = {
         this._showPreview('Find & Replace Preview', `Found <strong>${changes.length}</strong> match${changes.length !== 1 ? 'es' : ''}.`, changes, 'Find & replace edits', 'Find & Replace');
     },
 
-    getQuickCleanChanges(targetIndices = this.getTargetIds()) {
-        const changes = [];
-
-        targetIndices.forEach(idx => {
-            const row = this.dataById.get(idx);
-            const rowChanges = [];
-
-            if (this.composerField) {
-                const composer = row[this.composerField] || '';
-                let result = composer.trim();
-                if (result && result.includes(',') && result.split(',')[1].trim() === '') {
-                    result = result.replace(/,\s*$/, '');
-                }
-                if (result !== composer) {
-                    rowChanges.push({ field: this.composerField, newVal: result, desc: 'composer trimmed' });
-                }
-            }
-            if (this.titleField) {
-                const title = row[this.titleField] || '';
-                const trimmed = title.trim();
-                if (trimmed !== title) {
-                    rowChanges.push({ field: this.titleField, newVal: trimmed, desc: 'title trimmed' });
-                }
-            }
-            if (this.tagsField) {
-                const raw = row[this.tagsField] || '';
-                if (raw) {
-                    let tags = raw.split(';').map(t => t.trim()).filter(t => t.length > 0);
-                    const seen = new Map();
-                    const deduped = [];
-                    tags.forEach(tag => {
-                        const lower = tag.toLowerCase();
-                        if (!seen.has(lower)) {
-                            seen.set(lower, tag);
-                            deduped.push(tag);
-                        }
-                    });
-                    deduped.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-                    const cleaned = deduped.join(';');
-                    if (cleaned !== raw) {
-                        rowChanges.push({ field: this.tagsField, newVal: cleaned, desc: 'tags tidied' });
-                    }
-                }
-            }
-
-            rowChanges.forEach(c => {
-                const titleVal = this.titleField ? (row[this.titleField] || '').trim() : '';
-                changes.push({
-                    id: idx,
-                    label: `Row ${idx + 1}: ${titleVal || '(untitled)'}`,
-                    detail: row[c.field] || '',
-                    newDetail: c.newVal,
-                    field: c.field,
-                    newVal: c.newVal
-                });
-            });
-        });
-
-        return changes;
-    },
-
     quickClean() {
-        const changes = this.getQuickCleanChanges();
+        const changes = proposeQuickClean(this.getLibrary(), this.getTargetIds());
 
         if (changes.length === 0) {
             this.showNotification('Already clean! No issues found.');
@@ -477,12 +395,11 @@ export const modalUi = {
         this._showPreview('Quick Clean Preview', `Found <strong>${changes.length}</strong> field${changes.length !== 1 ? 's' : ''} to clean.`, changes, 'Whitespace, commas & tags cleaned', 'Quick Clean');
     },
 
+    // `changes` are domain change records: { id, field, oldValue, newValue }.
     _showPreview(title, desc, changes, logCategory, undoLabel) {
-        changes = changes.map(change => {
-            if (change.field !== this.composerField) return change;
-            const normalized = this.normalizeComposerValue(change.newVal).formatted;
-            return { ...change, newVal: normalized, newDetail: normalized };
-        });
+        changes = changes.map(change => (change.field === this.composerField
+            ? { ...change, newValue: this.normalizeComposerValue(change.newValue).formatted }
+            : change));
         this._previewChanges = changes;
         this._previewSelected = new Set(changes.map((_, i) => i));
         this._previewLogCategory = logCategory;
@@ -495,12 +412,12 @@ export const modalUi = {
         const toShow = changes.slice(0, maxShow);
         let html = '';
         toShow.forEach((c, i) => {
-            const oldEsc = this.escapeHtml(c.detail || '');
-            const newEsc = this.escapeHtml(c.newDetail || '');
+            const oldEsc = this.escapeHtml(c.oldValue || '');
+            const newEsc = this.escapeHtml(c.newValue || '');
             html += `<div class="preview-row">
                 <input type="checkbox" checked data-preview-index="${i}">
                 <div class="preview-row-content">
-                    <div class="preview-row-label">${this.escapeHtml(c.label)}</div>
+                    <div class="preview-row-label">${this.escapeHtml(this._previewLabel(c))}</div>
                     <div class="preview-row-detail">
                         <span class="diff-old">${oldEsc || '(empty)'}</span>
                         <span class="diff-arrow">&rarr;</span>
@@ -520,6 +437,11 @@ export const modalUi = {
         document.getElementById('previewSelectAll').checked = true;
         document.getElementById('previewApplyBtn').textContent = `Apply ${changes.length} Change${changes.length !== 1 ? 's' : ''}`;
         this.activateModal(document.getElementById('previewModal'));
+    },
+
+    _previewLabel(change) {
+        const title = this.titleField ? (this.dataById.get(change.id)?.[this.titleField] || '').trim() : '';
+        return `Row ${change.id + 1} · ${change.field}: ${title || '(untitled)'}`;
     },
 
     togglePreviewItem(i) {
@@ -557,19 +479,7 @@ export const modalUi = {
         }
 
         this.pushUndo(this._previewUndoLabel);
-        let count = 0;
-
-        selected.forEach(i => {
-            const c = this._previewChanges[i];
-            if (c) {
-                const newValue = c.field === this.composerField
-                    ? this.normalizeComposerValue(c.newVal).formatted
-                    : c.newVal;
-                this.dataById.get(c.id)[c.field] = newValue;
-                count++;
-            }
-        });
-
+        const count = applyChanges(this.dataById, [...selected].map(i => this._previewChanges[i]).filter(Boolean));
         this.modifiedCount += count;
         this.logChange(this._previewLogCategory, count);
         this.closePreviewModal();

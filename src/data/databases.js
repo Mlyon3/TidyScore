@@ -1,5 +1,3 @@
-import { builtInComposerDatabase } from './composer-database.js';
-
 export const composerEraDatabase = {
     // Baroque
     'Bach, Johann Sebastian': 'Baroque',
@@ -186,9 +184,3 @@ export const tagKeywordDatabase = [
     { pattern: /\bchoir\b|\bchoral\b|\bchorus\b/i, tag: 'choral' },
     { pattern: /\blied(?:er)?\b/i, tag: 'lied' },
 ];
-
-export const databaseState = {
-    builtInComposerDatabase,
-    composerEraDatabase,
-    tagKeywordDatabase,
-};

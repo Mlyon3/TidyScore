@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { analysisClient } from '../src/core/analysis-client.js';
 import { createBaseState } from '../src/core/state.js';
-import { assignRowIds, buildRowsById } from '../src/core/row-identity.js';
+import { assignRowIds, buildRowsById } from '../src/domain/row-identity.js';
 
 class FakeWorker {
     constructor() {

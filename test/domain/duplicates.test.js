@@ -1,28 +1,24 @@
-import { describe, expect, it, vi } from 'vitest';
-import { duplicateTools } from '../src/tools/duplicate-tools.js';
-import { assignRowIds, buildRowsById, getRowId } from '../src/core/row-identity.js';
+import { describe, expect, it } from 'vitest';
+import { buildComposerAliasMap } from '../../src/domain/composers.js';
+import { compareDuplicatePair, detectDuplicates, parseTitleForDedup } from '../../src/domain/duplicates.js';
+import { createLibrary } from '../../src/domain/library.js';
 
-function context(data, overrides = {}) {
-    const ids = data.map((row, index) => Number.isInteger(row.__id) ? row.__id : index);
-    data.forEach(row => { delete row.__id; });
-    assignRowIds(data, ids);
-    return {
-        ...duplicateTools,
-        data,
-        dataById: buildRowsById(data),
-        titleField: 'Title',
-        filenameField: 'Filename',
-        composerField: 'Composers',
-        tagsField: 'Tags',
-        modifiedCount: 0,
-        getTargetIds() { return data.map(getRowId); },
-        ...overrides
-    };
+const FIELDS = { title: 'Title', filename: 'Filename', composer: 'Composers', genre: null, tags: 'Tags' };
+
+function library(rows) {
+    return createLibrary(FIELDS, new Map(rows.map((row, index) => {
+        const { __id, ...fields } = row;
+        return [Number.isInteger(__id) ? __id : index, fields];
+    })));
 }
 
-function detect(data, overrides = {}) {
-    const app = context(data, overrides);
-    return duplicateTools.detectDuplicates.call(app).result;
+function allIds(lib) {
+    return [...lib.rowsById.keys()];
+}
+
+function detect(rows, options = {}) {
+    const lib = library(rows);
+    return detectDuplicates(lib, allIds(lib), options).result;
 }
 
 function categories(groups) {
@@ -31,14 +27,14 @@ function categories(groups) {
 
 describe('structured duplicate parsing', () => {
     it('removes copy markers while preserving unlabelled musical numbers', () => {
-        const parsed = duplicateTools.parseTitleForDedup('Symphony 5 (2).pdf');
+        const parsed = parseTitleForDedup('Symphony 5 (2).pdf');
         expect(parsed.normalized).toBe('symphony5');
         expect(parsed.core).toBe('symphony5');
         expect([...parsed.copyMarkers]).toEqual(['numbered copy']);
     });
 
     it('canonicalizes aliases and retains structured musical identifiers', () => {
-        const parsed = duplicateTools.parseTitleForDedup('Sonata for Vln, Op. 27 No. 2 in C# minor.pdf');
+        const parsed = parseTitleForDedup('Sonata for Vln, Op. 27 No. 2 in C# minor.pdf');
         expect([...parsed.instruments]).toEqual(['violin']);
         expect([...parsed.catalogues]).toEqual(['op 27']);
         expect([...parsed.workNumbers]).toEqual(['no 2']);
@@ -46,7 +42,7 @@ describe('structured duplicate parsing', () => {
     });
 
     it('does not mistake a standalone note letter for a musical key', () => {
-        const parsed = duplicateTools.parseTitleForDedup('A Little Night Music.pdf');
+        const parsed = parseTitleForDedup('A Little Night Music.pdf');
         expect(parsed.keys.size).toBe(0);
         expect(parsed.core).toBe('alittlenightmusic');
     });
@@ -60,7 +56,8 @@ describe('evidence-based duplicate detection', () => {
             Filename: `scan-${index}.pdf`,
             Composers: 'Example'
         }));
-        const result = duplicateTools.detectDuplicates.call(context(rows));
+        const lib = library(rows);
+        const result = detectDuplicates(lib, allIds(lib));
 
         expect(result.ok).toBe(true);
         expect(result.result[0].items).toHaveLength(500);
@@ -73,7 +70,8 @@ describe('evidence-based duplicate detection', () => {
             Filename: `scan-${index}.pdf`,
             Composers: 'Example'
         }));
-        const result = duplicateTools.detectDuplicates.call(context(rows), null, { pairBudget: 10 });
+        const lib = library(rows);
+        const result = detectDuplicates(lib, allIds(lib), { pairBudget: 10 });
 
         expect(result).toMatchObject({
             ok: false,
@@ -88,10 +86,8 @@ describe('evidence-based duplicate detection', () => {
             { __id: 1, Title: 'Prelude', Filename: 'prelude-b.pdf', Composers: 'Bach' },
             { __id: 2, Title: 'Prelude', Filename: 'prelude-c.pdf', Composers: 'Bach' }
         ];
-        const selected = duplicateTools.detectDuplicates.call(context(rows.map(row => ({ ...row }))), [0, 1]);
-        const filtered = duplicateTools.detectDuplicates.call(context(rows.map(row => ({ ...row })), {
-            getTargetIds: () => [1, 2]
-        }));
+        const selected = detectDuplicates(library(rows), [0, 1]);
+        const filtered = detectDuplicates(library(rows), [1, 2]);
 
         expect(selected.result[0].items.map(item => item.id)).toEqual([0, 1]);
         expect(filtered.result[0].items.map(item => item.id)).toEqual([1, 2]);
@@ -139,11 +135,10 @@ describe('evidence-based duplicate detection', () => {
     });
 
     it('uses configured composer aliases when available', () => {
-        const aliases = { 'j.s. bach': 'Bach, Johann Sebastian' };
         const groups = detect([
             { __id: 0, Title: 'Prelude', Filename: 'prelude.pdf', Composers: 'J.S. Bach' },
             { __id: 1, Title: 'Prelude copy', Filename: 'prelude-copy.pdf', Composers: 'Bach, Johann Sebastian' }
-        ], { getSuggestion: value => aliases[value.toLowerCase()] || null });
+        ], { aliasMap: buildComposerAliasMap() });
         expect(groups[0].category).toBe('likely');
         expect(groups[0].matches.some(item => item.label === 'Composer agrees')).toBe(true);
     });
@@ -204,34 +199,9 @@ describe('evidence-based duplicate detection', () => {
         ]);
         expect(realGroups.filter(group => group.category === 'likely').every(group =>
             group.items.every((left, i) => group.items.slice(i + 1).every(right => {
-                const compared = duplicateTools._compareDuplicatePair.call(context([]), left, right);
+                const compared = compareDuplicatePair(left, right);
                 return compared.category === 'likely';
             }))
         )).toBe(true);
-    });
-});
-
-describe('duplicate review tagging', () => {
-    it('tags unique selected rows once, preserves tags, and remains undoable', () => {
-        const rows = [
-            { __id: 0, Tags: 'Favorite' },
-            { __id: 1, Tags: '_Duplicate_Delete_Me' }
-        ];
-        const app = context(rows, {
-            _dupSelected: new Set([0, 1]),
-            pushUndo: vi.fn(),
-            logChange: vi.fn(),
-            closeDuplicateModal: vi.fn(),
-            renderTable: vi.fn(),
-            updateStats: vi.fn(),
-            showNotification: vi.fn()
-        });
-
-        duplicateTools.applyDuplicateTags.call(app);
-        expect(rows[0].Tags).toBe('Favorite; _Duplicate_Delete_Me');
-        expect(rows[1].Tags).toBe('_Duplicate_Delete_Me');
-        expect(app.modifiedCount).toBe(1);
-        expect(app.pushUndo).toHaveBeenCalledWith('Tag Duplicates');
-        expect(app.showNotification).toHaveBeenCalledWith(expect.stringContaining('Compare every tagged file'));
     });
 });

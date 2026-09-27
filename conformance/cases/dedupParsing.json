@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "description": "parseTitleForDedup(input); sets are emitted as sorted arrays.",
+  "cases": [
+    {
+      "input": "Symphony 5 (2).pdf",
+      "expected": {
+        "original": "Symphony 5 (2).pdf",
+        "normalized": "symphony5",
+        "core": "symphony5",
+        "groupKey": "symphony5",
+        "copyMarkers": [
+          "numbered copy"
+        ],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Sonata for Vln, Op. 27 No. 2 in C# minor.pdf",
+      "expected": {
+        "original": "Sonata for Vln, Op. 27 No. 2 in C# minor.pdf",
+        "normalized": "sonataforvlnop27no2incminor",
+        "core": "sonataforin",
+        "groupKey": "sonataforin",
+        "copyMarkers": [],
+        "instruments": [
+          "violin"
+        ],
+        "roles": [],
+        "keys": [
+          "C# minor"
+        ],
+        "catalogues": [
+          "op 27"
+        ],
+        "workNumbers": [
+          "no 2"
+        ]
+      }
+    },
+    {
+      "input": "A Little Night Music.pdf",
+      "expected": {
+        "original": "A Little Night Music.pdf",
+        "normalized": "alittlenightmusic",
+        "core": "alittlenightmusic",
+        "groupKey": "alittlenightmusic",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Concerto Full Score Op. 3 No. 1 in C major",
+      "expected": {
+        "original": "Concerto Full Score Op. 3 No. 1 in C major",
+        "normalized": "concertofullscoreop3no1incmajor",
+        "core": "concertoin",
+        "groupKey": "concertoin",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [
+          "score"
+        ],
+        "keys": [
+          "C major"
+        ],
+        "catalogues": [
+          "op 3"
+        ],
+        "workNumbers": [
+          "no 1"
+        ]
+      }
+    },
+    {
+      "input": "Suite in B flat major BWV 1010 copy",
+      "expected": {
+        "original": "Suite in B flat major BWV 1010 copy",
+        "normalized": "suiteinbflatmajorbwv1010",
+        "core": "suitein",
+        "groupKey": "suitein",
+        "copyMarkers": [
+          "copy"
+        ],
+        "instruments": [],
+        "roles": [],
+        "keys": [
+          "Bb major"
+        ],
+        "catalogues": [
+          "bwv 1010"
+        ],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Moonlight Sonata v2",
+      "expected": {
+        "original": "Moonlight Sonata v2",
+        "normalized": "moonlightsonata",
+        "core": "moonlightsonata",
+        "groupKey": "moonlightsonata",
+        "copyMarkers": [
+          "version"
+        ],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Bach - Cello Suite No. 1 in G Major",
+      "expected": {
+        "original": "Bach - Cello Suite No. 1 in G Major",
+        "normalized": "bachcellosuiteno1ingmajor",
+        "core": "bachsuitein",
+        "groupKey": "bachsuitein",
+        "copyMarkers": [],
+        "instruments": [
+          "cello"
+        ],
+        "roles": [],
+        "keys": [
+          "G major"
+        ],
+        "catalogues": [],
+        "workNumbers": [
+          "no 1"
+        ]
+      }
+    },
+    {
+      "input": "Prelude in C Major",
+      "expected": {
+        "original": "Prelude in C Major",
+        "normalized": "preludeincmajor",
+        "core": "preludein",
+        "groupKey": "preludein",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [
+          "C major"
+        ],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Moonlight Sonata",
+      "expected": {
+        "original": "Moonlight Sonata",
+        "normalized": "moonlightsonata",
+        "core": "moonlightsonata",
+        "groupKey": "moonlightsonata",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Moonlight Sonata (2)",
+      "expected": {
+        "original": "Moonlight Sonata (2)",
+        "normalized": "moonlightsonata",
+        "core": "moonlightsonata",
+        "groupKey": "moonlightsonata",
+        "copyMarkers": [
+          "numbered copy"
+        ],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Symphony No. 5, Op. 67",
+      "expected": {
+        "original": "Symphony No. 5, Op. 67",
+        "normalized": "symphonyno5op67",
+        "core": "symphony",
+        "groupKey": "symphony",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [
+          "op 67"
+        ],
+        "workNumbers": [
+          "no 5"
+        ]
+      }
+    },
+    {
+      "input": "Clair de Lune",
+      "expected": {
+        "original": "Clair de Lune",
+        "normalized": "clairdelune",
+        "core": "clairdelune",
+        "groupKey": "clairdelune",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "The Four Seasons - Spring",
+      "expected": {
+        "original": "The Four Seasons - Spring",
+        "normalized": "thefourseasonsspring",
+        "core": "thefourseasonsspring",
+        "groupKey": "thefourseasonsspring",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    },
+    {
+      "input": "Nocturne Op. 9, No. 2",
+      "expected": {
+        "original": "Nocturne Op. 9, No. 2",
+        "normalized": "nocturneop9no2",
+        "core": "nocturne",
+        "groupKey": "nocturne",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [
+          "op 9"
+        ],
+        "workNumbers": [
+          "no 2"
+        ]
+      }
+    },
+    {
+      "input": "Hungarian Rhapsody No. 2",
+      "expected": {
+        "original": "Hungarian Rhapsody No. 2",
+        "normalized": "hungarianrhapsodyno2",
+        "core": "hungarianrhapsody",
+        "groupKey": "hungarianrhapsody",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": [
+          "no 2"
+        ]
+      }
+    },
+    {
+      "input": "Ave Maria",
+      "expected": {
+        "original": "Ave Maria",
+        "normalized": "avemaria",
+        "core": "avemaria",
+        "groupKey": "avemaria",
+        "copyMarkers": [],
+        "instruments": [],
+        "roles": [],
+        "keys": [],
+        "catalogues": [],
+        "workNumbers": []
+      }
+    }
+  ]
+}

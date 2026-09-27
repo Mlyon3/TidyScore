@@ -1,3 +1,17 @@
+import { tagKeywordDatabase } from '../data/databases.js';
+import { proposeGenreSuggestions } from '../domain/genres.js';
+import { applyChanges } from '../domain/library.js';
+import {
+    addTag,
+    countFieldValues,
+    proposeTagEdits,
+    proposeTagSuggestions,
+    removeTag,
+    renameTags,
+    replaceTag,
+    splitTags
+} from '../domain/tags.js';
+
 export const tagTools = {
     toggleGenreTagMenu(e) {
         e.stopPropagation();
@@ -28,23 +42,6 @@ export const tagTools = {
         trigger.setAttribute('aria-expanded', 'false');
     },
 
-    getComposerEra(composerValue, aliasMap = null) {
-        if (!composerValue) return null;
-        aliasMap = aliasMap || this.getComposerAliasMap();
-        const entries = this.normalizeComposerValue(composerValue, aliasMap).entries;
-        if (!entries.length) return null;
-
-        const eras = entries.map(entry => {
-            if (this.composerEraDatabase[entry.canonical]) return this.composerEraDatabase[entry.canonical];
-            const canonical = this.getSuggestion(entry.extracted, aliasMap);
-            return canonical ? this.composerEraDatabase[canonical] || null : null;
-        });
-        if (eras.some(era => !era)) return null;
-
-        const uniqueEras = new Set(eras);
-        return uniqueEras.size === 1 ? eras[0] : null;
-    },
-
     suggestGenres() {
         this.closeGenreTagMenu();
         if (!this.composerField || !this.genreField) {
@@ -52,27 +49,7 @@ export const tagTools = {
             return;
         }
 
-        const targetIndices = this.getTargetIds();
-        let suggestions = [];
-        const aliasMap = this.getComposerAliasMap();
-
-        targetIndices.forEach(idx => {
-            const row = this.dataById.get(idx);
-            const genre = (row[this.genreField] || '').trim();
-            const composer = (row[this.composerField] || '').trim();
-            if (genre || !composer) return;
-
-            const era = this.getComposerEra(composer, aliasMap);
-            if (era) {
-                suggestions.push({
-                    id: idx,
-                    composer: composer,
-                    suggestedGenre: era,
-                    title: row[this.titleField] || ''
-                });
-            }
-        });
-
+        const suggestions = proposeGenreSuggestions(this.getLibrary(), this.getTargetIds(), this.getComposerAliasMap());
         if (suggestions.length === 0) {
             const scopeLabel = this.getScopeLabel();
             const scope = scopeLabel ? ` (${scopeLabel})` : '';
@@ -163,14 +140,9 @@ export const tagTools = {
         }
 
         this.pushUndo('Suggest Genre');
-        let count = 0;
-        this.selectedGenreSuggestions.forEach(index => {
-            const suggestion = this.pendingGenreSuggestions[index];
-            this.dataById.get(suggestion.id)[this.genreField] = suggestion.suggestedGenre;
-            this.modifiedCount++;
-            count++;
-        });
-
+        const selected = [...this.selectedGenreSuggestions].map(index => this.pendingGenreSuggestions[index]);
+        const count = applyChanges(this.dataById, selected);
+        this.modifiedCount += count;
         this.logChange('Genres suggested from composer', count);
         this.closeGenreSuggestModal();
         this.analyzeData();
@@ -185,51 +157,7 @@ export const tagTools = {
             return;
         }
 
-        const targetIndices = this.getTargetIds();
-        let suggestions = [];
-
-        targetIndices.forEach(idx => {
-            const row = this.dataById.get(idx);
-            const title = (row[this.titleField] || '').trim();
-            if (!title) return;
-
-            const existingTags = (row[this.tagsField] || '')
-                .split(';').map(t => t.trim().toLowerCase()).filter(Boolean);
-
-            let newTags = [];
-            this.tagKeywordDatabase.forEach(entry => {
-                if (entry.pattern.test(title)) {
-                    if (!existingTags.includes(entry.tag.toLowerCase()) && !newTags.includes(entry.tag)) {
-                        newTags.push(entry.tag);
-                    }
-                }
-            });
-
-            // Key signature detection
-            const keyMatch = title.match(/\b(?:in\s+)?([A-G])[\s-]?([#♯]|flat|[b♭])?\s*[-\s]?(major|minor|maj\.?|min\.?|dur|moll)\b/i);
-            if (keyMatch) {
-                let note = keyMatch[1].toUpperCase();
-                const accidental = (keyMatch[2] || '').toLowerCase();
-                if (accidental === '#' || accidental === '♯') note += ' sharp';
-                else if (accidental === 'b' || accidental === '♭' || accidental === 'flat') note += ' flat';
-                const quality = keyMatch[3].toLowerCase();
-                const mode = (quality.startsWith('maj') || quality === 'dur') ? 'major' : 'minor';
-                const keyTag = `${note} ${mode}`;
-                if (!existingTags.includes(keyTag.toLowerCase()) && !newTags.includes(keyTag)) {
-                    newTags.push(keyTag);
-                }
-            }
-
-            if (newTags.length > 0) {
-                suggestions.push({
-                    id: idx,
-                    title: title,
-                    existingTags: row[this.tagsField] || '',
-                    suggestedTags: newTags
-                });
-            }
-        });
-
+        const suggestions = proposeTagSuggestions(this.getLibrary(), this.getTargetIds(), tagKeywordDatabase);
         if (suggestions.length === 0) {
             const scopeLabel = this.getScopeLabel();
             const scope = scopeLabel ? ` (${scopeLabel})` : '';
@@ -317,17 +245,9 @@ export const tagTools = {
         }
 
         this.pushUndo('Suggest Tags');
-        let count = 0;
-        this.selectedTagSuggestions.forEach(index => {
-            const suggestion = this.pendingTagSuggestions[index];
-            const row = this.dataById.get(suggestion.id);
-            const existing = (row[this.tagsField] || '').trim();
-            const newTagStr = suggestion.suggestedTags.join(';');
-            row[this.tagsField] = existing ? existing + ';' + newTagStr : newTagStr;
-            this.modifiedCount++;
-            count++;
-        });
-
+        const selected = [...this.selectedTagSuggestions].map(index => this.pendingTagSuggestions[index]);
+        const count = applyChanges(this.dataById, selected);
+        this.modifiedCount += count;
         this.logChange('Tags suggested from titles', count);
         this.closeTagSuggestModal();
         this.analyzeData();
@@ -374,8 +294,7 @@ export const tagTools = {
         const tagCounts = new Map();
         targetIndices.forEach(idx => {
             const row = this.dataById.get(idx);
-            const tags = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
-            tags.forEach(t => {
+            splitTags(row[this.tagsField]).forEach(t => {
                 tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
             });
         });
@@ -419,19 +338,9 @@ export const tagTools = {
         const newTag = input.value.trim();
         if (!newTag) return;
 
-        const targetIndices = this.getTargetIds();
-        this.pushUndo('Batch Add Tag');
-        let count = 0;
-
-        targetIndices.forEach(idx => {
-            const row = this.dataById.get(idx);
-            const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
-            if (!existing.some(t => t.toLowerCase() === newTag.toLowerCase())) {
-                existing.push(newTag);
-                row[this.tagsField] = existing.join('; ');
-                count++;
-            }
-        });
+        const changes = proposeTagEdits(this.getLibrary(), this.getTargetIds(), value => addTag(value, newTag));
+        if (changes.length) this.pushUndo('Batch Add Tag');
+        const count = applyChanges(this.dataById, changes);
 
         if (count > 0) {
             this.modifiedCount += count;
@@ -446,19 +355,9 @@ export const tagTools = {
     },
 
     batchRemoveTag(tag) {
-        const targetIndices = this.getTargetIds();
-        this.pushUndo('Batch Remove Tag');
-        let count = 0;
-
-        targetIndices.forEach(idx => {
-            const row = this.dataById.get(idx);
-            const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
-            const filtered = existing.filter(t => t.toLowerCase() !== tag.toLowerCase());
-            if (filtered.length !== existing.length) {
-                row[this.tagsField] = filtered.join('; ');
-                count++;
-            }
-        });
+        const changes = proposeTagEdits(this.getLibrary(), this.getTargetIds(), value => removeTag(value, tag));
+        if (changes.length) this.pushUndo('Batch Remove Tag');
+        const count = applyChanges(this.dataById, changes);
 
         if (count > 0) {
             this.modifiedCount += count;
@@ -483,29 +382,9 @@ export const tagTools = {
             return;
         }
 
-        const targetIndices = this.getTargetIds();
-        this.pushUndo('Batch Replace Tag');
-        let count = 0;
-
-        targetIndices.forEach(idx => {
-            const row = this.dataById.get(idx);
-            const existing = (row[this.tagsField] || '').split(';').map(t => t.trim()).filter(Boolean);
-            let changed = false;
-            const updated = existing.map(t => {
-                if (t.toLowerCase() === fromTag.toLowerCase()) {
-                    changed = true;
-                    return toTag;
-                }
-                return t;
-            });
-            const unique = [...new Set(updated.map(t => t.toLowerCase()))].map(lower => {
-                return updated.find(t => t.toLowerCase() === lower);
-            });
-            if (changed) {
-                row[this.tagsField] = unique.join('; ');
-                count++;
-            }
-        });
+        const changes = proposeTagEdits(this.getLibrary(), this.getTargetIds(), value => replaceTag(value, fromTag, toTag));
+        if (changes.length) this.pushUndo('Batch Replace Tag');
+        const count = applyChanges(this.dataById, changes);
 
         if (count > 0) {
             this.modifiedCount += count;
@@ -546,36 +425,14 @@ export const tagTools = {
     },
 
     computeManagerData() {
-        const counts = new Map();
-        let emptyCount = 0;
-        const targetIndices = this.getTargetIds();
-
-        if (this.managerTab === 'genres') {
-            if (!this.genreField) { this.managerData = []; return; }
-            targetIndices.forEach(idx => {
-                const val = (this.dataById.get(idx)[this.genreField] || '').trim();
-                if (!val) { emptyCount++; } else { counts.set(val, (counts.get(val) || 0) + 1); }
-            });
-        } else {
-            if (!this.tagsField) { this.managerData = []; return; }
-            targetIndices.forEach(idx => {
-                const raw = (this.dataById.get(idx)[this.tagsField] || '').trim();
-                if (!raw) { emptyCount++; return; }
-                const tags = raw.split(';').map(t => t.trim()).filter(Boolean);
-                if (tags.length === 0) { emptyCount++; return; }
-                tags.forEach(tag => { counts.set(tag, (counts.get(tag) || 0) + 1); });
-            });
+        const isGenres = this.managerTab === 'genres';
+        const field = isGenres ? this.genreField : this.tagsField;
+        if (!field) {
+            this.managerData = [];
+            return;
         }
-
-        let sorted = [...counts.entries()]
-            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-            .map(([value, count]) => ({ value, count }));
-
-        if (emptyCount > 0) {
-            sorted.unshift({ value: '', count: emptyCount, isEmpty: true });
-        }
-
-        this.managerData = sorted;
+        const rows = this.getTargetIds().map(id => this.dataById.get(id));
+        this.managerData = countFieldValues(rows, field, { multiValue: !isGenres });
     },
 
     renderManagerList() {
@@ -634,6 +491,16 @@ export const tagTools = {
         this.managerSelectedValues = new Set();
     },
 
+    _proposeGenreRename(library, ids, selectedValues, newName) {
+        const field = library.fields.genre;
+        return ids.flatMap(id => {
+            const oldValue = library.rowsById.get(id)?.[field] || '';
+            const current = oldValue.trim();
+            if (!selectedValues.has(current) || current === newName) return [];
+            return [{ id, field, oldValue, newValue: newName }];
+        });
+    },
+
     applyManagerRename() {
         const newName = document.getElementById('managerRenameInput').value.trim();
 
@@ -649,52 +516,12 @@ export const tagTools = {
 
         const selectedValues = new Set(this.managerSelectedValues);
         const targetIndices = this.getTargetIds();
-
-        this.pushUndo('Manager Rename');
-        let count = 0;
-
-        if (this.managerTab === 'genres') {
-            const field = this.genreField;
-            targetIndices.forEach(idx => {
-                const row = this.dataById.get(idx);
-                const current = (row[field] || '').trim();
-                if (selectedValues.has(current) || (selectedValues.has('') && !current)) {
-                    if (current !== newName) {
-                        row[field] = newName;
-                        count++;
-                    }
-                }
-            });
-        } else {
-            const field = this.tagsField;
-            targetIndices.forEach(idx => {
-                const row = this.dataById.get(idx);
-                const raw = (row[field] || '').trim();
-                if (!raw && selectedValues.has('')) {
-                    row[field] = newName;
-                    count++;
-                    return;
-                }
-                const tags = raw.split(';').map(t => t.trim());
-                let changed = false;
-                const newTags = tags.map(tag => {
-                    if (selectedValues.has(tag)) { changed = true; return newName; }
-                    return tag;
-                });
-                if (changed) {
-                    const seen = new Set();
-                    const deduped = newTags.filter(t => {
-                        if (!t) return false;
-                        const lower = t.toLowerCase();
-                        if (seen.has(lower)) return false;
-                        seen.add(lower);
-                        return true;
-                    });
-                    row[field] = deduped.join(';');
-                    count++;
-                }
-            });
-        }
+        const library = this.getLibrary();
+        const changes = this.managerTab === 'genres'
+            ? this._proposeGenreRename(library, targetIndices, selectedValues, newName)
+            : proposeTagEdits(library, targetIndices, value => renameTags(value, selectedValues, newName));
+        if (changes.length) this.pushUndo('Manager Rename');
+        const count = applyChanges(this.dataById, changes);
 
         if (count === 0) {
             this.showNotification('No changes were needed');

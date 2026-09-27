@@ -1,39 +1,37 @@
-import { createApp } from '../main.js';
-import { assignRowIds, buildRowsById } from '../core/row-identity.js';
+import { buildComposerAliasMap, proposeComposerExtractions } from '../domain/composers.js';
+import { resolveLibraryFields } from '../domain/data-model.js';
+import { detectDuplicates } from '../domain/duplicates.js';
+import { createLibrary } from '../domain/library.js';
+import { computeScanResults } from '../domain/scan.js';
 
-function buildWorkerApp(payload) {
-    const app = createApp();
-    app.headers = [...payload.headers];
-    app.settings = payload.settings;
-    app._settingsRevision = payload.settingsRevision || 0;
-    app.data = payload.rows.map(row => row.fields);
-    assignRowIds(app.data, payload.rows.map(row => row.id));
-    app.dataById = buildRowsById(app.data);
-    app.analyzeData();
-    const aliasMap = app.getComposerAliasMap();
-    app.getComposerAliasMap = () => aliasMap;
-    return app;
+function buildWorkerContext(payload) {
+    const library = createLibrary(
+        resolveLibraryFields(payload.headers),
+        new Map(payload.rows.map(row => [row.id, row.fields]))
+    );
+    return {
+        library,
+        ids: payload.rows.map(row => row.id),
+        aliasMap: buildComposerAliasMap(payload.settings)
+    };
 }
 
 self.addEventListener('message', event => {
     const { requestId, type, payload } = event.data || {};
     try {
-        const app = buildWorkerApp(payload);
+        const { library, ids, aliasMap } = buildWorkerContext(payload);
         if (type === 'scan') {
-            const result = payload.rows.map(row => ({
-                id: row.id,
-                result: app.computeScanResults([row.id])
-            }));
+            const result = ids.map(id => ({ id, result: computeScanResults(library, [id], aliasMap) }));
             self.postMessage({ requestId, ok: true, result });
             return;
         }
         if (type === 'duplicates') {
-            const result = app.detectDuplicates(payload.rows.map(row => row.id), { pairBudget: payload.pairBudget });
+            const result = detectDuplicates(library, ids, { aliasMap, pairBudget: payload.pairBudget });
             self.postMessage({ requestId, ...result });
             return;
         }
         if (type === 'composerExtraction') {
-            const result = app.getComposerExtractionSignals(payload.rows.map(row => row.id));
+            const result = proposeComposerExtractions(library, ids, aliasMap);
             self.postMessage({ requestId, ok: true, result });
             return;
         }

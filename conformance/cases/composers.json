@@ -1,0 +1,567 @@
+{
+  "version": 1,
+  "description": "normalizeComposerValue(input, builtInAliasMap) and formatComposerName(input).",
+  "normalize": [
+    {
+      "input": "",
+      "expected": {
+        "entries": [],
+        "formatted": ""
+      }
+    },
+    {
+      "input": "bach",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formatted": "Johann Sebastian Bach"
+      }
+    },
+    {
+      "input": "beethoven",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formatted": "Ludwig van Beethoven"
+      }
+    },
+    {
+      "input": "Beethoven, Ludwig van",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Beethoven, Ludwig van",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formatted": "Ludwig van Beethoven"
+      }
+    },
+    {
+      "input": "Ludwig van Beethoven",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Ludwig van Beethoven",
+            "canonical": "Beethoven, Ludwig van",
+            "formatted": "Ludwig van Beethoven"
+          }
+        ],
+        "formatted": "Ludwig van Beethoven"
+      }
+    },
+    {
+      "input": "Debussy",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Debussy",
+            "canonical": "Debussy, Claude",
+            "formatted": "Claude Debussy"
+          }
+        ],
+        "formatted": "Claude Debussy"
+      }
+    },
+    {
+      "input": "vivaldi ",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "vivaldi",
+            "canonical": "Vivaldi, Antonio",
+            "formatted": "Antonio Vivaldi"
+          }
+        ],
+        "formatted": "Antonio Vivaldi"
+      }
+    },
+    {
+      "input": "chopin",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "chopin",
+            "canonical": "Chopin, Frédéric",
+            "formatted": "Frédéric Chopin"
+          }
+        ],
+        "formatted": "Frédéric Chopin"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {
+        "entries": [],
+        "formatted": ""
+      }
+    },
+    {
+      "input": " Schubert, Franz ",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Schubert, Franz",
+            "canonical": "Schubert, Franz",
+            "formatted": "Franz Schubert"
+          }
+        ],
+        "formatted": "Franz Schubert"
+      }
+    },
+    {
+      "input": "Erik Satie",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Erik Satie",
+            "canonical": "Satie, Erik",
+            "formatted": "Erik Satie"
+          }
+        ],
+        "formatted": "Erik Satie"
+      }
+    },
+    {
+      "input": "Pachelbel",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Pachelbel",
+            "canonical": "Pachelbel, Johann",
+            "formatted": "Johann Pachelbel"
+          }
+        ],
+        "formatted": "Johann Pachelbel"
+      }
+    },
+    {
+      "input": "debussy",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "debussy",
+            "canonical": "Debussy, Claude",
+            "formatted": "Claude Debussy"
+          }
+        ],
+        "formatted": "Claude Debussy"
+      }
+    },
+    {
+      "input": "ravel",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "ravel",
+            "canonical": "Ravel, Maurice",
+            "formatted": "Maurice Ravel"
+          }
+        ],
+        "formatted": "Maurice Ravel"
+      }
+    },
+    {
+      "input": "Robert Schumann",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Robert Schumann",
+            "canonical": "Schumann, Robert",
+            "formatted": "Robert Schumann"
+          }
+        ],
+        "formatted": "Robert Schumann"
+      }
+    },
+    {
+      "input": "liszt",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "liszt",
+            "canonical": "Liszt, Franz",
+            "formatted": "Franz Liszt"
+          }
+        ],
+        "formatted": "Franz Liszt"
+      }
+    },
+    {
+      "input": "tchaikovsky",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "tchaikovsky",
+            "canonical": "Tchaikovsky, Pyotr Ilyich",
+            "formatted": "Pyotr Ilyich Tchaikovsky"
+          }
+        ],
+        "formatted": "Pyotr Ilyich Tchaikovsky"
+      }
+    },
+    {
+      "input": "dvorak",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "dvorak",
+            "canonical": "Dvořák, Antonín",
+            "formatted": "Antonín Dvořák"
+          }
+        ],
+        "formatted": "Antonín Dvořák"
+      }
+    },
+    {
+      "input": "rachmaninoff",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "rachmaninoff",
+            "canonical": "Rachmaninoff, Sergei",
+            "formatted": "Sergei Rachmaninoff"
+          }
+        ],
+        "formatted": "Sergei Rachmaninoff"
+      }
+    },
+    {
+      "input": "cpe bach",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "cpe bach",
+            "canonical": "Bach, Carl Philipp Emanuel",
+            "formatted": "Carl Philipp Emanuel Bach"
+          }
+        ],
+        "formatted": "Carl Philipp Emanuel Bach"
+      }
+    },
+    {
+      "input": "clara schumann",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "clara schumann",
+            "canonical": "Schumann, Clara",
+            "formatted": "Clara Schumann"
+          }
+        ],
+        "formatted": "Clara Schumann"
+      }
+    },
+    {
+      "input": "m0zart",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "m0zart",
+            "canonical": "m0zart",
+            "formatted": "m0zart"
+          }
+        ],
+        "formatted": "m0zart"
+      }
+    },
+    {
+      "input": "Johannes Brahms",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Johannes Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Johannes Brahms"
+      }
+    },
+    {
+      "input": "brahms",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Johannes Brahms"
+      }
+    },
+    {
+      "input": "Antonin Dvorak, Johannes Brahms",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Antonin Dvorak",
+            "canonical": "Dvořák, Antonín",
+            "formatted": "Antonín Dvořák"
+          },
+          {
+            "extracted": "Johannes Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Antonín Dvořák, Johannes Brahms"
+      }
+    },
+    {
+      "input": "Brahms",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Johannes Brahms"
+      }
+    },
+    {
+      "input": "Brahms, Johannes",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Brahms, Johannes",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Johannes Brahms"
+      }
+    },
+    {
+      "input": "Johannes Brahms",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Johannes Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Johannes Brahms"
+      }
+    },
+    {
+      "input": "Antonin Dvorak, Johannes Brahms",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Antonin Dvorak",
+            "canonical": "Dvořák, Antonín",
+            "formatted": "Antonín Dvořák"
+          },
+          {
+            "extracted": "Johannes Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Antonín Dvořák, Johannes Brahms"
+      }
+    },
+    {
+      "input": "Brahms, Johannes Brahms",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Brahms",
+            "canonical": "Brahms, Johannes",
+            "formatted": "Johannes Brahms"
+          }
+        ],
+        "formatted": "Johannes Brahms"
+      }
+    },
+    {
+      "input": "j.s. bach",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "j.s. bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formatted": "Johann Sebastian Bach"
+      }
+    },
+    {
+      "input": "J S Bach",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "J S Bach",
+            "canonical": "Bach, Johann Sebastian",
+            "formatted": "Johann Sebastian Bach"
+          }
+        ],
+        "formatted": "Johann Sebastian Bach"
+      }
+    },
+    {
+      "input": "Frederic Chopin",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Frederic Chopin",
+            "canonical": "Chopin, Frédéric",
+            "formatted": "Frédéric Chopin"
+          }
+        ],
+        "formatted": "Frédéric Chopin"
+      }
+    },
+    {
+      "input": "Tchaikovsky",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Tchaikovsky",
+            "canonical": "Tchaikovsky, Pyotr Ilyich",
+            "formatted": "Pyotr Ilyich Tchaikovsky"
+          }
+        ],
+        "formatted": "Pyotr Ilyich Tchaikovsky"
+      }
+    },
+    {
+      "input": "Unknown Person",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Unknown Person",
+            "canonical": "Unknown Person",
+            "formatted": "Unknown Person"
+          }
+        ],
+        "formatted": "Unknown Person"
+      }
+    },
+    {
+      "input": "Smith, Jane",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "Smith",
+            "canonical": "Smith",
+            "formatted": "Smith"
+          },
+          {
+            "extracted": "Jane",
+            "canonical": "Jane",
+            "formatted": "Jane"
+          }
+        ],
+        "formatted": "Smith, Jane"
+      }
+    },
+    {
+      "input": "__proto__",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "__proto__",
+            "canonical": "__proto__",
+            "formatted": "__proto__"
+          }
+        ],
+        "formatted": "__proto__"
+      }
+    },
+    {
+      "input": "constructor",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "constructor",
+            "canonical": "constructor",
+            "formatted": "constructor"
+          }
+        ],
+        "formatted": "constructor"
+      }
+    },
+    {
+      "input": "  ",
+      "expected": {
+        "entries": [],
+        "formatted": ""
+      }
+    },
+    {
+      "input": "bach cpe",
+      "expected": {
+        "entries": [
+          {
+            "extracted": "bach cpe",
+            "canonical": "Bach, Carl Philipp Emanuel",
+            "formatted": "Carl Philipp Emanuel Bach"
+          }
+        ],
+        "formatted": "Carl Philipp Emanuel Bach"
+      }
+    }
+  ],
+  "format": [
+    {
+      "input": "Bach, Johann Sebastian",
+      "expected": "Johann Sebastian Bach"
+    },
+    {
+      "input": "Beethoven, Ludwig van",
+      "expected": "Ludwig van Beethoven"
+    },
+    {
+      "input": "Satie",
+      "expected": "Satie"
+    },
+    {
+      "input": "Erik Satie",
+      "expected": "Erik Satie"
+    },
+    {
+      "input": "",
+      "expected": ""
+    }
+  ],
+  "era": [
+    {
+      "input": "Antonin Dvorak, Johannes Brahms",
+      "expected": "Romantic"
+    },
+    {
+      "input": "Beethoven, Johannes Brahms",
+      "expected": null
+    },
+    {
+      "input": "Johannes Brahms, Unknown Person",
+      "expected": null
+    },
+    {
+      "input": "bach",
+      "expected": "Baroque"
+    },
+    {
+      "input": "",
+      "expected": null
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "needsImslpCleanup(input) and cleanImslpTitle(input, addLabel).",
+  "cases": [
+    {
+      "input": "IMSLP00001-Bach_Cello_Suite_No1.pdf",
+      "expected": {
+        "needsCleanup": true,
+        "withLabel": "Bach Cello Suite No1 (IMSLP)",
+        "withoutLabel": "Bach Cello Suite No1"
+      }
+    },
+    {
+      "input": "PMLP12345-Some_Work",
+      "expected": {
+        "needsCleanup": true,
+        "withLabel": "Some Work (IMSLP)",
+        "withoutLabel": "Some Work"
+      }
+    },
+    {
+      "input": "IMSLP123-PMLP456-Etude_No_1",
+      "expected": {
+        "needsCleanup": true,
+        "withLabel": "Etude No 1 (IMSLP)",
+        "withoutLabel": "Etude No 1"
+      }
+    },
+    {
+      "input": "_Leading_Underscore",
+      "expected": {
+        "needsCleanup": true,
+        "withLabel": "Leading Underscore",
+        "withoutLabel": "Leading Underscore"
+      }
+    },
+    {
+      "input": "a_b_c_d",
+      "expected": {
+        "needsCleanup": true,
+        "withLabel": "a b c d",
+        "withoutLabel": "a b c d"
+      }
+    },
+    {
+      "input": "Plain Title",
+      "expected": {
+        "needsCleanup": false,
+        "withLabel": "Plain Title",
+        "withoutLabel": "Plain Title"
+      }
+    },
+    {
+      "input": "Already (IMSLP)",
+      "expected": {
+        "needsCleanup": false,
+        "withLabel": "Already (IMSLP)",
+        "withoutLabel": "Already (IMSLP)"
+      }
+    }
+  ]
+}

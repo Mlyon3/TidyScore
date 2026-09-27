@@ -1,0 +1,542 @@
+{
+  "version": 1,
+  "description": "Whole-library operations over the sample library; row ids are 0-based row indexes.",
+  "csv": "Title,Composers,Genre,Tags,Filename\nBach - Cello Suite No. 1 in G Major,,Baroque,cello,Bach - Cello Suite No.1 in G Major.pdf\nPrelude in C Major,bach,Baroque,piano;keyboard,Bach - Prelude in C Major BWV 846.pdf\nMoonlight Sonata,beethoven,Classical,piano,Moonlight Sonata.pdf\nMoonlight Sonata (2),\"Beethoven, Ludwig van\",Classical,piano,Moonlight Sonata copy.pdf\n\"Symphony No. 5, Op. 67\",Ludwig van Beethoven,Classical,orchestra,Beethoven Symphony No.5 Op.67.pdf\nClair de Lune,Debussy,Romantic,piano,Clair de Lune.pdf\nThe Four Seasons - Spring,vivaldi ,Baroque,violin;ensemble,The Four Seasons - Spring.pdf\n\"Nocturne Op. 9, No. 2\",chopin,Romantic,piano,\"Nocturne Op. 9, No. 2.pdf\"\nHungarian Rhapsody No. 2, ,Romantic,piano,Hungarian Rhapsody No. 2.pdf\nAve Maria,\" Schubert, Franz \",Classical,vocal,Ave Maria.pdf\nGymnopédie No. 1,Erik Satie,Modern,piano,Gymnopédie No. 1.pdf\nCanon in D,Pachelbel,Baroque,ensemble,Canon in D.pdf\nFür Elise,beethoven,Classical,piano,Für Elise.pdf\n\"IMSLP00001-Beethoven - Piano Sonata No.8, Op.13\",,Classical,piano,\"IMSLP00001-Beethoven - Piano Sonata No.8, Op.13.pdf\"\nRêverie,debussy,Romantic,piano,Rêverie.pdf\nBoléro,ravel,Modern,orchestra,Boléro.pdf\nTräumerei,Robert Schumann,Romantic,piano,Träumerei.pdf\nLiebestraum No. 3,liszt,Romantic,piano,Liebestraum No. 3.pdf\nThe Nutcracker Suite,tchaikovsky,Romantic,orchestra,The Nutcracker Suite.pdf\nNew World Symphony,dvorak,Romantic,orchestra;symphony,New World Symphony.pdf\nPiano Concerto No. 2,rachmaninoff,Romantic,piano;orchestra,Piano Concerto No. 2.pdf\nC.P.E. Bach - Solfeggietto in C Minor,,Baroque,keyboard;study,C.P.E. Bach - Solfeggietto in C Minor.pdf\nSolfeggietto in C Minor,cpe bach,Baroque,keyboard,Solfeggietto in C Minor.pdf\n\"Clara Schumann - Romance in A Minor, Op. 21 No. 1\",,Romantic,piano,\"Romance in A Minor, Op.21 No.1.pdf\"\n\"Romance in A Minor, Op. 21 No. 1\",clara schumann,Romantic,piano,\"Romance in A Minor, Op.21 No.1 (scan).pdf\"\nJ.S. Bach: Invention No. 1 in C Major,,Baroque,piano;pedagogy,J.S. Bach: Invention No. 1 in C Major.pdf\nWTC Book I - Prelude and Fugue in C major (Bach),,Baroque,piano,WTC Book I - Prelude and Fugue in C major (Bach).pdf\nHaydn - Cello Concerto No. 1 in C Major,,Classical,cello;orchestra,Haydn - Cello Concerto No. 1 in C Major.pdf\n\"Mozart: Sonata in C Major, K.545\",,Classical,piano,Sonata in C Major K545.pdf\nSonata in C Major K.545,m0zart,Classical,piano,Sonata in C Major K545.pdf\nRachmaninoff - Vocalise Op.34 No.14,,Romantic,voice;violin,Rachmaninoff - Vocalise Op.34 No.14.pdf\nMahler: Symphony No. 5 - Adagietto,,Romantic,orchestra,Mahler: Symphony No. 5 - Adagietto.pdf\nGershwin - Rhapsody in Blue,,Jazz,piano;orchestra,Gershwin - Rhapsody in Blue.pdf\nScott Joplin - The Entertainer,,Ragtime,piano,Scott Joplin - The Entertainer.pdf\nPiazzolla: Libertango,,Contemporary,tango;ensemble,Piazzolla: Libertango.pdf\nArvo Pärt - Spiegel im Spiegel,,Neo-Classical,violin;piano,Arvo Pärt - Spiegel im Spiegel.pdf\nHans Zimmer - Time,,Film,piano,Hans Zimmer - Time.pdf\nYiruma - River Flows in You,,Contemporary,piano,Yiruma - River Flows in You.pdf\nSatie: Gnossienne No. 1,,Modern,piano,Satie: Gnossienne No. 1.pdf\nDebussy Arabesque No.1,debussy,Impressionist,piano,Debussy Arabesque No.1.pdf\nProkofiev: Dance of the Knights,,20th Century,orchestra,Prokofiev: Dance of the Knights.pdf\n\"Intermezzo for Piano, Op. 118 No. 2\",Johannes Brahms,Romantic,piano,Intermezzo piano op 118 no 2.pdf\n\"Intermezzo, Op. 118 No. 2\",brahms,Romantic,piano,Intermezzo alternate scan.pdf\nAcademic Festival Overture Full Score,Johannes Brahms,Romantic,orchestra,Academic Festival Overture score.pdf\nAcademic Festival Overture Violin Part,Johannes Brahms,Romantic,violin;orchestra,Academic Festival Overture violin part.pdf\nBrahms and Beethoven - Variations,,,piano,Brahms Beethoven Variations.pdf\nC.P.E. Bach and J.S. Bach - Two Bachs,,Baroque,keyboard,CPE and JS Bach.pdf\nPiano Miniatures Brahms Kapustin Beethoven,,,piano,Brahms Kapustin Beethoven Miniatures.pdf\nSlavonic Dances,\"Antonin Dvorak, Johannes Brahms\",Romantic,piano;four hands,Slavonic Dances four hands.pdf",
+  "scan": {
+    "counts": {
+      "missingComposer": 40,
+      "composerFormatting": 20,
+      "imslpTitles": 1,
+      "quickClean": 13
+    },
+    "candidates": {
+      "missingComposer": [
+        0,
+        21,
+        23,
+        25,
+        26,
+        27,
+        28,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40,
+        45,
+        46,
+        47,
+        1,
+        2,
+        3,
+        5,
+        6,
+        7,
+        9,
+        11,
+        12,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        22,
+        24,
+        39,
+        42,
+        48
+      ],
+      "composerFormatting": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        7,
+        9,
+        11,
+        12,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        22,
+        24,
+        39,
+        42,
+        48
+      ],
+      "imslpTitles": [
+        13
+      ],
+      "quickClean": [
+        {
+          "id": 1,
+          "field": "Tags",
+          "oldValue": "piano;keyboard",
+          "newValue": "keyboard;piano"
+        },
+        {
+          "id": 6,
+          "field": "Composers",
+          "oldValue": "vivaldi ",
+          "newValue": "vivaldi"
+        },
+        {
+          "id": 6,
+          "field": "Tags",
+          "oldValue": "violin;ensemble",
+          "newValue": "ensemble;violin"
+        },
+        {
+          "id": 8,
+          "field": "Composers",
+          "oldValue": " ",
+          "newValue": ""
+        },
+        {
+          "id": 9,
+          "field": "Composers",
+          "oldValue": " Schubert, Franz ",
+          "newValue": "Schubert, Franz"
+        },
+        {
+          "id": 20,
+          "field": "Tags",
+          "oldValue": "piano;orchestra",
+          "newValue": "orchestra;piano"
+        },
+        {
+          "id": 25,
+          "field": "Tags",
+          "oldValue": "piano;pedagogy",
+          "newValue": "pedagogy;piano"
+        },
+        {
+          "id": 30,
+          "field": "Tags",
+          "oldValue": "voice;violin",
+          "newValue": "violin;voice"
+        },
+        {
+          "id": 32,
+          "field": "Tags",
+          "oldValue": "piano;orchestra",
+          "newValue": "orchestra;piano"
+        },
+        {
+          "id": 34,
+          "field": "Tags",
+          "oldValue": "tango;ensemble",
+          "newValue": "ensemble;tango"
+        },
+        {
+          "id": 35,
+          "field": "Tags",
+          "oldValue": "violin;piano",
+          "newValue": "piano;violin"
+        },
+        {
+          "id": 44,
+          "field": "Tags",
+          "oldValue": "violin;orchestra",
+          "newValue": "orchestra;violin"
+        },
+        {
+          "id": 48,
+          "field": "Tags",
+          "oldValue": "piano;four hands",
+          "newValue": "four hands;piano"
+        }
+      ]
+    },
+    "extractionSignals": {
+      "checked": 21,
+      "skipped": 28,
+      "titleCount": 20,
+      "completionCount": 20
+    }
+  },
+  "quickClean": [
+    {
+      "id": 1,
+      "field": "Tags",
+      "oldValue": "piano;keyboard",
+      "newValue": "keyboard;piano"
+    },
+    {
+      "id": 6,
+      "field": "Composers",
+      "oldValue": "vivaldi ",
+      "newValue": "vivaldi"
+    },
+    {
+      "id": 6,
+      "field": "Tags",
+      "oldValue": "violin;ensemble",
+      "newValue": "ensemble;violin"
+    },
+    {
+      "id": 8,
+      "field": "Composers",
+      "oldValue": " ",
+      "newValue": ""
+    },
+    {
+      "id": 9,
+      "field": "Composers",
+      "oldValue": " Schubert, Franz ",
+      "newValue": "Schubert, Franz"
+    },
+    {
+      "id": 20,
+      "field": "Tags",
+      "oldValue": "piano;orchestra",
+      "newValue": "orchestra;piano"
+    },
+    {
+      "id": 25,
+      "field": "Tags",
+      "oldValue": "piano;pedagogy",
+      "newValue": "pedagogy;piano"
+    },
+    {
+      "id": 30,
+      "field": "Tags",
+      "oldValue": "voice;violin",
+      "newValue": "violin;voice"
+    },
+    {
+      "id": 32,
+      "field": "Tags",
+      "oldValue": "piano;orchestra",
+      "newValue": "orchestra;piano"
+    },
+    {
+      "id": 34,
+      "field": "Tags",
+      "oldValue": "tango;ensemble",
+      "newValue": "ensemble;tango"
+    },
+    {
+      "id": 35,
+      "field": "Tags",
+      "oldValue": "violin;piano",
+      "newValue": "piano;violin"
+    },
+    {
+      "id": 44,
+      "field": "Tags",
+      "oldValue": "violin;orchestra",
+      "newValue": "orchestra;violin"
+    },
+    {
+      "id": 48,
+      "field": "Tags",
+      "oldValue": "piano;four hands",
+      "newValue": "four hands;piano"
+    }
+  ],
+  "findReplace": [
+    {
+      "id": 0,
+      "field": "Title",
+      "oldValue": "Bach - Cello Suite No. 1 in G Major",
+      "newValue": "Bach - Cello Suite No. $1 1 in G Major"
+    },
+    {
+      "id": 4,
+      "field": "Title",
+      "oldValue": "Symphony No. 5, Op. 67",
+      "newValue": "Symphony No. $1 5, Op. 67"
+    },
+    {
+      "id": 7,
+      "field": "Title",
+      "oldValue": "Nocturne Op. 9, No. 2",
+      "newValue": "Nocturne Op. 9, No. $1 2"
+    },
+    {
+      "id": 8,
+      "field": "Title",
+      "oldValue": "Hungarian Rhapsody No. 2",
+      "newValue": "Hungarian Rhapsody No. $1 2"
+    },
+    {
+      "id": 10,
+      "field": "Title",
+      "oldValue": "Gymnopédie No. 1",
+      "newValue": "Gymnopédie No. $1 1"
+    },
+    {
+      "id": 13,
+      "field": "Title",
+      "oldValue": "IMSLP00001-Beethoven - Piano Sonata No.8, Op.13",
+      "newValue": "IMSLP00001-Beethoven - Piano Sonata No. $18, Op.13"
+    },
+    {
+      "id": 17,
+      "field": "Title",
+      "oldValue": "Liebestraum No. 3",
+      "newValue": "Liebestraum No. $1 3"
+    },
+    {
+      "id": 20,
+      "field": "Title",
+      "oldValue": "Piano Concerto No. 2",
+      "newValue": "Piano Concerto No. $1 2"
+    },
+    {
+      "id": 23,
+      "field": "Title",
+      "oldValue": "Clara Schumann - Romance in A Minor, Op. 21 No. 1",
+      "newValue": "Clara Schumann - Romance in A Minor, Op. 21 No. $1 1"
+    },
+    {
+      "id": 24,
+      "field": "Title",
+      "oldValue": "Romance in A Minor, Op. 21 No. 1",
+      "newValue": "Romance in A Minor, Op. 21 No. $1 1"
+    },
+    {
+      "id": 25,
+      "field": "Title",
+      "oldValue": "J.S. Bach: Invention No. 1 in C Major",
+      "newValue": "J.S. Bach: Invention No. $1 1 in C Major"
+    },
+    {
+      "id": 27,
+      "field": "Title",
+      "oldValue": "Haydn - Cello Concerto No. 1 in C Major",
+      "newValue": "Haydn - Cello Concerto No. $1 1 in C Major"
+    },
+    {
+      "id": 30,
+      "field": "Title",
+      "oldValue": "Rachmaninoff - Vocalise Op.34 No.14",
+      "newValue": "Rachmaninoff - Vocalise Op.34 No. $114"
+    },
+    {
+      "id": 31,
+      "field": "Title",
+      "oldValue": "Mahler: Symphony No. 5 - Adagietto",
+      "newValue": "Mahler: Symphony No. $1 5 - Adagietto"
+    },
+    {
+      "id": 38,
+      "field": "Title",
+      "oldValue": "Satie: Gnossienne No. 1",
+      "newValue": "Satie: Gnossienne No. $1 1"
+    },
+    {
+      "id": 39,
+      "field": "Title",
+      "oldValue": "Debussy Arabesque No.1",
+      "newValue": "Debussy Arabesque No. $11"
+    },
+    {
+      "id": 41,
+      "field": "Title",
+      "oldValue": "Intermezzo for Piano, Op. 118 No. 2",
+      "newValue": "Intermezzo for Piano, Op. 118 No. $1 2"
+    },
+    {
+      "id": 42,
+      "field": "Title",
+      "oldValue": "Intermezzo, Op. 118 No. 2",
+      "newValue": "Intermezzo, Op. 118 No. $1 2"
+    }
+  ],
+  "duplicates": {
+    "ok": true,
+    "groups": [
+      {
+        "category": "likely",
+        "ids": [
+          2,
+          3
+        ],
+        "score": 100,
+        "summary": "Strong match: filename matches after copy-marker removal; title matches after copy-marker removal; filename work core matches.",
+        "matches": [
+          "Filename matches after copy-marker removal",
+          "Title matches after copy-marker removal",
+          "Filename work core matches",
+          "Title work core matches",
+          "Title matches the other filename",
+          "Composer agrees",
+          "One filename or title has an explicit copy marker"
+        ],
+        "conflicts": []
+      },
+      {
+        "category": "likely",
+        "ids": [
+          28,
+          29
+        ],
+        "score": 100,
+        "summary": "Strong match: filename matches after copy-marker removal; filename work core matches; title matches the other filename.",
+        "matches": [
+          "Filename matches after copy-marker removal",
+          "Filename work core matches",
+          "Title matches the other filename",
+          "Catalogue number agrees",
+          "Key agrees"
+        ],
+        "conflicts": []
+      },
+      {
+        "category": "possible",
+        "ids": [
+          41,
+          42
+        ],
+        "score": 70,
+        "summary": "Possible match: title matches the other filename; composer agrees; catalogue number agrees.",
+        "matches": [
+          "Title matches the other filename",
+          "Composer agrees",
+          "Catalogue number agrees",
+          "Work number agrees"
+        ],
+        "conflicts": []
+      },
+      {
+        "category": "possible",
+        "ids": [
+          23,
+          24
+        ],
+        "score": 55,
+        "summary": "Possible match: title matches the other filename; catalogue number agrees; work number agrees.",
+        "matches": [
+          "Title matches the other filename",
+          "Catalogue number agrees",
+          "Work number agrees",
+          "Key agrees"
+        ],
+        "conflicts": []
+      },
+      {
+        "category": "related",
+        "ids": [
+          43,
+          44
+        ],
+        "score": 75,
+        "summary": "Likely separate: instrument or document role differs.",
+        "matches": [
+          "Filename work core matches",
+          "Title work core matches",
+          "Title matches the other filename",
+          "Composer agrees"
+        ],
+        "conflicts": [
+          "Instrument or document role differs"
+        ]
+      }
+    ]
+  },
+  "duplicatesWithoutAliases": {
+    "ok": true,
+    "groups": [
+      {
+        "category": "likely",
+        "ids": [
+          28,
+          29
+        ],
+        "score": 100,
+        "summary": "Strong match: filename matches after copy-marker removal; filename work core matches; title matches the other filename.",
+        "matches": [
+          "Filename matches after copy-marker removal",
+          "Filename work core matches",
+          "Title matches the other filename",
+          "Catalogue number agrees",
+          "Key agrees"
+        ],
+        "conflicts": []
+      },
+      {
+        "category": "possible",
+        "ids": [
+          23,
+          24
+        ],
+        "score": 55,
+        "summary": "Possible match: title matches the other filename; catalogue number agrees; work number agrees.",
+        "matches": [
+          "Title matches the other filename",
+          "Catalogue number agrees",
+          "Work number agrees",
+          "Key agrees"
+        ],
+        "conflicts": []
+      },
+      {
+        "category": "related",
+        "ids": [
+          2,
+          3
+        ],
+        "score": 100,
+        "summary": "Likely separate: composer differs.",
+        "matches": [
+          "Filename matches after copy-marker removal",
+          "Title matches after copy-marker removal",
+          "Filename work core matches",
+          "Title work core matches",
+          "Title matches the other filename",
+          "One filename or title has an explicit copy marker"
+        ],
+        "conflicts": [
+          "Composer differs"
+        ]
+      },
+      {
+        "category": "related",
+        "ids": [
+          43,
+          44
+        ],
+        "score": 75,
+        "summary": "Likely separate: instrument or document role differs.",
+        "matches": [
+          "Filename work core matches",
+          "Title work core matches",
+          "Title matches the other filename",
+          "Composer agrees"
+        ],
+        "conflicts": [
+          "Instrument or document role differs"
+        ]
+      },
+      {
+        "category": "related",
+        "ids": [
+          41,
+          42
+        ],
+        "score": 5,
+        "summary": "Likely separate: composer differs.",
+        "matches": [
+          "Title matches the other filename",
+          "Catalogue number agrees",
+          "Work number agrees"
+        ],
+        "conflicts": [
+          "Composer differs"
+        ]
+      }
+    ]
+  }
+}

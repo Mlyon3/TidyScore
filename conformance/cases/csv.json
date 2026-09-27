@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "description": "parseCsvDocument(input); serialized is serializeCsvDocument(headers, rows) with CRLF line endings.",
+  "cases": [
+    {
+      "name": "quoted fields and unicode",
+      "input": "Title,Composers\n\"Nocturne, Op. 9\",Chopin\nRêverie,\"He said \"\"Hi\"\"\"\n",
+      "expected": {
+        "ok": true,
+        "headers": [
+          "Title",
+          "Composers"
+        ],
+        "rows": [
+          {
+            "Title": "Nocturne, Op. 9",
+            "Composers": "Chopin"
+          },
+          {
+            "Title": "Rêverie",
+            "Composers": "He said \"Hi\""
+          }
+        ],
+        "serialized": "Title,Composers\r\n\"Nocturne, Op. 9\",Chopin\r\nRêverie,\"He said \"\"Hi\"\"\""
+      }
+    },
+    {
+      "name": "byte order mark header",
+      "input": "﻿Title,Tags\nPrelude,piano\n",
+      "expected": {
+        "ok": true,
+        "headers": [
+          "Title",
+          "Tags"
+        ],
+        "rows": [
+          {
+            "Title": "Prelude",
+            "Tags": "piano"
+          }
+        ],
+        "serialized": "Title,Tags\r\nPrelude,piano"
+      }
+    },
+    {
+      "name": "multiline field",
+      "input": "Title,Notes\nPrelude,\"First\nSecond\"\n",
+      "expected": {
+        "ok": true,
+        "headers": [
+          "Title",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Title": "Prelude",
+            "Notes": "First\nSecond"
+          }
+        ],
+        "serialized": "Title,Notes\r\nPrelude,\"First\nSecond\""
+      }
+    },
+    {
+      "name": "ragged row",
+      "input": "Title,Composers\nPrelude\n",
+      "expected": {
+        "ok": false,
+        "error": "Invalid CSV on row 2: expected 2 columns but found 1."
+      }
+    },
+    {
+      "name": "duplicate header",
+      "input": "Title,Title\nA,B\n",
+      "expected": {
+        "ok": false,
+        "error": "Invalid CSV: duplicate column headers are not supported."
+      }
+    },
+    {
+      "name": "empty header",
+      "input": "Title,\nA,B\n",
+      "expected": {
+        "ok": false,
+        "error": "Invalid CSV: column 2 has no header."
+      }
+    },
+    {
+      "name": "header only",
+      "input": "Title,Composers\n",
+      "expected": {
+        "ok": false,
+        "error": "No data found in CSV. Please check the file format."
+      }
+    }
+  ]
+}

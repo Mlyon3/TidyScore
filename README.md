@@ -45,29 +45,17 @@ On iPad, TidyScore can be added to the Home Screen for an app-like, offline-capa
 
 ## Project Structure
 
-Application code now lives under `src/` in modular JavaScript and CSS files:
+- `src/domain` — the portable core: CSV parsing, composer recognition, title/tag cleanup, duplicate detection, and settings validation as pure functions. No DOM, browser APIs, or app state (enforced by ESLint), so it runs in the analysis worker, in Node tests, and is the reference for a native port.
+- `src/data` — composer aliases, composer eras, tag keywords, and settings defaults.
+- `src/core`, `src/ui`, `src/tools` — the browser app: state, rendering, modals, and the glue that asks the domain for proposed changes and applies them with undo.
+- `src/workers` — the on-device analysis worker; it calls `src/domain` directly.
+- `src/pwa.js` and `src/ui/pwa.js` — generated-service-worker registration and update-safe UI.
+- `src/styles` — modular stylesheets imported in order.
+- `conformance/` — language-neutral golden cases generated from `src/domain`. See [`conformance/README.md`](conformance/README.md).
 
-- `src/data` — data definitions, mappings, and constants
-- `src/core` — app state and core processing logic
-- `src/ui` — rendering, events, and interaction wiring
-- `src/tools` — feature-specific cleanup tools (for example duplicate detection)
-- `src/workers` — on-device composer and duplicate analysis workers
-- `src/pwa.js` and `src/ui/pwa.js` — generated-service-worker registration and update-safe UI
-- `src/styles` — modular stylesheet files imported in order
-
-> Historical note: older builds were maintained as a single-file HTML app. Current development and startup flow uses Vite via the pnpm scripts above.
+Cleanup operations share one shape: they read a library (`{ fields, rowsById }`) plus a scope of row ids and return proposed changes `{ id, field, oldValue, newValue }`. The UI previews those changes, and `applyChanges` writes the ones the user keeps.
 
 ---
-
-
-## Current migration status
-
-- ✅ **Modularized in `src/`**: core app logic, UI interactions, data definitions, feature tools (including duplicate tooling), and stylesheet modules.
-- ✅ **Vite-based local workflow**: repository root now includes `package.json` scripts (`dev`, `build`, `preview`) and Vite dependency entries as the source of truth for local startup/build.
-- ✅ **Explicit browser bindings**: `index.html` contains the static shell and declarative `data-action` hooks; `src/ui/bindings.js` owns the allowlisted event wiring. There are no inline JavaScript handlers or global `window.app` object.
-- ✅ **Generated offline shell**: `vite-plugin-pwa` and Workbox generate the service worker, revisioned precache, network-first navigation fallback, immutable-asset caching, and obsolete-cache cleanup.
-
-This section should be updated as remaining inline structure is moved into fully componentized/modules-first architecture.
 
 ## Cleanup Tools
 
@@ -140,7 +128,7 @@ Composer names are always written as `First Last`. forScore supports multiple co
 ## Regression Coverage
 
 - Run the static quality gate with `pnpm lint`.
-- Run unit and regression tests with `pnpm test`.
+- Run unit and regression tests with `pnpm test`. This includes a check that `conformance/` matches current domain behavior; after an intentional behavior change, run `pnpm conformance` and commit the regenerated files.
 - Run the Chromium smoke suite with `pnpm test:e2e` after installing its browser once with `pnpm exec playwright install chromium`.
 - After `pnpm build`, run the production offline suite with `pnpm test:e2e:pwa`.
 - GitHub Actions runs lint, tests, the production build, both Chromium suites, diff validation, and a tracked-worktree cleanliness check for pushes and pull requests.

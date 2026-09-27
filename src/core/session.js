@@ -1,4 +1,4 @@
-import { buildRowsById, rehydrateRowIds } from './row-identity.js';
+import { buildRowsById, rehydrateRowIds } from '../domain/row-identity.js';
 
 const DB_NAME = 'tidyscore-local';
 const STORE_NAME = 'sessions';

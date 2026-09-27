@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tagTools } from '../src/tools/tag-tools.js';
-import { assignRowIds, buildRowsById } from '../src/core/row-identity.js';
+import { assignRowIds, buildRowsById } from '../src/domain/row-identity.js';
 
 describe('tag and genre value counting', () => {
     it('treats prototype-key values as ordinary metadata', () => {

@@ -1,0 +1,518 @@
+{
+  "version": 1,
+  "description": "Tag list edits. null means the value is unchanged.",
+  "tidy": [
+    {
+      "input": "",
+      "expected": ""
+    },
+    {
+      "input": "piano",
+      "expected": "piano"
+    },
+    {
+      "input": " piano ;Keyboard;; piano;alpha",
+      "expected": "alpha;Keyboard;piano"
+    },
+    {
+      "input": "b;a;A",
+      "expected": "a;b"
+    },
+    {
+      "input": "piano; keyboard",
+      "expected": "keyboard;piano"
+    },
+    {
+      "input": "Baroque;baroque era",
+      "expected": "Baroque;baroque era"
+    }
+  ],
+  "add": [
+    {
+      "input": "",
+      "tag": "Piano",
+      "expected": "Piano"
+    },
+    {
+      "input": "piano",
+      "tag": "Piano",
+      "expected": null
+    },
+    {
+      "input": " piano ;Keyboard;; piano;alpha",
+      "tag": "Piano",
+      "expected": null
+    },
+    {
+      "input": "b;a;A",
+      "tag": "Piano",
+      "expected": "b;a;A;Piano"
+    },
+    {
+      "input": "piano; keyboard",
+      "tag": "Piano",
+      "expected": null
+    },
+    {
+      "input": "Baroque;baroque era",
+      "tag": "Piano",
+      "expected": "Baroque;baroque era;Piano"
+    }
+  ],
+  "remove": [
+    {
+      "input": "",
+      "tag": "piano",
+      "expected": null
+    },
+    {
+      "input": "piano",
+      "tag": "piano",
+      "expected": ""
+    },
+    {
+      "input": " piano ;Keyboard;; piano;alpha",
+      "tag": "piano",
+      "expected": "Keyboard;alpha"
+    },
+    {
+      "input": "b;a;A",
+      "tag": "piano",
+      "expected": null
+    },
+    {
+      "input": "piano; keyboard",
+      "tag": "piano",
+      "expected": "keyboard"
+    },
+    {
+      "input": "Baroque;baroque era",
+      "tag": "piano",
+      "expected": null
+    }
+  ],
+  "replace": [
+    {
+      "input": "",
+      "from": "keyboard",
+      "to": "Piano",
+      "expected": null
+    },
+    {
+      "input": "piano",
+      "from": "keyboard",
+      "to": "Piano",
+      "expected": null
+    },
+    {
+      "input": " piano ;Keyboard;; piano;alpha",
+      "from": "keyboard",
+      "to": "Piano",
+      "expected": "piano;alpha"
+    },
+    {
+      "input": "b;a;A",
+      "from": "keyboard",
+      "to": "Piano",
+      "expected": null
+    },
+    {
+      "input": "piano; keyboard",
+      "from": "keyboard",
+      "to": "Piano",
+      "expected": "piano"
+    },
+    {
+      "input": "Baroque;baroque era",
+      "from": "keyboard",
+      "to": "Piano",
+      "expected": null
+    }
+  ],
+  "rename": [
+    {
+      "input": "",
+      "selected": [
+        "",
+        "baroque era"
+      ],
+      "to": "Baroque",
+      "expected": "Baroque"
+    },
+    {
+      "input": "piano",
+      "selected": [
+        "",
+        "baroque era"
+      ],
+      "to": "Baroque",
+      "expected": null
+    },
+    {
+      "input": " piano ;Keyboard;; piano;alpha",
+      "selected": [
+        "",
+        "baroque era"
+      ],
+      "to": "Baroque",
+      "expected": "piano;Keyboard;Baroque;alpha"
+    },
+    {
+      "input": "b;a;A",
+      "selected": [
+        "",
+        "baroque era"
+      ],
+      "to": "Baroque",
+      "expected": null
+    },
+    {
+      "input": "piano; keyboard",
+      "selected": [
+        "",
+        "baroque era"
+      ],
+      "to": "Baroque",
+      "expected": null
+    },
+    {
+      "input": "Baroque;baroque era",
+      "selected": [
+        "",
+        "baroque era"
+      ],
+      "to": "Baroque",
+      "expected": "Baroque"
+    }
+  ],
+  "keyTag": [
+    {
+      "input": "Prelude in C Major",
+      "expected": "C major"
+    },
+    {
+      "input": "Sonata in B-flat minor",
+      "expected": "B flat minor"
+    },
+    {
+      "input": "Etude in F# min.",
+      "expected": "F sharp minor"
+    },
+    {
+      "input": "Scherzo in e-moll",
+      "expected": "E minor"
+    },
+    {
+      "input": "A Little Night Music",
+      "expected": null
+    }
+  ],
+  "suggest": [
+    {
+      "input": "Bach - Cello Suite No. 1 in G Major",
+      "existing": "piano",
+      "expected": [
+        "cello",
+        "suite",
+        "G major"
+      ]
+    },
+    {
+      "input": "Prelude in C Major",
+      "existing": "piano",
+      "expected": [
+        "prelude",
+        "C major"
+      ]
+    },
+    {
+      "input": "Moonlight Sonata",
+      "existing": "piano",
+      "expected": [
+        "sonata"
+      ]
+    },
+    {
+      "input": "Moonlight Sonata (2)",
+      "existing": "piano",
+      "expected": [
+        "sonata"
+      ]
+    },
+    {
+      "input": "Symphony No. 5, Op. 67",
+      "existing": "piano",
+      "expected": [
+        "symphony"
+      ]
+    },
+    {
+      "input": "Clair de Lune",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "The Four Seasons - Spring",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Nocturne Op. 9, No. 2",
+      "existing": "piano",
+      "expected": [
+        "nocturne"
+      ]
+    },
+    {
+      "input": "Hungarian Rhapsody No. 2",
+      "existing": "piano",
+      "expected": [
+        "rhapsody"
+      ]
+    },
+    {
+      "input": "Ave Maria",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Gymnopédie No. 1",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Canon in D",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Für Elise",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "IMSLP00001-Beethoven - Piano Sonata No.8, Op.13",
+      "existing": "piano",
+      "expected": [
+        "sonata"
+      ]
+    },
+    {
+      "input": "Rêverie",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Boléro",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Träumerei",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Liebestraum No. 3",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "The Nutcracker Suite",
+      "existing": "piano",
+      "expected": [
+        "suite"
+      ]
+    },
+    {
+      "input": "New World Symphony",
+      "existing": "piano",
+      "expected": [
+        "symphony"
+      ]
+    },
+    {
+      "input": "Piano Concerto No. 2",
+      "existing": "piano",
+      "expected": [
+        "concerto"
+      ]
+    },
+    {
+      "input": "C.P.E. Bach - Solfeggietto in C Minor",
+      "existing": "piano",
+      "expected": [
+        "C minor"
+      ]
+    },
+    {
+      "input": "Solfeggietto in C Minor",
+      "existing": "piano",
+      "expected": [
+        "C minor"
+      ]
+    },
+    {
+      "input": "Clara Schumann - Romance in A Minor, Op. 21 No. 1",
+      "existing": "piano",
+      "expected": [
+        "A minor"
+      ]
+    },
+    {
+      "input": "Romance in A Minor, Op. 21 No. 1",
+      "existing": "piano",
+      "expected": [
+        "A minor"
+      ]
+    },
+    {
+      "input": "J.S. Bach: Invention No. 1 in C Major",
+      "existing": "piano",
+      "expected": [
+        "invention",
+        "C major"
+      ]
+    },
+    {
+      "input": "WTC Book I - Prelude and Fugue in C major (Bach)",
+      "existing": "piano",
+      "expected": [
+        "prelude",
+        "fugue",
+        "C major"
+      ]
+    },
+    {
+      "input": "Haydn - Cello Concerto No. 1 in C Major",
+      "existing": "piano",
+      "expected": [
+        "cello",
+        "concerto",
+        "C major"
+      ]
+    },
+    {
+      "input": "Mozart: Sonata in C Major, K.545",
+      "existing": "piano",
+      "expected": [
+        "sonata",
+        "C major"
+      ]
+    },
+    {
+      "input": "Sonata in C Major K.545",
+      "existing": "piano",
+      "expected": [
+        "sonata",
+        "C major"
+      ]
+    },
+    {
+      "input": "Rachmaninoff - Vocalise Op.34 No.14",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Mahler: Symphony No. 5 - Adagietto",
+      "existing": "piano",
+      "expected": [
+        "symphony"
+      ]
+    },
+    {
+      "input": "Gershwin - Rhapsody in Blue",
+      "existing": "piano",
+      "expected": [
+        "rhapsody"
+      ]
+    },
+    {
+      "input": "Scott Joplin - The Entertainer",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Piazzolla: Libertango",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Arvo Pärt - Spiegel im Spiegel",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Hans Zimmer - Time",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Yiruma - River Flows in You",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Satie: Gnossienne No. 1",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Debussy Arabesque No.1",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Prokofiev: Dance of the Knights",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Intermezzo for Piano, Op. 118 No. 2",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Intermezzo, Op. 118 No. 2",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Academic Festival Overture Full Score",
+      "existing": "piano",
+      "expected": [
+        "overture"
+      ]
+    },
+    {
+      "input": "Academic Festival Overture Violin Part",
+      "existing": "piano",
+      "expected": [
+        "violin",
+        "overture"
+      ]
+    },
+    {
+      "input": "Brahms and Beethoven - Variations",
+      "existing": "piano",
+      "expected": [
+        "variations"
+      ]
+    },
+    {
+      "input": "C.P.E. Bach and J.S. Bach - Two Bachs",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Piano Miniatures Brahms Kapustin Beethoven",
+      "existing": "piano",
+      "expected": []
+    },
+    {
+      "input": "Slavonic Dances",
+      "existing": "piano",
+      "expected": []
+    }
+  ]
+}
